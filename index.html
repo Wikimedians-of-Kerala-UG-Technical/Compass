@@ -923,8 +923,8 @@ function enrichAndScore(tasks,prof){
       if(prof.isReturning&&t.isQuick)personBonus+=.08;
       // Weekend match — if weekend editor and it's weekend, boost heavier tasks
       var todayDay=new Date().getUTCDay();var isWeekend=todayDay===0||todayDay===6;
-      if(prof.isWeekendEditor&&isWeekend&&m.effort!=='low')personBonus+=.06;
-      if(!prof.isWeekendEditor&&!isWeekend&&m.effort==='low')personBonus+=.04;
+      if(prof.isWeekendEditor&&isWeekend&&meta.effort!=='low')personBonus+=.06;
+      if(!prof.isWeekendEditor&&!isWeekend&&meta.effort==='low')personBonus+=.04;
       // Geographic focus match
       if(prof.topGeo&&prof.topGeo.length&&t.topic==='geography')personBonus+=.06;
       // Expert needed in user's strong topics
