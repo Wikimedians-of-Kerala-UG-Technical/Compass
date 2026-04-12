@@ -6,24 +6,24 @@
 <title>WikiTask Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f7f5f0;--card:#fff;--ink:#1d1b16;--ink2:#5c5648;--ink3:#9a9282;--ink4:#c4bdb0;--red:#bf3a2b;--red-bg:#fdf0ee;--blue:#2563a0;--blue-bg:#eef4fb;--green:#2d7a4f;--green-bg:#eef7f1;--amber:#a67c1a;--amber-bg:#fdf6e3;--purple:#6b4fa0;--purple-bg:#f3eefa;--teal:#1a7a7a;--teal-bg:#e8f6f6;--border:#e5e0d5;--shadow:0 1px 4px rgba(0,0,0,.06);--r:10px;--serif:'Newsreader',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace}
+:root{--bg:#fff1e5;--card:#fff;--ink:#33302e;--ink2:#66605c;--ink3:#99938d;--ink4:#ccc6bf;--red:#990f3d;--red-bg:#fdf0ee;--blue:#0d7680;--blue-bg:#e8f6f6;--green:#09814a;--green-bg:#e6f3ed;--amber:#b6600f;--amber-bg:#fdf2e3;--purple:#593380;--purple-bg:#f2ecf9;--teal:#0d7680;--teal-bg:#e8f6f6;--border:#e0d8ce;--shadow:0 1px 3px rgba(0,0,0,.05);--r:4px;--serif:'Newsreader',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
 button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:none}
-.nav{background:var(--ink);color:var(--bg);padding:14px 20px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between}
-.nav-brand{display:flex;align-items:center;gap:10px}.nav-logo{width:30px;height:30px;background:var(--red);border-radius:7px;display:grid;place-items:center;font:700 15px/1 var(--serif);color:#fff}
-.nav-title{font:600 17px/1 var(--serif);letter-spacing:-.3px}.nav-user{font:500 12px var(--mono);color:var(--ink3)}
+.nav{background:var(--ink);color:var(--bg);padding:0 20px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;border-top:4px solid var(--red);height:48px}
+.nav-brand{display:flex;align-items:center;gap:10px}.nav-logo{width:26px;height:26px;border:1.5px solid rgba(255,255,255,.35);border-radius:3px;display:grid;place-items:center;font:700 13px/1 var(--serif);color:rgba(255,255,255,.9)}
+.nav-title{font:600 16px/1 var(--serif);letter-spacing:-.2px}.nav-user{font:500 11px var(--mono);color:var(--ink4)}
 .screen{display:none;padding:20px;max-width:700px;margin:0 auto}.screen.active{display:block}
 #onboard{text-align:center;padding-top:8vh}
 #onboard h1{font:700 32px/1.15 var(--serif);letter-spacing:-.5px;margin-bottom:10px}
 #onboard .sub{font-size:15px;color:var(--ink2);line-height:1.6;margin-bottom:20px;max-width:420px;margin-left:auto;margin-right:auto}
 .feats{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:460px;margin:0 auto 20px;text-align:left}
-.feat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--ink2);line-height:1.4}
-.feat b{display:block;color:var(--ink);margin-bottom:2px;font-size:12px}
+.feat{background:var(--card);border:none;border-left:3px solid var(--red);border-radius:0;padding:10px 14px;font-size:11px;color:var(--ink2);line-height:1.5}
+.feat b{display:flex;align-items:center;gap:6px;color:var(--ink);margin-bottom:3px;font-size:12px;font-weight:600}
 .form-row{display:flex;gap:8px;max-width:440px;margin:0 auto}
 .form-row input{flex:1;padding:14px 16px;border:2px solid var(--border);border-radius:var(--r);font:500 16px var(--sans);background:#fff;color:var(--ink);-webkit-appearance:none}
 .form-row input:focus{outline:none;border-color:var(--red)}.form-row input::placeholder{color:var(--ink4)}
 .btn{padding:14px 24px;border:none;border-radius:var(--r);font:600 15px var(--sans);transition:all .15s}
-.btn-red{background:var(--red);color:#fff}.btn-red:active{transform:scale(.97)}.btn-red:disabled{opacity:.4}
+.btn-red{background:var(--red);color:#fff;border-radius:2px}.btn-red:active{transform:scale(.97)}.btn-red:disabled{opacity:.4}
 .btn-ghost{background:transparent;color:var(--ink2);border:1.5px solid var(--border);padding:9px 16px;font-size:13px;border-radius:var(--r)}
 .hint{font:400 11px var(--mono);color:var(--ink3);margin-top:14px}.err-msg{color:var(--red);font-size:13px;margin-top:10px}
 #loading{text-align:center;padding-top:12vh}
@@ -38,7 +38,7 @@ button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:no
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* PROFILE CARD */
-.profile-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.profile-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .pc-row{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
 .pc-stat{flex:1;min-width:70px;text-align:center}.pc-num{font:600 20px var(--serif);letter-spacing:-.5px}.pc-label{font:500 9px var(--sans);color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
 .pc-section{margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
@@ -51,8 +51,8 @@ button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:no
 .pref-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .pref-item{font:400 11px var(--sans);color:var(--ink2);background:var(--bg);padding:4px 10px;border-radius:8px}
 
-.trending-box{background:linear-gradient(135deg,#1a1a18,#2c1810);color:var(--bg);border-radius:12px;padding:16px 18px;margin-bottom:16px}
-.tb-title{font:600 11px var(--sans);text-transform:uppercase;letter-spacing:1px;color:var(--amber);margin-bottom:10px}
+.trending-box{background:var(--ink);color:var(--bg);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;border-top:3px solid var(--amber)}
+.tb-title{font:600 10px var(--sans);text-transform:uppercase;letter-spacing:1.2px;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .trend-pills{display:flex;flex-wrap:wrap;gap:6px}
 .tp{padding:5px 11px;border-radius:14px;font:500 11px var(--sans);background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.1)}
 .tp .tp-s{font:400 9px var(--mono);color:rgba(255,255,255,.4);margin-left:3px}
@@ -60,8 +60,8 @@ button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:no
 .topic-pill{padding:5px 12px;border-radius:16px;font:500 12px var(--sans);background:var(--card);border:1px solid var(--border);color:var(--ink2)}
 .topic-pill .ct{font:400 10px var(--mono);color:var(--ink4);margin-left:3px}
 
-.news-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
-.news-title{font:600 12px var(--sans);text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:10px}
+.news-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:16px}
+.news-title{font:600 10px var(--sans);text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .news-items{display:flex;flex-direction:column;gap:8px}
 .news-item{padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border)}
 .ni-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px}
@@ -79,10 +79,10 @@ button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:no
 .sbtn{padding:4px 10px;border-radius:12px;font:500 10px var(--sans);background:transparent;border:1px solid transparent;color:var(--ink4);white-space:nowrap}
 .sbtn.on{color:var(--ink);border-color:var(--border);background:var(--card)}
 .tasks{display:flex;flex-direction:column;gap:14px;padding-bottom:60px}
-.task{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.task.is-trend{border-color:var(--amber);border-width:1.5px}
-.task.is-trend::after{content:'🔥 TRENDING';position:absolute;top:0;right:0;background:var(--amber);color:#fff;font:700 8px var(--sans);letter-spacing:.8px;padding:3px 10px;border-radius:0 0 0 8px}
-.task.is-quick::before{content:'⚡ QUICK';position:absolute;top:0;right:0;background:var(--green);color:#fff;font:700 8px var(--sans);letter-spacing:.8px;padding:3px 10px;border-radius:0 0 0 8px}
+.task{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.task.is-trend{border-left-color:var(--amber)}
+.task.is-trend::after{content:'TRENDING';position:absolute;top:0;right:0;background:var(--amber);color:#fff;font:700 8px var(--sans);letter-spacing:.8px;padding:3px 10px;border-radius:0 0 0 4px}
+.task.is-quick::before{content:'QUICK';position:absolute;top:0;right:0;background:var(--green);color:#fff;font:700 8px var(--sans);letter-spacing:.8px;padding:3px 10px;border-radius:0 0 0 4px}
 .task.is-trend.is-quick::before{display:none}
 .task-rank{position:absolute;top:0;left:0;width:24px;height:24px;background:var(--ink);color:var(--bg);font:700 10px var(--mono);display:grid;place-items:center;border-radius:0 0 8px 0}
 .task-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;padding-left:22px;padding-right:2px}
@@ -119,7 +119,37 @@ button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:no
 .gref-meta{font:400 10px var(--sans);color:var(--ink3);margin-top:2px}.gref-src{font:400 10px var(--mono);color:var(--ink4);margin-top:2px}
 .empty{text-align:center;padding:40px 20px;color:var(--ink3)}
 .fade{animation:fadeUp .35s ease-out both}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.icon{display:inline-block;width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.icon-sm{width:12px;height:12px;vertical-align:-1px}.icon-lg{width:16px;height:16px;vertical-align:-3px}
 </style>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+<symbol id="i-edit" viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3z"/></symbol>
+<symbol id="i-book" viewBox="0 0 16 16"><path d="M2 2h4c1.1 0 2 .9 2 2v10c0-.6-.4-1-1-1H2zm12 0h-4c-1.1 0-2 .9-2 2v10c0-.6.4-1 1-1h5z"/></symbol>
+<symbol id="i-link" viewBox="0 0 16 16"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1m3 4a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1"/></symbol>
+<symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 1.5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></symbol>
+<symbol id="i-chart" viewBox="0 0 16 16"><path d="M14 14H2V2"/><path d="M2 10l4-4 3 3 5-5"/></symbol>
+<symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1L2 4v4c0 3.5 2.6 6.4 6 7 3.4-.6 6-3.5 6-7V4z"/></symbol>
+<symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2a10 10 0 010 12M8 2a10 10 0 000 12"/></symbol>
+<symbol id="i-user" viewBox="0 0 16 16"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5"/></symbol>
+<symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M14.5 14.5l-3.6-3.6"/></symbol>
+<symbol id="i-star" viewBox="0 0 16 16"><path d="M8 1l2 4.5H15l-3.8 3 1.4 4.5L8 10.5 3.4 13l1.4-4.5L1 5.5h5z"/></symbol>
+<symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 1L1 14h14zM8 6v3m0 2v.5"/></symbol>
+<symbol id="i-layers" viewBox="0 0 16 16"><path d="M8 1L1 5l7 4 7-4zM1 8l7 4 7-4M1 11l7 4 7-4"/></symbol>
+<symbol id="i-file" viewBox="0 0 16 16"><path d="M10 1H3v14h10V4z"/><path d="M10 1v3h3"/></symbol>
+<symbol id="i-compass" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M10.5 5.5l-1.2 3.8-3.8 1.2 1.2-3.8z"/></symbol>
+<symbol id="i-tag" viewBox="0 0 16 16"><path d="M1 8.4V2h6.4L15 9.6 9.6 15zM4.5 4.5h.01"/></symbol>
+<symbol id="i-zap" viewBox="0 0 16 16"><path d="M9 1L3 9h5l-1 6 6-8H8z"/></symbol>
+<symbol id="i-trending" viewBox="0 0 16 16"><path d="M2 12l4-5 3 3 5-6"/><path d="M10 4h4v4"/></symbol>
+<symbol id="i-grid" viewBox="0 0 16 16"><rect x="1" y="1" width="5.5" height="5.5" rx="1"/><rect x="9.5" y="1" width="5.5" height="5.5" rx="1"/><rect x="1" y="9.5" width="5.5" height="5.5" rx="1"/><rect x="9.5" y="9.5" width="5.5" height="5.5" rx="1"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 16 16"><path d="M1 2v5h5M15 14v-5h-5"/><path d="M13.5 6A6 6 0 002.3 7M2.5 10a6 6 0 0011.2-1"/></symbol>
+<symbol id="i-pin" viewBox="0 0 16 16"><path d="M8 14c0 0-5-4.5-5-8a5 5 0 0110 0c0 3.5-5 8-5 8z"/><circle cx="8" cy="6" r="1.5"/></symbol>
+<symbol id="i-merge" viewBox="0 0 16 16"><circle cx="4" cy="4" r="1.5"/><circle cx="12" cy="4" r="1.5"/><circle cx="4" cy="12" r="1.5"/><path d="M4 5.5v5m0-4c0-1 2-2 8-2"/></symbol>
+<symbol id="i-image" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><circle cx="5" cy="6" r="1.2"/><path d="M14.5 10.5l-3.5-3.5-4 4-2-2-3.5 3.5"/></symbol>
+<symbol id="i-wand" viewBox="0 0 16 16"><path d="M1.5 14.5l9-9m-2.5 0l2.5-2.5L13 5.5 10.5 8M5 3V1m0 6v-2m-2-1h2m2 0h2"/></symbol>
+<symbol id="i-list" viewBox="0 0 16 16"><path d="M6 3h8M6 8h8M6 13h8M2 3h.01M2 8h.01M2 13h.01"/></symbol>
+<symbol id="i-newspaper" viewBox="0 0 16 16"><path d="M2 3h10v11H3a1 1 0 01-1-1zm10 0h2v10a1 1 0 01-1 1h-1"/><path d="M4 6h6M4 9h3M9 9h1"/></symbol>
+</svg>
 </head>
 <body>
 <nav class="nav"><div class="nav-brand"><div class="nav-logo">W</div><div class="nav-title">WikiTask Pro</div></div><div class="nav-user" id="navUser"></div></nav>
@@ -128,10 +158,10 @@ button{font-family:inherit;cursor:pointer}a{color:var(--blue);text-decoration:no
   <h1>Your Wikipedia,<br>Curated</h1>
   <p class="sub">Deep edit analysis, real news, article structure guides, reference discovery, and tons of quick-win tasks.</p>
   <div class="feats">
-    <div class="feat"><b>🧠 Deep Personalization</b>Skill level, geo focus, edit velocity, quality tier, weekend/weekday, article age preference</div>
-    <div class="feat"><b>⚡ 20+ Quick Win Types</b>Orphans, dead-ends, bare URLs, disambig links, coords, categories, BLPs, wikify, short descriptions</div>
-    <div class="feat"><b>👁️ Watchlist Alerts</b>Your past articles that have degraded — new issues flagged since you last edited</div>
-    <div class="feat"><b>📋 Edit Guides + References</b>Section analysis, missing content detection, papers from Semantic Scholar, CrossRef &amp; PubMed</div>
+    <div class="feat"><b><svg class="icon"><use href="#i-user"/></svg> Deep Personalization</b>Skill level, geo focus, edit velocity, quality tier, weekend/weekday, article age preference</div>
+    <div class="feat"><b><svg class="icon"><use href="#i-zap"/></svg> 20+ Quick Win Types</b>Orphans, dead-ends, bare URLs, disambig links, coords, categories, BLPs, wikify, short descriptions</div>
+    <div class="feat"><b><svg class="icon"><use href="#i-eye"/></svg> Watchlist Alerts</b>Your past articles that have degraded — new issues flagged since you last edited</div>
+    <div class="feat"><b><svg class="icon"><use href="#i-book"/></svg> Edit Guides + References</b>Section analysis, missing content detection, papers from Semantic Scholar, CrossRef &amp; PubMed</div>
   </div>
   <div class="form-row"><input id="userInput" placeholder="Wikipedia username" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="btn btn-red" id="goBtn">Go</button></div>
   <div class="hint">MediaWiki + Pageviews + Semantic Scholar + CrossRef + PubMed APIs</div>
@@ -794,33 +824,33 @@ function findReferences(title){
 
 /* ══════ SCORING ══════ */
 var TASK_META={
-  expand_stub:{label:'Expand Stub',icon:'📝',effort:'med',min:30,color:'#2563a0',bg:'#eef4fb'},
-  add_refs:{label:'Add References',icon:'📚',effort:'med',min:20,color:'#a67c1a',bg:'#fdf6e3'},
-  update:{label:'Update',icon:'🔄',effort:'high',min:45,color:'#bf3a2b',bg:'#fdf0ee'},
-  add_images:{label:'Add Images',icon:'🖼️',effort:'low',min:15,color:'#2d7a4f',bg:'#eef7f1'},
-  cleanup:{label:'Cleanup',icon:'🧹',effort:'low',min:15,color:'#6b4fa0',bg:'#f3eefa'},
-  neighbor:{label:'Expand Related',icon:'🔗',effort:'med',min:25,color:'#2d6b55',bg:'#e8f5f0'},
-  trending:{label:'Trending',icon:'🔥',effort:'varies',min:20,color:'#1a7a7a',bg:'#e8f6f6'},
-  fix_orphan:{label:'Fix Orphan',icon:'🏝️',effort:'low',min:5,color:'#6b4fa0',bg:'#f3eefa'},
-  fix_deadend:{label:'Fix Dead-End',icon:'🔚',effort:'low',min:5,color:'#6b4fa0',bg:'#f3eefa'},
-  fix_bare_urls:{label:'Fix Bare URLs',icon:'🔧',effort:'low',min:10,color:'#a67c1a',bg:'#fdf6e3'},
-  add_wikilinks:{label:'Add Wikilinks',icon:'🔗',effort:'low',min:5,color:'#2563a0',bg:'#eef4fb'},
-  add_infobox:{label:'Add Infobox',icon:'📦',effort:'med',min:15,color:'#1a7a7a',bg:'#e8f6f6'},
-  add_citations:{label:'Add Citations',icon:'📎',effort:'low',min:10,color:'#a67c1a',bg:'#fdf6e3'},
-  add_shortdesc:{label:'Short Description',icon:'📋',effort:'low',min:2,color:'#2d7a4f',bg:'#eef7f1'},
-  fix_pov:{label:'Fix POV',icon:'⚖️',effort:'high',min:40,color:'#bf3a2b',bg:'#fdf0ee'},
-  followup:{label:'Your Article',icon:'👤',effort:'med',min:20,color:'#6b4fa0',bg:'#f3eefa'},
-  fix_disambig:{label:'Fix Disambig Links',icon:'🔀',effort:'low',min:5,color:'#6b4fa0',bg:'#f3eefa'},
-  fix_blp:{label:'Fix BLP',icon:'🛡️',effort:'med',min:20,color:'#bf3a2b',bg:'#fdf0ee'},
-  expert_needed:{label:'Expert Needed',icon:'🎓',effort:'high',min:45,color:'#2563a0',bg:'#eef4fb'},
-  wikify:{label:'Wikify',icon:'📄',effort:'low',min:8,color:'#1a7a7a',bg:'#e8f6f6'},
-  expand_list:{label:'Expand List',icon:'📋',effort:'low',min:10,color:'#2d7a4f',bg:'#eef7f1'},
-  fix_lead:{label:'Fix Lead',icon:'📰',effort:'med',min:15,color:'#a67c1a',bg:'#fdf6e3'},
-  add_coords:{label:'Add Coordinates',icon:'📍',effort:'low',min:3,color:'#2d7a4f',bg:'#eef7f1'},
-  add_categories:{label:'Add Categories',icon:'🏷️',effort:'low',min:3,color:'#2d7a4f',bg:'#eef7f1'},
-  merge:{label:'Merge',icon:'🔀',effort:'high',min:30,color:'#6b4fa0',bg:'#f3eefa'},
-  fix_or:{label:'Fix OR',icon:'🔬',effort:'med',min:25,color:'#bf3a2b',bg:'#fdf0ee'},
-  watchlist:{label:'Your Watchlist',icon:'👁️',effort:'med',min:15,color:'#6b4fa0',bg:'#f3eefa'}
+  expand_stub:{label:'Expand Stub',icon:'i-edit',effort:'med',min:30,color:'#0d7680',bg:'#e8f6f6'},
+  add_refs:{label:'Add References',icon:'i-book',effort:'med',min:20,color:'#b6600f',bg:'#fdf2e3'},
+  update:{label:'Update',icon:'i-refresh',effort:'high',min:45,color:'#990f3d',bg:'#fdf0ee'},
+  add_images:{label:'Add Images',icon:'i-image',effort:'low',min:15,color:'#09814a',bg:'#e6f3ed'},
+  cleanup:{label:'Cleanup',icon:'i-wand',effort:'low',min:15,color:'#593380',bg:'#f2ecf9'},
+  neighbor:{label:'Expand Related',icon:'i-link',effort:'med',min:25,color:'#0d7680',bg:'#e8f6f6'},
+  trending:{label:'Trending',icon:'i-trending',effort:'varies',min:20,color:'#b6600f',bg:'#fdf2e3'},
+  fix_orphan:{label:'Fix Orphan',icon:'i-compass',effort:'low',min:5,color:'#593380',bg:'#f2ecf9'},
+  fix_deadend:{label:'Fix Dead-End',icon:'i-link',effort:'low',min:5,color:'#593380',bg:'#f2ecf9'},
+  fix_bare_urls:{label:'Fix Bare URLs',icon:'i-link',effort:'low',min:10,color:'#b6600f',bg:'#fdf2e3'},
+  add_wikilinks:{label:'Add Wikilinks',icon:'i-link',effort:'low',min:5,color:'#0d7680',bg:'#e8f6f6'},
+  add_infobox:{label:'Add Infobox',icon:'i-grid',effort:'med',min:15,color:'#0d7680',bg:'#e8f6f6'},
+  add_citations:{label:'Add Citations',icon:'i-file',effort:'low',min:10,color:'#b6600f',bg:'#fdf2e3'},
+  add_shortdesc:{label:'Short Description',icon:'i-list',effort:'low',min:2,color:'#09814a',bg:'#e6f3ed'},
+  fix_pov:{label:'Fix POV',icon:'i-alert',effort:'high',min:40,color:'#990f3d',bg:'#fdf0ee'},
+  followup:{label:'Your Article',icon:'i-user',effort:'med',min:20,color:'#593380',bg:'#f2ecf9'},
+  fix_disambig:{label:'Fix Disambig Links',icon:'i-merge',effort:'low',min:5,color:'#593380',bg:'#f2ecf9'},
+  fix_blp:{label:'Fix BLP',icon:'i-shield',effort:'med',min:20,color:'#990f3d',bg:'#fdf0ee'},
+  expert_needed:{label:'Expert Needed',icon:'i-star',effort:'high',min:45,color:'#0d7680',bg:'#e8f6f6'},
+  wikify:{label:'Wikify',icon:'i-file',effort:'low',min:8,color:'#0d7680',bg:'#e8f6f6'},
+  expand_list:{label:'Expand List',icon:'i-list',effort:'low',min:10,color:'#09814a',bg:'#e6f3ed'},
+  fix_lead:{label:'Fix Lead',icon:'i-newspaper',effort:'med',min:15,color:'#b6600f',bg:'#fdf2e3'},
+  add_coords:{label:'Add Coordinates',icon:'i-pin',effort:'low',min:3,color:'#09814a',bg:'#e6f3ed'},
+  add_categories:{label:'Add Categories',icon:'i-tag',effort:'low',min:3,color:'#09814a',bg:'#e6f3ed'},
+  merge:{label:'Merge',icon:'i-merge',effort:'high',min:30,color:'#593380',bg:'#f2ecf9'},
+  fix_or:{label:'Fix OR',icon:'i-search',effort:'med',min:25,color:'#990f3d',bg:'#fdf0ee'},
+  watchlist:{label:'Your Watchlist',icon:'i-eye',effort:'med',min:15,color:'#593380',bg:'#f2ecf9'}
 };
 var URGENCY={update:.9,trending:.85,fix_blp:.82,add_refs:.75,fix_pov:.72,fix_or:.70,followup:.68,watchlist:.66,add_citations:.65,expert_needed:.62,fix_lead:.58,expand_stub:.5,add_infobox:.48,neighbor:.45,merge:.44,fix_bare_urls:.42,cleanup:.4,fix_orphan:.38,fix_deadend:.38,expand_list:.36,add_wikilinks:.35,wikify:.33,fix_disambig:.32,add_images:.3,add_shortdesc:.25,add_coords:.22,add_categories:.20};
 var AFFINITY_MAP={expand_stub:['stub_work','major_add','creation'],add_refs:['references'],update:['major_add'],add_images:['media'],cleanup:['copyedit','minor'],neighbor:['major_add'],
@@ -874,7 +904,7 @@ function enrichAndScore(tasks,prof){
       var staleScore=staleDays?Math.min(staleDays/365,1)*.5:0;
       var blScore=Math.min(bl/50,1)*.3;
       var sizeGap=artSize>0&&artSize<3000?.15:artSize>0&&artSize<6000?.08:0;
-      var meta=TASK_META[t.type]||{label:t.type,icon:'📄',effort:'med',min:20,color:'#666',bg:'#f5f5f5'};
+      var meta=TASK_META[t.type]||{label:t.type,icon:'i-file',effort:'med',min:20,color:'#666',bg:'#f5f5f5'};
       var effortMatch=(effortPref==='low'&&meta.effort==='low')?.12:(effortPref==='high'&&meta.effort!=='low')?.08:0;
 
       // Personalization bonuses
@@ -912,19 +942,19 @@ function enrichAndScore(tasks,prof){
       var isQuick=t.isQuick||meta.effort==='low';
 
       var signals=[];
-      if(isTrending||pv.trend>30)signals.push({text:'📈 +'+pv.trend+'%',c:'sig-hot'});
-      if(pv.avg>200)signals.push({text:'👁 '+pv.avg+'/day',c:'sig-warm'});else if(pv.avg>50)signals.push({text:'👁 '+pv.avg+'/day',c:'sig-neutral'});
-      if(staleDays&&staleDays>180)signals.push({text:'⏰ '+staleDays+'d stale',c:'sig-warm'});
-      if(bl>20)signals.push({text:'🔗 '+bl+' links',c:'sig-cool'});
-      if(artSize>0&&artSize<2000)signals.push({text:'📏 Very short',c:'sig-hot'});
-      if(t._extSource==='current_events')signals.push({text:'📰 News',c:'sig-hot'});
-      if(t._extSource==='recent_deaths')signals.push({text:'✝ Obit',c:'sig-warm'});
-      if(t._extSource==='ongoing')signals.push({text:'🔴 Live',c:'sig-hot'});
-      if(t.type==='followup')signals.push({text:'👤 Yours',c:'sig-fresh'});
-      if(t.type==='watchlist')signals.push({text:'👁️ Watchlist',c:'sig-warm'});
-      if(t.type==='fix_blp')signals.push({text:'🛡️ BLP',c:'sig-hot'});
-      if(t.type==='expert_needed')signals.push({text:'🎓 Expert',c:'sig-cool'});
-      if(isQuick)signals.push({text:'⚡ '+meta.min+'m',c:'sig-fresh'});
+      if(isTrending||pv.trend>30)signals.push({text:'+'+pv.trend+'%',c:'sig-hot',ico:'i-trending'});
+      if(pv.avg>200)signals.push({text:pv.avg+'/day',c:'sig-warm',ico:'i-eye'});else if(pv.avg>50)signals.push({text:pv.avg+'/day',c:'sig-neutral',ico:'i-eye'});
+      if(staleDays&&staleDays>180)signals.push({text:staleDays+'d stale',c:'sig-warm',ico:'i-clock'});
+      if(bl>20)signals.push({text:bl+' links',c:'sig-cool',ico:'i-link'});
+      if(artSize>0&&artSize<2000)signals.push({text:'Very short',c:'sig-hot',ico:'i-alert'});
+      if(t._extSource==='current_events')signals.push({text:'News',c:'sig-hot',ico:'i-newspaper'});
+      if(t._extSource==='recent_deaths')signals.push({text:'Obit',c:'sig-warm',ico:'i-file'});
+      if(t._extSource==='ongoing')signals.push({text:'Live',c:'sig-hot',ico:'i-trending'});
+      if(t.type==='followup')signals.push({text:'Yours',c:'sig-fresh',ico:'i-user'});
+      if(t.type==='watchlist')signals.push({text:'Watchlist',c:'sig-warm',ico:'i-eye'});
+      if(t.type==='fix_blp')signals.push({text:'BLP',c:'sig-hot',ico:'i-shield'});
+      if(t.type==='expert_needed')signals.push({text:'Expert',c:'sig-cool',ico:'i-star'});
+      if(isQuick)signals.push({text:meta.min+'m',c:'sig-fresh',ico:'i-zap'});
 
       return{title:t.title,type:t.type,topic:t.topic,reason:t.reason,isTrending:isTrending,isQuick:isQuick,meta:meta,signals:signals,
         _newsContext:t._newsContext||'',_extSource:t._extSource||'',
@@ -1020,27 +1050,27 @@ function renderDashboard(){
     '<div class="pc-section"><div class="pc-section-title">Your Skills</div><div class="skill-badges">'+
     profile.skills.map(function(s){return'<span class="skill-badge '+(skillColors[s.level]||'')+'">'+s.name+'</span>'}).join('')+'</div></div>'+
     '<div class="pc-section"><div class="pc-section-title">Preferences Detected</div><div class="pref-row">'+
-    [profile.isReturning?'🔙 Returning after '+profile.daysSinceLastEdit+'d':null,
-     profile.recentActivity==='very_active'?'🔥 Very active':profile.recentActivity==='active'?'✅ Active':null,
-     profile.quickEditRatio>.4?'⚡ Prefers quick edits':null,
-     profile.isMaintWorker?'🔧 Maintenance worker':null,
-     profile.creatorScore>.05?'✨ Article creator':'🔨 Improver',
-     '📐 Prefers '+profile.prefArticleSize+' articles',
-     profile.isWeekendEditor?'📅 Weekend editor':'📅 Weekday editor',
-     profile.prefArticleAge!=='mixed'?'📜 Prefers '+(profile.prefArticleAge==='old'?'established':'newer')+' articles':null,
-     profile.topGeo&&profile.topGeo.length?'🌍 Focus: '+profile.topGeo.map(function(g){return cap(g[0])}).join(', '):null,
-     profile.usesVisualEditor?'🖥️ Visual Editor user':null,
-     profile.usesMobile?'📱 Mobile editor':null,
-     profile.isHighTrafficEditor?'🏛️ High-traffic articles':null,
-     '📊 Avg edit: ±'+profile.avgDiff+' chars',
-     profile.bestSession?'🕐 Peak: '+cap(profile.bestSession[0]):null]
+    [profile.isReturning?'Returning after '+profile.daysSinceLastEdit+'d':null,
+     profile.recentActivity==='very_active'?'Very active':profile.recentActivity==='active'?'Active':null,
+     profile.quickEditRatio>.4?'Prefers quick edits':null,
+     profile.isMaintWorker?'Maintenance worker':null,
+     profile.creatorScore>.05?'Article creator':'Improver',
+     'Prefers '+profile.prefArticleSize+' articles',
+     profile.isWeekendEditor?'Weekend editor':'Weekday editor',
+     profile.prefArticleAge!=='mixed'?'Prefers '+(profile.prefArticleAge==='old'?'established':'newer')+' articles':null,
+     profile.topGeo&&profile.topGeo.length?'Focus: '+profile.topGeo.map(function(g){return cap(g[0])}).join(', '):null,
+     profile.usesVisualEditor?'Visual Editor user':null,
+     profile.usesMobile?'Mobile editor':null,
+     profile.isHighTrafficEditor?'High-traffic articles':null,
+     'Avg edit: \u00b1'+profile.avgDiff+' chars',
+     profile.bestSession?'Peak: '+cap(profile.bestSession[0]):null]
     .filter(Boolean).map(function(p){return'<span class="pref-item">'+p+'</span>'}).join('')+'</div></div></div>';
 
   // News
   var newsToShow=newsItems.filter(function(n){return n.source==='current_events'}).slice(0,4);
   var srcC={current_events:{bg:'#fdf0ee',c:'#bf3a2b',l:'News'},recent_deaths:{bg:'#f3eefa',c:'#6b4fa0',l:'Obit'},ongoing:{bg:'#fdf6e3',c:'#a67c1a',l:'Live'},dyk:{bg:'#eef7f1',c:'#2d7a4f',l:'DYK'}};
   if(newsToShow.length){
-    $('newsBox').innerHTML='<div class="news-box fade"><div class="news-title">📰 Today\'s News → Wikipedia Gaps</div><div class="news-items">'+
+    $('newsBox').innerHTML='<div class="news-box fade"><div class="news-title"><svg class="icon" style="stroke:var(--ink3)"><use href="#i-newspaper"/></svg> Today\'s News \u2192 Wikipedia Gaps</div><div class="news-items">'+
       newsToShow.map(function(ni){var sc=srcC[ni.source]||{bg:'#eef4fb',c:'#2563a0',l:'news'};
         return'<div class="news-item"><div class="ni-head"><div class="ni-title">'+ni.text.slice(0,150)+'</div>'+
           '<span class="ni-badge" style="background:'+sc.bg+';color:'+sc.c+'">'+sc.l+'</span></div>'+
@@ -1050,7 +1080,7 @@ function renderDashboard(){
   // Trending
   var srcL={wiki_trending:'trending',current_events:'news',main_page:'main',dyk:'DYK',recent_deaths:'obit',ongoing:'live'};
   if(trendData.length){
-    $('trendingBox').innerHTML='<div class="trending-box fade"><div class="tb-title">🔥 Trending Now</div><div class="trend-pills">'+
+    $('trendingBox').innerHTML='<div class="trending-box fade"><div class="tb-title"><svg class="icon" style="stroke:var(--amber)"><use href="#i-trending"/></svg> Trending Now</div><div class="trend-pills">'+
       trendData.slice(0,12).map(function(t){var l=(t.title||'').length>30?(t.title||'').slice(0,28)+'…':(t.title||'');
         return'<span class="tp">'+l+'<span class="tp-s">'+(t.views?(t.views/1000).toFixed(0)+'k':(srcL[t.source]||''))+'</span></span>'}).join('')+'</div></div>';
   }else $('trendingBox').innerHTML='';
@@ -1066,8 +1096,8 @@ function renderFilters(){
   $('filters').innerHTML=types.map(function(t){
     var m=TASK_META[t];var label,count;
     if(t==='all'){label='All';count=allTasks.length}
-    else if(t==='quick'){label='⚡ Quick Wins';count=allTasks.filter(function(x){return x.isQuick}).length}
-    else{label=(m?m.icon+' '+m.label:t);count=allTasks.filter(function(x){return x.type===t}).length}
+    else if(t==='quick'){label='Quick Wins';count=allTasks.filter(function(x){return x.isQuick}).length}
+    else{label=(m?m.label:t);count=allTasks.filter(function(x){return x.type===t}).length}
     return'<button class="chip'+(t===activeFilter?' on':'')+'" data-f="'+t+'">'+label+' ('+count+')</button>'}).join('');
   $('filters').querySelectorAll('.chip').forEach(function(el){
     el.addEventListener('click',function(){activeFilter=this.getAttribute('data-f');
@@ -1090,26 +1120,26 @@ function sortTasks(tasks){var k=activeSort;
 
 function renderTasks(tasks){
   $('taskCount').textContent='('+tasks.length+')';
-  if(!tasks.length){$('tasksList').innerHTML='<div class="empty">🔍 No tasks for this filter</div>';return}
+  if(!tasks.length){$('tasksList').innerHTML='<div class="empty">No tasks for this filter</div>';return}
   $('tasksList').innerHTML=tasks.map(function(t,i){
     var m=t.meta||{};var s=t.scores||{};var id='t'+i;
     var wiki='https://en.wikipedia.org/wiki/'+encodeURIComponent(t.title.replace(/ /g,'_'));
     var edit='https://en.wikipedia.org/w/index.php?title='+encodeURIComponent(t.title.replace(/ /g,'_'))+'&action=edit';
     var fc=function(v){return v>=.5?'sc-hi':v>=.3?'sc-md':'sc-lo'};
-    var sigs=(t.signals||[]).map(function(sg){return'<span class="sig '+sg.c+'">'+sg.text+'</span>'}).join('');
+    var sigs=(t.signals||[]).map(function(sg){return'<span class="sig '+sg.c+'">'+(sg.ico?'<svg class="icon-sm" style="width:11px;height:11px"><use href="#'+sg.ico+'"/></svg> ':'')+sg.text+'</span>'}).join('');
     var nc=t._newsContext?'<div style="font:italic 11px var(--sans);color:var(--ink3);padding-left:22px;margin-bottom:6px">'+t._newsContext.slice(0,140)+'</div>':'';
     var cls='task fade'+(t.isTrending?' is-trend':'')+(t.isQuick&&!t.isTrending?' is-quick':'');
     return'<div class="'+cls+'" style="animation-delay:'+i*.025+'s">'+
       '<div class="task-rank">'+(i+1)+'</div>'+
       '<div class="task-head"><div class="task-title"><a href="'+wiki+'" target="_blank">'+t.title+'</a></div>'+
-      '<span class="badge" style="background:'+(m.bg||'#f5f5f5')+';color:'+(m.color||'#666')+'">'+(m.icon||'')+' '+(m.label||t.type)+'</span></div>'+
+      '<span class="badge" style="background:'+(m.bg||'#f5f5f5')+';color:'+(m.color||'#666')+'">'+(m.icon?'<svg class="icon-sm" style="width:12px;height:12px;stroke:'+(m.color||'#666')+'"><use href="#'+m.icon+'"/></svg> ':'')+''+(m.label||t.type)+'</span></div>'+
       '<div class="task-reason">'+(t.reason||'')+'</div>'+nc+
       (sigs?'<div class="sigs">'+sigs+'</div>':'')+
       '<div class="task-scores"><span class="sc">Score <span class="sc-bar"><span class="sc-fill '+fc(s.composite)+'" style="width:'+s.composite*100+'%"></span></span> '+(s.composite*100).toFixed(0)+'%</span>'+
       '<span class="sc">~'+m.min+'m</span></div>'+
       '<div class="task-actions"><a href="'+edit+'" target="_blank" class="tbtn tbtn-edit">Edit</a>'+
       '<a href="'+wiki+'" target="_blank" class="tbtn tbtn-view">View</a>'+
-      '<button class="guide-toggle" data-title="'+t.title.replace(/"/g,'&quot;')+'" data-id="'+id+'">📋 How to Edit</button></div>'+
+      '<button class="guide-toggle" data-title="'+t.title.replace(/"/g,'&quot;')+'" data-id="'+id+'"><svg class="icon-sm" style="width:12px;height:12px"><use href="#i-book"/></svg> How to Edit</button></div>'+
       '<div class="guide" id="guide-'+id+'"></div></div>';
   }).join('');
 
@@ -1124,22 +1154,21 @@ function renderTasks(tasks){
 }
 
 function renderGuide(el,a,refs,title){
-  var html='<h3>📋 Edit Guide: '+title+'</h3>';
-  html+='<p>Type: <b>'+cap(a.articleType||'general')+'</b> · '+Math.round((a.currentSize||0)/1000)+'k chars · '+(a.totalRefs||0)+' refs · '+(a.sections||[]).length+' sections'+
-    (a.hasInfobox?'':' · ⚠️ No infobox')+(a.hasImages?'':' · ⚠️ No images')+'</p>';
+  var html='<h3>Edit Guide: '+title+'</h3>';
+  html+='<p>Type: <b>'+cap(a.articleType||'general')+'</b> \u00b7 '+Math.round((a.currentSize||0)/1000)+'k chars \u00b7 '+(a.totalRefs||0)+' refs \u00b7 '+(a.sections||[]).length+' sections'+
+    (a.hasInfobox?'':' \u00b7 No infobox')+(a.hasImages?'':' \u00b7 No images')+'</p>';
   if(a.suggestions&&a.suggestions.length){
-    html+='<h4>✏️ What to Edit</h4><ul>';
-    var icons={section:'📑',refs:'📚',expand:'📝',structure:'🏗️',media:'🖼️'};
-    a.suggestions.forEach(function(s){html+='<li>'+(icons[s.type]||'💡')+' '+s.text+'</li>'});html+='</ul>'}
-  if(a.sections&&a.sections.length){html+='<h4>📐 Current Sections</h4><div class="guide-sections">';
-    a.sections.forEach(function(s){html+='<div class="gs"><div class="gs-name">'+s.name+'</div><div class="gs-status '+(s.status==='short'?'short':'ok')+'">'+(s.status==='short'?'⚠️ Short ('+s.charCount+' chars, '+s.refCount+' refs)':'✓ '+s.charCount+' chars, '+s.refCount+' refs')+'</div></div>'});html+='</div>'}
+    html+='<h4>What to Edit</h4><ul>';
+    a.suggestions.forEach(function(s){html+='<li>'+s.text+'</li>'});html+='</ul>'}
+  if(a.sections&&a.sections.length){html+='<h4>Current Sections</h4><div class="guide-sections">';
+    a.sections.forEach(function(s){html+='<div class="gs"><div class="gs-name">'+s.name+'</div><div class="gs-status '+(s.status==='short'?'short':'ok')+'">'+(s.status==='short'?'Short ('+s.charCount+' chars, '+s.refCount+' refs)':'\u2713 '+s.charCount+' chars, '+s.refCount+' refs')+'</div></div>'});html+='</div>'}
   if(a.missingExpected&&a.missingExpected.length){
     var tips={'Early life':'Birth, childhood, family, education','Career':'Milestones, works, positions','Personal life':'Family, interests','Awards':'Notable awards with dates',
       'Signs and symptoms':'Clinical presentation, onset','Causes':'Etiology, risk factors','Diagnosis':'Criteria, tests, differential','Treatment':'Medications, procedures',
       'Epidemiology':'Incidence, prevalence, demographics','History':'Origins, key events','Geography':'Location, terrain, climate','Demographics':'Population, ethnic composition'};
-    html+='<h4>➕ Missing Sections</h4><div class="guide-sections">';
-    a.missingExpected.forEach(function(s){html+='<div class="gs"><div class="gs-name" style="color:var(--red)">+ '+s+'</div><div class="gs-status missing">Expected for '+cap(a.articleType)+' articles</div>'+(tips[s]?'<div class="gs-tip">💡 '+tips[s]+'</div>':'')+'</div>'});html+='</div>'}
-  if(refs&&refs.length){html+='<h4>📚 Suggested References</h4><div class="guide-refs">';
+    html+='<h4>Missing Sections</h4><div class="guide-sections">';
+    a.missingExpected.forEach(function(s){html+='<div class="gs"><div class="gs-name" style="color:var(--red)">+ '+s+'</div><div class="gs-status missing">Expected for '+cap(a.articleType)+' articles</div>'+(tips[s]?'<div class="gs-tip">'+tips[s]+'</div>':'')+'</div>'});html+='</div>'}
+  if(refs&&refs.length){html+='<h4>Suggested References</h4><div class="guide-refs">';
     refs.forEach(function(r){html+='<a class="gref" href="'+(r.url||'#')+'" target="_blank"><div class="gref-title">'+r.title+'</div><div class="gref-meta">'+(r.authors||'?')+' · '+(r.year||'n.d.')+(r.venue?' · '+r.venue:'')+(r.citations?' · Cited '+r.citations+'×':'')+'</div><div class="gref-src">'+r.source+(r.doi?' · '+r.doi:'')+'</div></a>'});html+='</div>'}
   html+='<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">'+
     '<a href="https://en.wikipedia.org/w/index.php?title='+encodeURIComponent(title.replace(/ /g,'_'))+'&action=edit" target="_blank" class="tbtn tbtn-edit">Open Editor</a>'+
