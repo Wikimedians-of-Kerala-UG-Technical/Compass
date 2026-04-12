@@ -1,88 +1,113 @@
-# WikiTask Pro
+<p align="center">
+  <img src="https://img.shields.io/badge/zero-dependencies-1d1b16?style=flat-square" alt="Zero dependencies">
+  <img src="https://img.shields.io/badge/client--side-only-1d1b16?style=flat-square" alt="Client-side only">
+  <img src="https://img.shields.io/badge/no-backend-1d1b16?style=flat-square" alt="No backend">
+</p>
 
-**Your Wikipedia, Curated** -- a personalized task recommender for Wikipedia editors.
+<h1 align="center">WikiTask Pro</h1>
 
-Enter your Wikipedia username and WikiTask Pro analyzes your edit history, skill areas, and editing patterns to surface the most impactful tasks *for you*.
+<p align="center">
+  <strong>Your Wikipedia, Curated</strong><br>
+  <sub>A personalized task recommender for Wikipedia editors.<br>
+  Enter your username. Get ranked, actionable tasks matched to your expertise.</sub>
+</p>
 
-**Try it now:** [https://nethahussain.github.io/wikitask-pro/](https://nethahussain.github.io/wikitask-pro/)
-
----
-
-## What it does
-
-WikiTask Pro fetches your contribution history, builds a deep editor profile, and generates a ranked list of tasks tailored to your expertise and interests.
-
-### Deep Personalization
-Analyzes your skill level, geographic focus, edit velocity, quality tier, active hours, and article age preference to match you with relevant work.
-
-### 20+ Quick-Win Task Types
-Finds orphan articles, dead-end pages, bare URLs, disambiguation link fixes, missing coordinates, uncategorized pages, BLP issues, wikification needs, short description gaps, and more.
-
-### Watchlist Alerts
-Flags articles you previously edited that have since degraded -- new issues detected since your last contribution.
-
-### Edit Guides & References
-Provides section-level analysis, missing content detection, and discovers relevant academic papers from Semantic Scholar, CrossRef, and PubMed.
-
-### Real-Time News & Trends
-Surfaces trending topics and current events relevant to your editing areas so you can keep articles up to date.
+<p align="center">
+  <a href="https://nethahussain.github.io/wikitask-pro/"><strong>Open WikiTask Pro &rarr;</strong></a>
+</p>
 
 ---
 
-## How it works
+### The problem
 
-WikiTask Pro is a single-page client-side application (`index.html`) that runs entirely in the browser. No backend, no login, no data stored.
+Wikipedia has millions of articles that need work, but no good way to match editors with tasks suited to their skills. Existing tools show generic maintenance lists. WikiTask Pro is different -- it studies *you* first, then recommends accordingly.
 
-It queries the following APIs:
+---
 
-| API | Purpose |
-|-----|---------|
-| **MediaWiki Action API** | Edit history, page info, categories, templates |
-| **Wikimedia Pageviews API** | Article traffic and trending pages |
-| **Semantic Scholar API** | Academic paper discovery for references |
-| **CrossRef API** | DOI and citation metadata |
-| **PubMed API** | Biomedical literature references |
+### How it works
+
+```
+Username  -->  Edit history analysis  -->  Deep profile  -->  Ranked tasks
+                     |                        |                    |
+              500+ recent edits        Skill mapping         Scored by
+              Category analysis        Topic focus           relevance,
+              Edit type breakdown      Activity patterns     impact &
+              Page info lookup         Quality tier          feasibility
+```
+
+WikiTask Pro runs entirely in your browser. No accounts, no backend, no data stored.
+
+---
+
+### Features
+
+| | Feature | Description |
+|---|---|---|
+| &#x1F50D; | **Deep profiling** | Skill level, geographic focus, edit velocity, quality tier, active hours, article age preference |
+| &#x26A1; | **20+ task types** | Orphans, dead-ends, bare URLs, disambig fixes, missing coords, uncategorized pages, BLP issues, wikification, short descriptions |
+| &#x1F514; | **Watchlist alerts** | Articles you edited that have since degraded -- new issues flagged since your last contribution |
+| &#x1F4CE; | **Reference discovery** | Section analysis, missing content detection, papers from Semantic Scholar, CrossRef & PubMed |
+| &#x1F4F0; | **News & trends** | Trending topics and current events relevant to your editing areas |
+| &#x1F3AF; | **Smart scoring** | Each task ranked by relevance, impact, feasibility, and urgency |
+| &#x1F4F1; | **Mobile-ready** | Responsive design, works on any device |
+
+---
+
+### APIs
+
+WikiTask Pro queries five public APIs -- all from the client, no keys required:
+
+| Source | Data |
+|:---|:---|
+| MediaWiki Action API | Edit history, page metadata, categories, templates |
+| Wikimedia Pageviews | Article traffic, trending pages |
+| Semantic Scholar | Academic paper discovery |
+| CrossRef | DOI and citation metadata |
+| PubMed | Biomedical literature |
+
+---
 
 ### Task scoring
 
-Each task is scored and ranked using signals including:
+Every task is scored across four dimensions:
 
-- **Relevance** -- how well the task matches your topic expertise
-- **Impact** -- article pageviews, importance, and visibility
-- **Feasibility** -- estimated effort based on your skill profile
-- **Urgency** -- staleness, trending status, degradation signals
+```
+Relevance   ████████░░  How well the task matches your topic expertise
+Impact      ██████████  Article pageviews, importance, visibility
+Feasibility ███████░░░  Estimated effort based on your skill profile
+Urgency     █████░░░░░  Staleness, trending status, degradation signals
+```
+
+Tasks are ranked by a weighted composite. Filters let you narrow by topic, type, or difficulty.
 
 ---
 
-## Setup
+### Quickstart
 
-No build step required. Just open `index.html` in a browser, or deploy to any static hosting.
+**Use it online** -- no install needed:
 
-### Run locally
+> **https://nethahussain.github.io/wikitask-pro/**
+
+**Run locally:**
 
 ```bash
-# Clone the repo
 git clone https://github.com/nethahussain/wikitask-pro.git
 cd wikitask-pro
-
-# Open in browser
 open index.html
 ```
 
-### Deploy to GitHub Pages
-
-Go to **Settings > Pages** in this repository, set the source to the `main` branch, and your site will be live at `https://nethahussain.github.io/wikitask-pro/`.
+**Deploy your own:** Fork this repo, enable GitHub Pages on `main`, done.
 
 ---
 
-## Tech stack
+### Stack
 
-- Vanilla HTML, CSS, and JavaScript -- zero dependencies
-- Responsive design (mobile-friendly)
-- Fonts: Newsreader (serif), DM Sans (sans-serif), JetBrains Mono (monospace)
+Vanilla HTML, CSS, and JavaScript. Single file. Zero dependencies.
+
+Fonts: Newsreader (serif) / DM Sans (sans-serif) / JetBrains Mono (mono).
 
 ---
 
-## License
+### License
 
-This project is open source. Contributions welcome.
+Open source. Contributions welcome.
