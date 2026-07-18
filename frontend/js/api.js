@@ -1,5 +1,7 @@
-function getProfile(username) { /* TODO: Contributor A */ }
-function getTrends() { /* TODO: Contributor B */ }
-function getTasks() { /* TODO: Contributor B */ }
-function getGuide(title) { /* TODO: Contributor C */ }
-function getReferences(title) { /* TODO: Contributor C */ }
+function getProfile(username) {
+  return fetch('http://127.0.0.1:5000/api/profile/' + encodeURIComponent(username))
+    .then(function (r) {
+      if (!r.ok) return r.json().then(function (e) { throw new Error(e.error || ('API ' + r.status)); });
+      return r.json();
+    });
+}

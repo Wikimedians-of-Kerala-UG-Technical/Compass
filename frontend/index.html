@@ -2,19 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WikiTask Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<nav class="nav"><div class="nav-brand"><div class="nav-logo">W</div><div class="nav-title">WikiTask Pro</div></div><div class="nav-user" id="navUser"></div></nav>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">W</div>
+    <div class="nav-title">WikiTask Pro</div>
+  </div>
+  <div class="nav-user" id="navUser"></div>
+</nav>
 
 <div class="screen active" id="onboard">
   <h1>Your Wikipedia,<br>Curated</h1>
-  <p class="sub">Deep edit analysis, real news, article structure guides, reference discovery, and tons of quick-win tasks.</p>
-  <div class="form-row"><input id="userInput" placeholder="Wikipedia username" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="btn btn-red" id="goBtn">Go</button></div>
-  <div class="hint">Backed by a Flask API — MediaWiki + Pageviews + Semantic Scholar + CrossRef + PubMed</div>
+  <p class="sub">Enter your Wikipedia username to get started.</p>
+  <div class="form-row">
+    <input id="userInput" placeholder="Wikipedia username" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button class="btn btn-red" id="goBtn">Go</button>
+  </div>
   <div class="err-msg" id="errMsg"></div>
 </div>
 
@@ -24,29 +32,20 @@
   <div class="load-sub" id="loadSub"></div>
   <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
   <div class="stages">
-    <div class="stg" id="s1"><span class="stg-dot"></span>Fetch profile</div>
-    <div class="stg" id="s2"><span class="stg-dot"></span>Scan news &amp; trends</div>
-    <div class="stg" id="s3"><span class="stg-dot"></span>Find tasks</div>
+    <div class="stg" id="s1"><span class="stg-dot"></span>Fetch edit history</div>
+    <div class="stg" id="s2"><span class="stg-dot"></span>Build profile</div>
+    <div class="stg" id="s3"><span class="stg-dot"></span>Scan news &amp; trends</div>
+    <div class="stg" id="s4"><span class="stg-dot"></span>Find gaps</div>
+    <div class="stg" id="s5"><span class="stg-dot"></span>Find quick wins</div>
+    <div class="stg" id="s6"><span class="stg-dot"></span>Score &amp; rank</div>
   </div>
 </div>
 
 <div class="screen" id="dash">
   <div id="profileCard"></div>
-  <div id="newsBox"></div>
-  <div id="trendingBox"></div>
-  <div class="section-head"><span class="section-title">Tasks <span id="taskCount"></span></span><button class="btn-ghost" id="refreshBtn">↻ Refresh</button></div>
-  <div class="tasks" id="tasksList"></div>
-
-  <div class="section-head" style="margin-top:24px"><span class="section-title">Article Guide</span></div>
-  <div class="form-row"><input id="guideInput" placeholder="Article title"><button class="btn btn-red" id="guideBtn">Analyze</button></div>
-  <div id="guidePanel"></div>
 </div>
 
-<script src="js/state.js"></script>
 <script src="js/api.js"></script>
 <script src="js/profile-view.js"></script>
-<script src="js/tasks-view.js"></script>
-<script src="js/guide-view.js"></script>
-<script src="js/main.js"></script>
 </body>
 </html>

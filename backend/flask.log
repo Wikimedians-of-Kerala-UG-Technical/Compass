@@ -8,3 +8,25 @@ Press CTRL+C to quit
  * Debugger PIN: 908-451-806
 127.0.0.1 - - [18/Jul/2026 17:24:36] "GET /api/profile/Jimbo_Wales HTTP/1.1" 200 -
 127.0.0.1 - - [18/Jul/2026 17:26:35] "GET /api/profile/Jimbo_Wales HTTP/1.1" 200 -
+ * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 908-451-806
+ * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 908-451-806
+ * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 908-451-806
+ * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\routes\\profile.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 908-451-806
+ * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\routes\\profile.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 908-451-806
+127.0.0.1 - - [18/Jul/2026 17:38:10] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
+127.0.0.1 - - [18/Jul/2026 17:38:39] "GET /api/profile/Jimbo_Wales HTTP/1.1" 200 -
