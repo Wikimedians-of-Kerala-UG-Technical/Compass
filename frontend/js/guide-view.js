@@ -6,8 +6,8 @@ function getGuide(title) {
         .then(res => res.json());
 }
 
-function getReferences(title) {
-    return fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/references?offset=0')
+function getReferences(title, offset=0) {
+    return fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/references?offset=' + offset)
         .then(res => res.json());
 }
 
@@ -175,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadMoreBtn.addEventListener('click', () => {
                         loadMoreBtn.innerText = 'Loading...';
                         loadMoreBtn.disabled = true;
-                        fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/references?offset=' + refsData.nextOffset)
-                        .then(res => res.json())
+                        
+                        getReferences(title, refsData.nextOffset)
                         .then(newData => {
                             const container = document.getElementById('refs-container');
                             container.insertAdjacentHTML('beforeend', generateRefsHtml(newData.results));
