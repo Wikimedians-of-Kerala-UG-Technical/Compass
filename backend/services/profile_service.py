@@ -35,7 +35,7 @@ def _wiki_get(params, retries=3):
     raise RuntimeError("MediaWiki API rate-limited us after retries")
 
 
-def fetch_contribs(username, limit=15000):
+def fetch_contribs(username, limit=20000):
     """Paginated action=query&list=usercontribs, 500/batch (API hard cap), up to `limit` total."""
     all_contribs = []
     cont = None

@@ -7,7 +7,7 @@ bp = Blueprint("profile", __name__)
 @bp.route("/api/profile/<username>", methods=["GET"])
 def get_profile(username):
     try:
-        contribs = fetch_contribs(username, limit=15000)
+        contribs = fetch_contribs(username, limit=20000)
         articles = [c for c in contribs if (c.get("ns") or 0) == 0]
         unique_titles = list({c["title"] for c in articles})[:50]
         cat_map = fetch_categories(unique_titles)
