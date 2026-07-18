@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from services.article_service import analyze_article, find_references
+from services.article_service import analyze_article, find_references, find_external_references
 
 bp = Blueprint('article', __name__, url_prefix='/api/article')
 
@@ -29,3 +29,14 @@ def get_references(title):
     except Exception as e:
         # Fallback to prevent crashing the whole request
         return jsonify({"error": str(e), "results": [], "nextOffset": None}), 500
+
+@bp.route('/<title>/external-references', methods=['GET'])
+def get_external_references(title):
+    """
+    Returns a list of external academic references (Semantic Scholar, CrossRef, PubMed).
+    """
+    try:
+        references_data = find_external_references(title)
+        return jsonify(references_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e), "results": []}), 500

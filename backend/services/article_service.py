@@ -3,7 +3,7 @@ import re
 import urllib.parse
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import functools
@@ -74,6 +74,8 @@ def get_session():
     return _local_session
 
 WIKI_API_URL = "https://en.wikipedia.org/w/api.php"
+
+@functools.lru_cache(maxsize=128)
 def analyze_article(title):
     """
     Port of analyzeArticle from index.html
@@ -204,11 +206,79 @@ def analyze_article(title):
         "cats": cats
     }
 
+@functools.lru_cache(maxsize=128)
+def analyze_article_light(title):
+    """
+    Lightweight version of analyze_article for sub-references.
+    Skips the heavy wikitext download (requests templates/categories/sections only).
+    """
+    if os.environ.get("STRESS_TEST") == "1":
+        time.sleep(0.05)
+        return {"missingExpected": ["Description", "References"], "suggestions": [{"type": "section", "text": "Add Description section"}]}
+
+    params = {
+        "action": "parse",
+        "page": title,
+        "prop": "sections|categories|templates",
+        "redirects": "true",
+        "format": "json"
+    }
+    
+    try:
+        response = get_session().get(WIKI_API_URL, params=params, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.RequestException:
+        return {"missingExpected": [], "suggestions": [{"type": "error", "text": "API Failure"}]}
+        
+    if "parse" not in data:
+        return {"missingExpected": [], "suggestions": []}
+        
+    parse_data = data["parse"]
+    raw_sections = parse_data.get("sections", [])
+    raw_cats = parse_data.get("categories", [])
+    raw_templates = parse_data.get("templates", [])
+    
+    sections = [{"name": s["line"], "level": int(s["level"])} for s in raw_sections]
+    cats = [c["*"].lower() for c in raw_cats if "*" in c]
+    
+    is_bio = any("living people" in c or "deaths" in c or "births" in c for c in cats)
+    is_med = any("disease" in c or "medic" in c or "drug" in c or "syndrome" in c for c in cats)
+    is_place = any("city" in c or "village" in c or "district" in c for c in cats)
+    is_event = any("event" in c or "war" in c or "election" in c for c in cats)
+    
+    if is_bio:
+        expected = ['Early life', 'Career', 'Personal life', 'Awards', 'Legacy', 'References']
+    elif is_med:
+        expected = ['Signs and symptoms', 'Causes', 'Diagnosis', 'Treatment', 'Epidemiology', 'References']
+    elif is_place:
+        expected = ['History', 'Geography', 'Demographics', 'Economy', 'References']
+    elif is_event:
+        expected = ['Background', 'Timeline', 'Aftermath', 'Reactions', 'References']
+    else:
+        expected = ['History', 'Description', 'References']
+        
+    existing_sections = [s["name"].lower() for s in sections]
+    missing_expected = [e for e in expected if not any(e.lower() in ex for ex in existing_sections)]
+    
+    has_infobox = any("infobox" in t.get("*", "").lower() for t in raw_templates)
+    
+    suggestions = []
+    if not has_infobox:
+        suggestions.append({"type": "structure", "text": "Add an infobox"})
+    for s in missing_expected:
+        suggestions.append({"type": "section", "text": f'Add "{s}" section'})
+        
+    return {
+        "missingExpected": missing_expected,
+        "suggestions": suggestions
+    }
+
 def _process_single_reference(item, original_title):
     if item["title"].lower() == original_title.lower():
         return None
         
-    analysis = analyze_article(item["title"])
+    analysis = analyze_article_light(item["title"])
     
     return {
         "title": item["title"],
@@ -223,6 +293,7 @@ def _process_single_reference(item, original_title):
         "missingSections": analysis.get("missingExpected", [])
     }
 
+@functools.lru_cache(maxsize=128)
 def find_references(title, offset=0):
     """
     Finds references using Wikipedia API, supports pagination, 
@@ -234,7 +305,7 @@ def find_references(title, offset=0):
         time.sleep(0.2) # Simulate 200ms search latency
         fake_results = [{"title": f"Fake_Ref_{i}", "timestamp": "2024-01-01T00:00:00Z", "wordcount": 1000} for i in range(5)]
         
-        with ProcessPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             original_titles = [title] * len(fake_results)
             results = list(executor.map(_process_single_reference, fake_results, original_titles))
             
@@ -261,7 +332,7 @@ def find_references(title, offset=0):
         
         search_results = data.get("query", {}).get("search", [])
         
-        with ProcessPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             original_titles = [title] * len(search_results)
             results = list(executor.map(_process_single_reference, search_results, original_titles))
             
@@ -278,4 +349,61 @@ def find_references(title, offset=0):
             
     except Exception as e:
         return {"results": [], "nextOffset": None, "total": 0, "error": str(e)}
+
+def fetch_semantic_scholar(title):
+    try:
+        r = get_session().get("https://api.semanticscholar.org/graph/v1/paper/search", params={"query": title, "limit": 5, "fields": "title,url,citationCount"}, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            return [{"title": p.get("title"), "url": p.get("url"), "citations": p.get("citationCount"), "source": "Semantic Scholar"} for p in data.get("data", [])]
+    except Exception: pass
+    return []
+
+def fetch_crossref(title):
+    try:
+        r = get_session().get("https://api.crossref.org/works", params={"query": title, "select": "title,URL,is-referenced-by-count", "sort": "is-referenced-by-count", "rows": 5}, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            return [{"title": p.get("title", [""])[0], "url": p.get("URL"), "citations": p.get("is-referenced-by-count"), "source": "CrossRef"} for p in data.get("message", {}).get("items", [])]
+    except Exception: pass
+    return []
+
+def fetch_pubmed(title):
+    try:
+        r = get_session().get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi", params={"db": "pubmed", "term": title, "retmode": "json", "retmax": 5}, timeout=5)
+        if r.status_code == 200:
+            ids = r.json().get("esearchresult", {}).get("idlist", [])
+            if ids:
+                r2 = get_session().get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi", params={"db": "pubmed", "id": ",".join(ids), "retmode": "json"}, timeout=5)
+                if r2.status_code == 200:
+                    data = r2.json().get("result", {})
+                    return [{"title": data[uid].get("title"), "url": f"https://pubmed.ncbi.nlm.nih.gov/{uid}/", "citations": 0, "source": "PubMed"} for uid in ids if uid in data]
+    except Exception: pass
+    return []
+
+@functools.lru_cache(maxsize=128)
+def find_external_references(title):
+    """
+    Finds references using Semantic Scholar, CrossRef, and PubMed.
+    Deduplicates and sorts by citation count.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        f1 = executor.submit(fetch_semantic_scholar, title)
+        f2 = executor.submit(fetch_crossref, title)
+        f3 = executor.submit(fetch_pubmed, title)
+        
+        results = f1.result() + f2.result() + f3.result()
+        
+    seen = set()
+    deduped = []
+    for r in results:
+        t = r.get("title") or ""
+        tl = t.lower().strip()
+        if tl and tl not in seen:
+            seen.add(tl)
+            deduped.append(r)
+            
+    deduped.sort(key=lambda x: x.get("citations") or 0, reverse=True)
+    return {"results": deduped}
 
