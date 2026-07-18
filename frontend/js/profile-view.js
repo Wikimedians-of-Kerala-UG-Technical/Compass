@@ -48,12 +48,27 @@ function startProfileLookup() {
     });
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 function renderProfileCard(p) {
   var topEditTypes = Object.entries(p.editTypes || {})
     .sort(function (a, b) { return b[1] - a[1]; })
     .slice(0, 5)
     .map(function (e) { return e[0] + ' (' + e[1] + ')'; })
     .join(', ');
+
+  var recentHtml = (p.recentEdits || []).map(function (e) {
+    var diffLink = e.diffUrl ? '<a href="' + escapeHtml(e.diffUrl) + '" target="_blank">diff</a>' : '';
+    return '<div class="pref-item" style="display:block;text-align:left;margin-bottom:6px;">' +
+      '<a href="' + escapeHtml(e.articleUrl) + '" target="_blank"><b>' + escapeHtml(e.title) + '</b></a> ' +
+      '(' + (e.sizediff > 0 ? '+' : '') + e.sizediff + ') ' + diffLink +
+      '<div style="font-size:11px;color:var(--ink3)">' + escapeHtml(e.comment || 'no summary') + '</div>' +
+    '</div>';
+  }).join('');
 
   $('profileCard').innerHTML =
     '<div class="profile-card">' +
@@ -65,5 +80,6 @@ function renderProfileCard(p) {
         '<div class="pref-row">' + (p.topTopics || []).map(function (t) { return '<span class="pref-item">' + t + '</span>'; }).join('') + '</div>' +
       '</div>' +
       '<div class="pc-section"><div class="pc-section-title">Edit Types</div><div class="pref-row">' + topEditTypes + '</div></div>' +
+      '<div class="pc-section"><div class="pc-section-title">Recent Contributions</div>' + recentHtml + '</div>' +
     '</div>';
 }

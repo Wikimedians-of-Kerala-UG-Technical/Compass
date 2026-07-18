@@ -136,6 +136,23 @@ def extract_topics(cat_map):
     return scores
 
 
+def build_recent_edits(contribs, limit=15):
+    """List of recent edits with direct links to the diff and the article."""
+    recent = []
+    for c in contribs[:limit]:
+        title = c.get("title", "")
+        revid = c.get("revid")
+        recent.append({
+            "title": title,
+            "timestamp": c.get("timestamp"),
+            "comment": c.get("comment") or "",
+            "sizediff": c.get("sizediff", 0),
+            "diffUrl": f"https://en.wikipedia.org/w/index.php?diff={revid}" if revid else None,
+            "articleUrl": f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
+        })
+    return recent
+
+
 def build_profile(username, contribs, cat_map):
     """Trimmed buildDeepProfile() — v1 scope only."""
     articles = [c for c in contribs if (c.get("ns") or 0) == 0]
@@ -157,4 +174,5 @@ def build_profile(username, contribs, cat_map):
         "uniqueArticles": len(unique_articles),
         "editTypes": edit_types,
         "topTopics": top_topics,
+        "recentEdits": build_recent_edits(contribs, limit=15),
     }
