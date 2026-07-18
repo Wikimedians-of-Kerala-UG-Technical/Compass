@@ -5,7 +5,7 @@ function renderTrends() {
   var news = trends.news || [];
   var trending = trends.trending || [];
 
-  var newsToShow = news.filter(function (n) { return n.source === 'current_events'; }).slice(0, 4);
+  var newsToShow = news.slice(0, 4);
   if (newsToShow.length) {
     $('newsBox').innerHTML = '<div class="news-box fade"><div class="news-title">Today\'s News</div><div class="news-items">' +
       newsToShow.map(function (ni) {
