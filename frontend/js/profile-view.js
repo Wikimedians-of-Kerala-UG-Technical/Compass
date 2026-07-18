@@ -1,52 +1,4 @@
-function $(id) { return document.getElementById(id); }
-function show(id) {
-  document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
-  $(id).classList.add('active');
-}
-function setStage(n) {
-  for (var i = 1; i <= 6; i++) {
-    $('s' + i).className = 'stg' + (i < n ? ' done' : i === n ? ' now' : '');
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  $('goBtn').addEventListener('click', startProfileLookup);
-  $('userInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') startProfileLookup();
-  });
-});
-
-function startProfileLookup() {
-  var username = $('userInput').value.trim();
-  if (!username) { $('errMsg').textContent = 'Please enter a username'; return; }
-  $('errMsg').textContent = '';
-  $('goBtn').disabled = true;
-  $('navUser').textContent = username;
-
-  show('loading');
-  $('progFill').style.width = '0%';
-  setStage(1);
-  $('loadStatus').textContent = 'Fetching edit history…';
-
-  setTimeout(function () {
-    setStage(2);
-    $('progFill').style.width = '50%';
-    $('loadStatus').textContent = 'Building profile…';
-  }, 300);
-
-  getProfile(username)
-    .then(function (profile) {
-      $('progFill').style.width = '100%';
-      renderProfileCard(profile);
-      show('dash');
-      $('goBtn').disabled = false;
-    })
-    .catch(function (e) {
-      show('onboard');
-      $('goBtn').disabled = false;
-      $('errMsg').textContent = 'Error: ' + e.message;
-    });
-}
+/* profile-view.js — Contributor A rendering */
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, function (c) {
@@ -54,32 +6,84 @@ function escapeHtml(s) {
   });
 }
 
-function renderProfileCard(p) {
-  var topEditTypes = Object.entries(p.editTypes || {})
-    .sort(function (a, b) { return b[1] - a[1]; })
-    .slice(0, 5)
-    .map(function (e) { return e[0] + ' (' + e[1] + ')'; })
-    .join(', ');
+function renderProfile() {
+  var p = state.profile;
+  var el = document.getElementById('profileCard');
+  if (!p || !el) return;
 
-  var recentHtml = (p.recentEdits || []).map(function (e) {
-    var diffLink = e.diffUrl ? '<a href="' + escapeHtml(e.diffUrl) + '" target="_blank">diff</a>' : '';
-    return '<div class="pref-item" style="display:block;text-align:left;margin-bottom:6px;">' +
-      '<a href="' + escapeHtml(e.articleUrl) + '" target="_blank"><b>' + escapeHtml(e.title) + '</b></a> ' +
-      '(' + (e.sizediff > 0 ? '+' : '') + e.sizediff + ') ' + diffLink +
-      '<div style="font-size:11px;color:var(--ink3)">' + escapeHtml(e.comment || 'no summary') + '</div>' +
+  /* ── Stats ─────────────────────────────────────────────── */
+  var initials = state.username ? state.username.slice(0, 2).toUpperCase() : '?';
+
+  /* ── Edit types (top 5) ──────────────────────────────── */
+  var editTypeEntries = Object.entries(p.editTypes || {})
+    .sort(function (a, b) { return b[1] - a[1]; })
+    .slice(0, 5);
+  var editTypeBadges = editTypeEntries.map(function (e) {
+    return '<span class="wtp-badge wtp-badge--neutral" style="margin:2px">' +
+      escapeHtml(e[0]) + ' <strong>' + e[1] + '</strong></span>';
+  }).join('');
+
+  /* ── Topics ─────────────────────────────────────────── */
+  var topicBadges = (p.topTopics || []).map(function (t) {
+    return '<span class="wtp-badge wtp-badge--notice" style="margin:2px">' + escapeHtml(t) + '</span>';
+  }).join('');
+
+  /* ── Recent edits ────────────────────────────────────── */
+  var recentHtml = (p.recentEdits || []).slice(0, 5).map(function (e) {
+    var diffClass = e.sizediff > 0 ? 'diff-pos' : 'diff-neg';
+    var sign = e.sizediff > 0 ? '+' : '';
+    var diffLink = e.diffUrl
+      ? ' <a href="' + escapeHtml(e.diffUrl) + '" target="_blank" class="wtp-badge wtp-badge--neutral">diff</a>'
+      : '';
+    return '<div class="recent-edit">' +
+      '<div class="recent-edit__title">' +
+        '<a href="' + escapeHtml(e.articleUrl || '#') + '" target="_blank">' + escapeHtml(e.title) + '</a>' +
+        ' <span class="' + diffClass + '">(' + sign + e.sizediff + ')</span>' + diffLink +
+      '</div>' +
+      '<div class="recent-edit__meta">' + escapeHtml(e.comment || '(no summary)') + '</div>' +
     '</div>';
   }).join('');
 
-  $('profileCard').innerHTML =
-    '<div class="profile-card">' +
-      '<div class="pc-row">' +
-        '<div class="pc-stat"><div class="pc-num">' + p.total + '</div><div class="pc-label">Edits</div></div>' +
-        '<div class="pc-stat"><div class="pc-num">' + p.uniqueArticles + '</div><div class="pc-label">Articles</div></div>' +
+  el.innerHTML =
+    '<div class="wtp-card__header">' +
+      '<div class="profile-header">' +
+        '<div class="profile-avatar">' + escapeHtml(initials) + '</div>' +
+        '<div>' +
+          '<div class="profile-username">' + escapeHtml(state.username) + '</div>' +
+          '<div class="profile-label">Wikipedia contributor</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="pc-section"><div class="pc-section-title">Top Topics</div>' +
-        '<div class="pref-row">' + (p.topTopics || []).map(function (t) { return '<span class="pref-item">' + t + '</span>'; }).join('') + '</div>' +
+    '</div>' +
+
+    '<div class="profile-stats">' +
+      '<div class="profile-stat">' +
+        '<span class="profile-stat__num">' + (p.total || 0).toLocaleString() + '</span>' +
+        '<span class="profile-stat__label">Edits</span>' +
       '</div>' +
-      '<div class="pc-section"><div class="pc-section-title">Edit Types</div><div class="pref-row">' + topEditTypes + '</div></div>' +
-      '<div class="pc-section"><div class="pc-section-title">Recent Contributions</div>' + recentHtml + '</div>' +
-    '</div>';
+      '<div class="profile-stat">' +
+        '<span class="profile-stat__num">' + (p.uniqueArticles || 0).toLocaleString() + '</span>' +
+        '<span class="profile-stat__label">Articles</span>' +
+      '</div>' +
+    '</div>' +
+
+    (topicBadges ? (
+      '<div class="profile-section">' +
+        '<div class="profile-section__title">Top topics</div>' +
+        '<div class="profile-tags">' + topicBadges + '</div>' +
+      '</div>'
+    ) : '') +
+
+    (editTypeBadges ? (
+      '<div class="profile-section">' +
+        '<div class="profile-section__title">Edit types</div>' +
+        '<div class="profile-tags">' + editTypeBadges + '</div>' +
+      '</div>'
+    ) : '') +
+
+    (recentHtml ? (
+      '<div class="profile-section">' +
+        '<div class="profile-section__title">Recent contributions</div>' +
+        recentHtml +
+      '</div>'
+    ) : '');
 }

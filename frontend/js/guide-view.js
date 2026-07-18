@@ -1,229 +1,200 @@
-// guide-view.js
-// Contributor C - Article Guide & Reference Discovery
+/* guide-view.js — Contributor C rendering
+   NOTE: This file ONLY exports renderGuide().
+   The standalone demo panel has been removed — the guide is
+   now embedded inside the dashboard (index.html #guideResult).
+*/
 
-function getGuide(title) {
-    return fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/guide')
-        .then(res => res.json());
+function renderGuide(title) {
+  var resultEl = document.getElementById('guideResult');
+  if (!resultEl) return;
+
+  /* Loading state */
+  resultEl.innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px;padding:16px;color:#54595d;">' +
+      '<div class="loading-card__spinner" style="width:24px;height:24px;border-width:2px;flex-shrink:0"></div>' +
+      'Analysing <strong>' + esc(title) + '</strong>…' +
+    '</div>';
+
+  Promise.all([
+    getGuide(title).catch(function () { return null; }),
+    getReferences(title).catch(function () { return null; }),
+    getExternalReferences(title).catch(function () { return null; })
+  ]).then(function (results) {
+    var guideData = results[0];
+    var refsData  = results[1];
+    var extRefsData = results[2];
+    renderGuideResult(title, guideData, refsData, extRefsData);
+  });
 }
 
-function getReferences(title) {
-    return fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/references?offset=0')
-        .then(res => res.json());
-}
+function renderGuideResult(title, g, refs, extRefs) {
+  var resultEl = document.getElementById('guideResult');
+  if (!resultEl) return;
 
-function getExternalReferences(title) {
-    return fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/external-references')
-        .then(res => res.json());
-}
+  if (!g || g.error) {
+    resultEl.innerHTML =
+      '<div class="cdx-message cdx-message--error" style="margin-top:8px">' +
+        '<span class="cdx-message__icon"></span>' +
+        '<div class="cdx-message__content">Could not load article guide. Make sure the title is exact.</div>' +
+      '</div>';
+    return;
+  }
 
-function generateRefsHtml(results) {
-    let html = '';
-    results.forEach(r => {
-        html += `
-            <div style="padding: 12px; border: 1px solid var(--cdx-color-border--subtle); border-radius: var(--cdx-border-radius-base);">
-                <a href="${r.url || '#'}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
-                    <div style="color: var(--cdx-color-primary); font-weight: bold; margin-bottom: 4px;">${r.title}</div>
-                    <div style="font-size: 0.9em; color: var(--cdx-color-base--subtle); margin-bottom: 4px;">
-                        ${r.authors || '?'} &middot; ${r.year || 'n.d.'}${r.venue ? ' &middot; ' + r.venue : ''}${r.citations ? ' &middot; Word count ' + r.citations : ''}
-                    </div>
-                </a>
-        `;
-        
-        if (r.whatToEdit && r.whatToEdit.length) {
-            html += `<div style="margin-top: 8px; font-size: 0.85em;"><strong>What to Edit in ${r.title}:</strong> <ul style="padding-left: 16px; margin: 4px 0;">`;
-            r.whatToEdit.forEach(s => html += `<li>${s.text}</li>`);
-            html += `</ul></div>`;
+  var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; };
+
+  /* ── Meta badges ──────────────────────────────────────── */
+  var metaBadges =
+    '<span class="wtp-badge wtp-badge--notice">' + cap(g.articleType || 'general') + '</span> ' +
+    '<span class="wtp-badge wtp-badge--neutral">' + Math.round((g.currentSize || 0) / 1000) + 'k chars</span> ' +
+    '<span class="wtp-badge wtp-badge--neutral">' + (g.totalRefs || 0) + ' refs</span>' +
+    (!g.hasInfobox ? ' <span class="wtp-badge wtp-badge--warning">No infobox</span>' : '') +
+    (!g.hasImages  ? ' <span class="wtp-badge wtp-badge--warning">No images</span>' : '');
+
+  /* ── Suggestions (Overall Analysis) ───────────────────── */
+  var suggestHtml = '';
+  if (g.suggestions && g.suggestions.length) {
+    suggestHtml =
+      '<div class="guide-col-title" style="margin-top:16px;">Overall Analysis: What to Edit</div>' +
+      '<div class="guide-suggestions">' +
+        g.suggestions.map(function (s) {
+          return '<div class="guide-suggestion">' + esc(s.text || s) + '</div>';
+        }).join('') +
+      '</div>';
+  }
+
+  /* ── Missing sections ─────────────────────────────────── */
+  var sectionsHtml = '';
+  if ((g.missingExpected && g.missingExpected.length) || (g.sections && g.sections.length)) {
+    var allSections = (g.sections || []);
+    var sectionItems = allSections.slice(0, 8).map(function (s) {
+      var cls = s.status === 'missing' ? 'is-missing' : s.status === 'short' ? 'is-short' : 'is-ok';
+      var statusText = s.status === 'missing' ? '✗ Missing'
+        : s.status === 'short' ? '△ Thin section'
+        : '✓ Present';
+      return '<div class="guide-section-item ' + cls + '">' +
+        '<div class="guide-section-name">' + esc(s.name || s) + '</div>' +
+        '<div class="guide-section-status">' + statusText + (s.tip ? ' — ' + esc(s.tip) : '') + '</div>' +
+      '</div>';
+    }).join('');
+
+    if (!sectionItems && g.missingExpected && g.missingExpected.length) {
+      sectionItems = g.missingExpected.map(function (s) {
+        return '<div class="guide-section-item is-missing">' +
+          '<div class="guide-section-name">' + esc(s) + '</div>' +
+          '<div class="guide-section-status">✗ Missing — expected for ' + cap(g.articleType || 'general') + ' articles</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    if (sectionItems) {
+      sectionsHtml =
+        '<div class="guide-col-title" style="margin-top:16px;">Section Analysis</div>' +
+        '<div class="guide-section-list" style="display:grid; grid-template-columns: 1fr 1fr; gap: 6px;">' + sectionItems + '</div>';
+    }
+  }
+
+  /* ── References (Wikimedia / internal) ───────────────── */
+  function generateRefsHtml(results) {
+    return results.map(function(r) {
+      var editHtml = '';
+      if (r.whatToEdit && r.whatToEdit.length) {
+          editHtml += '<div style="margin-top: 8px; font-size: 0.85em; color: #202122;"><strong>What to Edit:</strong> <ul style="padding-left: 16px; margin: 4px 0;">' + 
+            r.whatToEdit.map(function(s) { return '<li>' + esc(s.text) + '</li>'; }).join('') + 
+            '</ul></div>';
+      }
+      if (r.missingSections && r.missingSections.length) {
+           editHtml += '<div style="margin-top: 4px; font-size: 0.85em; color: #d33;"><strong>Missing Sections:</strong> ' + esc(r.missingSections.join(', ')) + '</div>';
+      }
+      
+      var dropdownHtml = editHtml ? 
+        '<details style="margin-top: 8px; cursor: pointer;">' +
+          '<summary style="font-size: 0.8125rem; color: #3366cc; font-weight: bold; outline: none; user-select: none;">View missing items & suggestions</summary>' +
+          '<div style="padding: 8px 12px; background: #f8f9fa; border-radius: 2px; border: 1px solid #eaecf0; margin-top: 6px;">' + editHtml + '</div>' +
+        '</details>' : '';
+
+      return '<div class="guide-ref-item" style="cursor: default;">' +
+        '<a href="' + esc(r.url || '#') + '" target="_blank" rel="noopener" style="text-decoration:none; color:inherit; display:block;">' +
+          '<div class="guide-ref-title">' + esc(r.title || 'Untitled') + '</div>' +
+          '<div class="guide-ref-meta">' + esc(r.authors || '') + (r.year ? ' · ' + r.year : '') + (r.venue ? ' · ' + r.venue : '') + '</div>' +
+          (r.citations ? '<div class="guide-ref-source">' + r.citations + ' citations</div>' : '') +
+        '</a>' +
+        dropdownHtml +
+      '</div>';
+    }).join('');
+  }
+
+  var wikiRefsHtml = '';
+  if (refs && refs.results && refs.results.length) {
+    wikiRefsHtml =
+      '<div class="guide-col-title" style="margin-bottom:12px;">Suggested Wikimedia References</div>' +
+      '<div id="wikiRefsContainer" style="display: flex; flex-direction: column; gap: 6px;">' + generateRefsHtml(refs.results.slice(0, 10)) + '</div>' +
+      (refs.nextOffset ? '<button class="cdx-button" id="guideLoadMore" style="width:100%;margin-top:8px;">Load more references…</button>' : '');
+  } else {
+    wikiRefsHtml =
+      '<div class="guide-col-title" style="margin-bottom:12px;">Suggested Wikimedia References</div>' +
+      '<div class="empty-state"><div class="empty-state__icon">📄</div>No internal references found.</div>';
+  }
+
+  /* ── External References ───────────────── */
+  var extRefsHtml = '';
+  if (extRefs && extRefs.results && extRefs.results.length) {
+    extRefsHtml =
+      '<div class="guide-col-title" style="margin-bottom:12px;">External Academic Research</div>' +
+      '<div style="display: flex; flex-direction: column; gap: 6px;">' +
+      extRefs.results.slice(0, 10).map(function(r) {
+        return '<a class="guide-ref-item" href="' + esc(r.url || '#') + '" target="_blank" rel="noopener" style="text-decoration:none; color:inherit; display:block;">' +
+          '<div class="guide-ref-title">' + esc(r.title || 'Untitled') + '</div>' +
+          '<div class="guide-ref-meta" style="margin-top: 6px;"><span class="wtp-badge wtp-badge--neutral" style="margin-right: 4px;">' + esc(r.source) + '</span> ' + 
+          (r.citations !== null && r.citations !== undefined ? r.citations + ' citations' : '') + 
+          '</div>' +
+        '</a>';
+      }).join('') + '</div>';
+  } else {
+    extRefsHtml =
+      '<div class="guide-col-title" style="margin-bottom:12px;">External Academic Research</div>' +
+      '<div class="empty-state"><div class="empty-state__icon">📄</div>No external research found.</div>';
+  }
+
+  /* ── Assemble ─────────────────────────────────────────── */
+  resultEl.innerHTML =
+    '<div style="margin-top:8px">' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-bottom:1px solid #eaecf0;padding-bottom:12px;">' +
+        '<a href="https://en.wikipedia.org/wiki/' + encodeURIComponent(title.replace(/ /g,'_')) + '" target="_blank" style="font-family:\'Linux Libertine\',Georgia,serif;font-size:1.125rem;font-weight:bold">' + esc(title) + '</a>' +
+        metaBadges +
+        '<a href="https://en.wikipedia.org/w/index.php?title=' + encodeURIComponent(title.replace(/ /g,'_')) + '&action=edit" target="_blank" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary" style="text-decoration:none;margin-left:auto">Edit article</a>' +
+      '</div>' +
+      '<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eaecf0;">' +
+         suggestHtml + sectionsHtml +
+      '</div>' +
+      '<div class="guide-result-grid">' +
+        '<div>' + wikiRefsHtml + '</div>' +
+        '<div>' + extRefsHtml + '</div>' +
+      '</div>' +
+    '</div>';
+
+  /* Load-more button */
+  var lmBtn = document.getElementById('guideLoadMore');
+  if (lmBtn && refs && refs.nextOffset) {
+    lmBtn.addEventListener('click', function () {
+      lmBtn.textContent = 'Loading…';
+      lmBtn.disabled = true;
+      getReferences(title, refs.nextOffset).then(function (more) {
+        if (more && more.results) {
+          refs.nextOffset = more.nextOffset;
+          var container = document.getElementById('wikiRefsContainer');
+          if (container) {
+              container.insertAdjacentHTML('beforeend', generateRefsHtml(more.results));
+          }
+          if (!more.nextOffset) lmBtn.remove();
+          else { lmBtn.textContent = 'Load more references…'; lmBtn.disabled = false; }
         }
-        
-        if (r.missingSections && r.missingSections.length) {
-             html += `<div style="margin-top: 4px; font-size: 0.85em; color: var(--cdx-color-destructive);"><strong>Missing Sections:</strong> ${r.missingSections.join(', ')}</div>`;
-        }
-        
-        html += `</div>`;
+      }).catch(function () { lmBtn.textContent = 'Error — try again'; lmBtn.disabled = false; });
     });
-    return html;
+  }
 }
 
-function generateExtRefsHtml(results) {
-    let html = '';
-    results.forEach(r => {
-        html += `
-            <div style="padding: 12px; border: 1px solid var(--cdx-color-border--subtle); border-radius: var(--cdx-border-radius-base); margin-bottom: 8px;">
-                <a href="${r.url || '#'}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
-                    <div style="color: var(--cdx-color-primary); font-weight: bold; margin-bottom: 4px;">${r.title}</div>
-                    <div style="font-size: 0.9em; color: var(--cdx-color-base--subtle); margin-bottom: 4px;">
-                        <span class="cdx-badge">${r.source}</span> &middot; ${r.citations !== null && r.citations !== undefined ? r.citations + ' citations' : 'Citation data N/A'}
-                    </div>
-                </a>
-            </div>
-        `;
-    });
-    return html;
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, function (c) {
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+  });
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('guide-test-panel')) return;
-
-    const panelHtml = `
-        <div id="guide-test-panel" class="cdx-card" style="max-width: 1200px; margin: 40px auto; border: 2px solid var(--cdx-color-primary);">
-            <h2 style="border-bottom: 1px solid var(--cdx-color-border); padding-bottom: 8px; margin-bottom: 16px;">Contributor C: Article Guide & References (Standalone Demo)</h2>
-            <div class="cdx-text-input" style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <input type="text" id="testGuideInput" class="cdx-text-input__input" style="flex: 1;" placeholder="Enter a Wikipedia article title (e.g. Python (programming language))">
-                <button id="testGuideBtn" class="cdx-button cdx-button--action-progressive">Analyze & Get References</button>
-            </div>
-            <div id="testGuidePanel">
-                <p style="color: var(--cdx-color-base--subtle);">Enter an article title above to test the backend endpoints independently.</p>
-            </div>
-        </div>
-    `;
-
-    const div = document.createElement('div');
-    div.innerHTML = panelHtml;
-    document.body.prepend(div.firstElementChild);
-
-    const guideBtn = document.getElementById('testGuideBtn');
-    const guideInput = document.getElementById('testGuideInput');
-    const guidePanel = document.getElementById('testGuidePanel');
-    
-    guideBtn.addEventListener('click', () => {
-        const title = guideInput.value.trim();
-        if (!title) return;
-        
-        guideBtn.disabled = true;
-        guideBtn.style.opacity = '0.7';
-        
-        // Render empty scaffold immediately
-        guidePanel.innerHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
-                <div id="wiki-col"><p style="color: var(--cdx-color-base--subtle);">Analyzing Wikipedia structure...</p></div>
-                <div id="ext-col"><p style="color: var(--cdx-color-base--subtle);">Searching external academic papers...</p></div>
-            </div>
-            <div style="display: flex; gap: 8px; margin-top: 16px;">
-                <a href="https://en.wikipedia.org/w/index.php?title=${encodeURIComponent(title.replace(/ /g,'_'))}&action=edit" target="_blank" class="cdx-button cdx-button--action-progressive">Open Editor</a>
-                <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g,'_'))}" target="_blank" class="cdx-button cdx-button--weight-primary">Read Article</a>
-            </div>
-        `;
-        
-        // Fetch Wikipedia Data
-        Promise.all([getGuide(title), getReferences(title)])
-            .then(([guideData, refsData]) => {
-                const wikiCol = document.getElementById('wiki-col');
-                if (guideData.error && !guideData.sections) {
-                    wikiCol.innerHTML = `<p style="color: var(--cdx-color-destructive);">Error: ${guideData.error}</p>`;
-                    return;
-                }
-                
-                const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-                let leftHtml = `
-                    <div class="cdx-card" style="margin-bottom: 16px;">
-                        <h3 style="margin-bottom: 8px;">Edit Guide: ${title}</h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                            <span class="cdx-badge cdx-badge--progressive">${cap(guideData.articleType || 'general')}</span>
-                            <span class="cdx-badge">${Math.round((guideData.currentSize || 0) / 1000)}k chars</span>
-                            <span class="cdx-badge">${guideData.totalRefs || 0} refs</span>
-                            ${!guideData.hasInfobox ? '<span class="cdx-badge cdx-badge--warning">No infobox</span>' : ''}
-                            ${!guideData.hasImages ? '<span class="cdx-badge cdx-badge--warning">No images</span>' : ''}
-                        </div>
-                    </div>
-                `;
-
-                if (guideData.suggestions && guideData.suggestions.length) {
-                    leftHtml += `
-                    <div class="cdx-card" style="margin-bottom: 16px;">
-                        <h4 style="margin-bottom: 8px; color: var(--cdx-color-base);">What to Edit</h4>
-                        <ul style="padding-left: 20px;">
-                    `;
-                    guideData.suggestions.forEach(s => leftHtml += `<li style="margin-bottom: 4px;">${s.text}</li>`);
-                    leftHtml += `</ul></div>`;
-                }
-
-                if (guideData.missingExpected && guideData.missingExpected.length) {
-                    leftHtml += `
-                    <div class="cdx-card" style="margin-bottom: 16px;">
-                        <h4 style="margin-bottom: 8px; color: var(--cdx-color-base);">Missing Sections</h4>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                    `;
-                    guideData.missingExpected.forEach(s => {
-                        leftHtml += `
-                            <div style="display: flex; justify-content: space-between; padding: 8px; background: var(--cdx-color-background--interactive); border-radius: var(--cdx-border-radius-base);">
-                                <span style="font-weight: bold; color: var(--cdx-color-destructive);">+ ${s}</span>
-                                <span style="color: var(--cdx-color-base--subtle); font-size: 0.9em;">Expected for ${cap(guideData.articleType || 'general')} articles</span>
-                            </div>
-                        `;
-                    });
-                    leftHtml += `</div></div>`;
-                }
-
-                if (refsData && refsData.results && refsData.results.length) {
-                    leftHtml += `
-                    <div class="cdx-card" style="margin-bottom: 16px;">
-                        <h4 style="margin-bottom: 8px; color: var(--cdx-color-base);">Suggested Wikimedia References (${refsData.total || refsData.results.length} total)</h4>
-                        <div id="refs-container" style="display: flex; flex-direction: column; gap: 8px;">
-                    `;
-                    leftHtml += generateRefsHtml(refsData.results);
-                    leftHtml += `</div>`;
-                    
-                    if (refsData.nextOffset) {
-                        leftHtml += `<button id="loadMoreBtn" class="cdx-button" style="margin-top: 12px; width: 100%;">Load More References...</button>`;
-                    }
-                    leftHtml += `</div>`;
-                }
-                wikiCol.innerHTML = leftHtml;
-                
-                const loadMoreBtn = document.getElementById('loadMoreBtn');
-                if (loadMoreBtn) {
-                    loadMoreBtn.addEventListener('click', () => {
-                        loadMoreBtn.innerText = 'Loading...';
-                        loadMoreBtn.disabled = true;
-                        fetch('http://localhost:5000/api/article/' + encodeURIComponent(title) + '/references?offset=' + refsData.nextOffset)
-                        .then(res => res.json())
-                        .then(newData => {
-                            const container = document.getElementById('refs-container');
-                            container.insertAdjacentHTML('beforeend', generateRefsHtml(newData.results));
-                            refsData.nextOffset = newData.nextOffset;
-                            if (!refsData.nextOffset) {
-                                loadMoreBtn.remove();
-                            } else {
-                                loadMoreBtn.innerText = 'Load More References...';
-                                loadMoreBtn.disabled = false;
-                            }
-                        }).catch(err => {
-                            loadMoreBtn.innerText = 'Error loading more';
-                        });
-                    });
-                }
-            })
-            .catch(err => {
-                document.getElementById('wiki-col').innerHTML = `<p style="color: var(--cdx-color-destructive);">Network Error: ${err.message}</p>`;
-            })
-            .finally(() => {
-                guideBtn.disabled = false;
-                guideBtn.style.opacity = '1';
-            });
-            
-        // Fetch External Academic Data Independently
-        getExternalReferences(title)
-            .then(extRefsData => {
-                const extCol = document.getElementById('ext-col');
-                let rightHtml = `
-                    <div class="cdx-card" style="margin-bottom: 16px; height: 100%;">
-                        <h3 style="margin-bottom: 8px; color: var(--cdx-color-base);">External Academic Research</h3>
-                        <p style="font-size: 0.9em; color: var(--cdx-color-base--subtle); margin-bottom: 12px;">Top cited papers from Semantic Scholar, CrossRef, and PubMed</p>
-                `;
-                if (extRefsData && extRefsData.results && extRefsData.results.length) {
-                    rightHtml += generateExtRefsHtml(extRefsData.results);
-                } else {
-                    rightHtml += `<p style="color: var(--cdx-color-base--subtle);">No external research found.</p>`;
-                }
-                rightHtml += `</div>`;
-                extCol.innerHTML = rightHtml;
-            })
-            .catch(err => {
-                document.getElementById('ext-col').innerHTML = `<p style="color: var(--cdx-color-destructive);">Error: ${err.message}</p>`;
-            });
-    });
-
-    guideInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') guideBtn.click();
-    });
-});
