@@ -1,6 +1,8 @@
 import requests
 import re
 import urllib.parse
+import os
+import time
 from concurrent.futures import ProcessPoolExecutor
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -77,6 +79,23 @@ def analyze_article(title):
     Port of analyzeArticle from index.html
     Fetches wikitext, sections, and categories to build a guide.
     """
+    
+    # STRESS TEST MOCK (Prevents Wikipedia IP Ban)
+    if os.environ.get("STRESS_TEST") == "1":
+        time.sleep(0.1) # Simulate 100ms network latency
+        return {
+            "title": title,
+            "articleType": "general",
+            "sections": [{"name": "History", "level": 2, "index": "1", "charCount": 500, "status": "ok", "refCount": 5}],
+            "missingExpected": ["Description", "References"],
+            "suggestions": [],
+            "currentSize": 5000,
+            "totalRefs": 5,
+            "hasInfobox": True,
+            "hasImages": True,
+            "cats": ["general"]
+        }
+
     params = {
         "action": "parse",
         "page": title,
@@ -209,6 +228,19 @@ def find_references(title, offset=0):
     Finds references using Wikipedia API, supports pagination, 
     and analyzes each result to find what to edit and missing sections.
     """
+    
+    # STRESS TEST MOCK (Prevents Wikipedia IP Ban)
+    if os.environ.get("STRESS_TEST") == "1":
+        time.sleep(0.2) # Simulate 200ms search latency
+        fake_results = [{"title": f"Fake_Ref_{i}", "timestamp": "2024-01-01T00:00:00Z", "wordcount": 1000} for i in range(5)]
+        
+        with ProcessPoolExecutor(max_workers=5) as executor:
+            original_titles = [title] * len(fake_results)
+            results = list(executor.map(_process_single_reference, fake_results, original_titles))
+            
+        refs = [res for res in results if res is not None]
+        return {"results": refs, "nextOffset": int(offset) + 5, "total": 10000}
+
     refs = []
     
     # Search Wikipedia for related articles
