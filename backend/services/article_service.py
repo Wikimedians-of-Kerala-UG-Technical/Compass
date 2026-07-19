@@ -314,7 +314,7 @@ def find_references(title, offset=0):
 
     refs = []
     
-    # Search Wikipedia for related articles
+    # Search Wikipedia for keyword related articles
     search_params = {
         "action": "query",
         "list": "search",
