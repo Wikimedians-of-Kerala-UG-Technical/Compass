@@ -80,9 +80,9 @@ function renderTasks() {
   var listEl = document.getElementById('tasksList');
   if (!listEl) return;
 
-  /* Apply filter */
-  var filtered = activeFilter === 'all'
-    ? tasks
+  /* Apply filter — 'quick' is cross-cutting (effort-based), not a task type */
+  var filtered = activeFilter === 'all' ? tasks
+    : activeFilter === 'quick' ? tasks.filter(function (t) { return (t.meta && t.meta.effort === 'low') || t.isQuick; })
     : tasks.filter(function (t) { return t.type === activeFilter; });
 
   if (!filtered.length) {
@@ -95,14 +95,25 @@ function renderTasks() {
     var wiki = 'https://en.wikipedia.org/wiki/' + encodeURIComponent((t.title || '').replace(/ /g, '_'));
     var edit = 'https://en.wikipedia.org/w/index.php?title=' + encodeURIComponent((t.title || '').replace(/ /g, '_')) + '&action=edit';
     var delay = 'style="animation-delay:' + (i * 0.03) + 's"';
+    var label = t.meta && t.meta.label ? t.meta.label : (t.type || '');
+    var scoreBadge = typeof t.score === 'number'
+      ? '<span class="wtp-badge wtp-badge--neutral">' + Math.round(t.score * 100) + '% match</span>' : '';
+    var effortBadge = t.meta && t.meta.min
+      ? '<span class="wtp-badge wtp-badge--neutral">~' + t.meta.min + 'm</span>' : '';
+    var pvBadge = t.pageviews
+      ? '<span class="wtp-badge wtp-badge--neutral">' + t.pageviews + '/day' + (t.trend > 30 ? ' 📈' : '') + '</span>' : '';
+    var staleBadge = t.staleDays > 180
+      ? '<span class="wtp-badge wtp-badge--warning">' + t.staleDays + 'd stale</span>' : '';
     return '<div class="task-item fade-in" ' + delay + '>' +
       '<div class="task-item__head">' +
         '<span class="task-item__num">#' + (i + 1) + '</span>' +
         '<span class="task-item__title"><a href="' + wiki + '" target="_blank" rel="noopener">' + (t.title || '') + '</a></span>' +
-        '<span class="wtp-badge wtp-badge--notice">' + (t.type || '') + '</span>' +
+        '<span class="wtp-badge wtp-badge--notice">' + label + '</span>' +
       '</div>' +
       (t.topic ? '<div class="task-item__topic">🏷 ' + t.topic + '</div>' : '') +
       '<div class="task-item__reason">' + (t.reason || '') + '</div>' +
+      (scoreBadge || effortBadge || pvBadge || staleBadge
+        ? '<div class="task-item__scores">' + scoreBadge + effortBadge + pvBadge + staleBadge + '</div>' : '') +
       '<div class="task-item__actions">' +
         '<a href="' + edit + '" target="_blank" rel="noopener" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary" style="text-decoration:none">Edit on Wikipedia</a>' +
         '<a href="' + wiki + '" target="_blank" rel="noopener" class="cdx-button" style="text-decoration:none">View</a>' +

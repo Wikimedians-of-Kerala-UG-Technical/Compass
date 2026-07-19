@@ -463,6 +463,7 @@ a:hover { text-decoration: underline; }
   padding: 1px 6px;
   margin-bottom: 8px;
 }
+.task-item__scores { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .task-item__actions { display: flex; gap: 8px; align-items: center; }
 
 /* ── GUIDE SECTION ──────────────────────────────────────────── */

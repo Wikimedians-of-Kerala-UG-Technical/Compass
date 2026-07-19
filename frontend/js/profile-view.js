@@ -28,6 +28,18 @@ function renderProfile() {
     return '<span class="wtp-badge wtp-badge--notice" style="margin:2px">' + escapeHtml(t) + '</span>';
   }).join('');
 
+  /* ── Geo focus ──────────────────────────────────────── */
+  var geoBadges = (p.topGeo || []).map(function (g) {
+    return '<span class="wtp-badge wtp-badge--neutral" style="margin:2px">🌍 ' + escapeHtml(g) + '</span>';
+  }).join('');
+
+  /* ── Quality tier ───────────────────────────────────── */
+  var qualityVariant = p.qualityTier === 'high' ? 'wtp-badge--success'
+    : p.qualityTier === 'medium' ? 'wtp-badge--warning' : 'wtp-badge--neutral';
+  var qualityBadge = p.qualityTier
+    ? '<span class="wtp-badge ' + qualityVariant + '" style="margin:2px">Quality: ' + escapeHtml(p.qualityTier) + '</span>'
+    : '';
+
   /* ── Recent edits ────────────────────────────────────── */
   var recentHtml = (p.recentEdits || []).slice(0, 5).map(function (e) {
     var diffClass = e.sizediff > 0 ? 'diff-pos' : 'diff-neg';
@@ -65,6 +77,12 @@ function renderProfile() {
         '<span class="profile-stat__label">Articles</span>' +
       '</div>' +
     '</div>' +
+
+    (qualityBadge || geoBadges ? (
+      '<div class="profile-section">' +
+        '<div class="profile-tags">' + qualityBadge + geoBadges + '</div>' +
+      '</div>'
+    ) : '') +
 
     (topicBadges ? (
       '<div class="profile-section">' +

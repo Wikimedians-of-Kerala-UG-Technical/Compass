@@ -91,20 +91,23 @@ function start() {
     setTimeout(function () { setStage(5); setProgress(85, 'Scoring tasks…', 'Ranking recommendations for you'); }, 3200)
   ];
 
-  Promise.all([
-    getProfile(username),
-    getTrends(),
-    getTasks()
-  ]).then(function (results) {
+  /* Task personalization needs the profile's topics/edit-history first, so fetch it
+     before tasks — trends stay independent and load alongside. */
+  getProfile(username).then(function (profile) {
     stageTimers.forEach(clearTimeout);
+    setStage(3);
+    setProgress(60, 'Finding gaps…', 'Searching for articles needing attention');
+    state.profile = profile;
+    renderProfile();
+
+    return Promise.all([getTrends(), getTasksForProfile(profile)]);
+  }).then(function (results) {
     setProgress(100, 'Done!', 'Loading your dashboard…');
     setStage(6);
 
-    state.profile = results[0];
-    state.trends  = results[1];
-    state.tasks   = results[2];
+    state.trends = results[0];
+    state.tasks  = results[1];
 
-    renderProfile();
     renderTrends();
     renderTasks();
 
@@ -117,12 +120,31 @@ function start() {
   });
 }
 
+/* Top N edit-type keys by count, e.g. {references: 40, minor: 12} -> ['references', 'minor'] */
+function topEditTypes(editTypes, n) {
+  if (!editTypes) return [];
+  return Object.keys(editTypes)
+    .sort(function (a, b) { return editTypes[b] - editTypes[a]; })
+    .slice(0, n);
+}
+
+/* Builds the personalized getTasks() call from a profile: topics, edit-type affinity,
+   heavily-edited articles (watchlist), self-created articles (follow-ups), and geo focus. */
+function getTasksForProfile(profile) {
+  profile = profile || {};
+  var editTypes = topEditTypes(profile.editTypes, 3);
+  var watchItems = (profile.heavilyEdited || []).slice(0, 10);
+  var mineTitles = (profile.createdArticles || []).slice(0, 8);
+  var geo = (profile.topGeo || [])[0];
+  return getTasks(profile.topTopics, editTypes, watchItems, mineTitles, geo);
+}
+
 /* ── REFRESH ─────────────────────────────────────────────── */
 function refreshDash() {
   var refreshBtn = document.getElementById('refreshBtn');
   if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = 'Refreshing…'; }
 
-  Promise.all([getTrends(), getTasks()]).then(function (results) {
+  Promise.all([getTrends(), getTasksForProfile(state.profile)]).then(function (results) {
     state.trends = results[0];
     state.tasks  = results[1];
     renderTrends();

@@ -16,8 +16,15 @@ function getTrends() {
     });
 }
 
-function getTasks() {
-  return fetch(API_BASE + '/api/tasks')
+function getTasks(topics, editTypes, watchItems, mineTitles, geo) {
+  var params = new URLSearchParams();
+  if (topics && topics.length) params.set('topics', topics.join(','));
+  if (editTypes && editTypes.length) params.set('editTypes', editTypes.join(','));
+  if (watchItems && watchItems.length) params.set('watch', JSON.stringify(watchItems));
+  if (mineTitles && mineTitles.length) params.set('mine', JSON.stringify(mineTitles));
+  if (geo) params.set('geo', geo);
+  var qs = params.toString();
+  return fetch(API_BASE + '/api/tasks' + (qs ? '?' + qs : ''))
     .then(function (r) {
       if (!r.ok) throw new Error('Failed to load tasks (' + r.status + ')');
       return r.json();
