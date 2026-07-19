@@ -361,12 +361,22 @@ def fetch_semantic_scholar(title):
 
 def fetch_crossref(title):
     try:
-        r = get_session().get("https://api.crossref.org/works", params={"query": title, "select": "title,URL,is-referenced-by-count", "sort": "is-referenced-by-count", "rows": 5}, timeout=5)
+        # query.bibliographic biases matching toward title/author/venue fields instead of
+        # any metadata field, and omitting `sort` keeps CrossRef's default relevance ranking
+        # (sorting by is-referenced-by-count surfaces popular-but-unrelated papers for generic titles).
+        r = get_session().get("https://api.crossref.org/works", params={"query.bibliographic": title, "select": "title,URL,is-referenced-by-count", "rows": 5}, timeout=5)
         if r.status_code == 200:
             data = r.json()
             return [{"title": p.get("title", [""])[0], "url": p.get("URL"), "citations": p.get("is-referenced-by-count"), "source": "CrossRef"} for p in data.get("message", {}).get("items", [])]
     except Exception: pass
     return []
+
+MEDICAL_HINTS = (
+    'medic', 'disease', 'health', 'hospital', 'drug', 'pharma', 'anatom', 'surg',
+    'radiol', 'pathol', 'diagnos', 'therap', 'clinic', 'symptom', 'syndrome',
+    'cancer', 'infect', 'epidem', 'virus', 'bacter', 'vaccine',
+)
+
 
 def fetch_pubmed(title):
     try:
@@ -385,25 +395,37 @@ def fetch_pubmed(title):
 def find_external_references(title):
     """
     Finds references using Semantic Scholar, CrossRef, and PubMed.
-    Deduplicates and sorts by citation count.
+    Each source already returns its results in its own relevance order, so we
+    interleave round-robin across sources instead of re-sorting everything by
+    raw citation count — a global citation sort was burying relevant results
+    under highly-cited but topically unrelated papers for generic titles.
     """
     from concurrent.futures import ThreadPoolExecutor
+    # PubMed only indexes biomedical literature — querying it for a non-medical
+    # title (e.g. a place or biography) reliably returns loosely-matched noise,
+    # so skip that call entirely unless the title hints at a medical topic.
+    is_medical = any(kw in title.lower() for kw in MEDICAL_HINTS)
     with ThreadPoolExecutor(max_workers=3) as executor:
         f1 = executor.submit(fetch_semantic_scholar, title)
         f2 = executor.submit(fetch_crossref, title)
-        f3 = executor.submit(fetch_pubmed, title)
-        
-        results = f1.result() + f2.result() + f3.result()
-        
+        f3 = executor.submit(fetch_pubmed, title) if is_medical else None
+
+        sources = [f1.result(), f2.result(), f3.result() if f3 else []]
+
+    merged = []
+    for i in range(max((len(s) for s in sources), default=0)):
+        for s in sources:
+            if i < len(s):
+                merged.append(s[i])
+
     seen = set()
     deduped = []
-    for r in results:
+    for r in merged:
         t = r.get("title") or ""
         tl = t.lower().strip()
         if tl and tl not in seen:
             seen.add(tl)
             deduped.append(r)
-            
-    deduped.sort(key=lambda x: x.get("citations") or 0, reverse=True)
+
     return {"results": deduped}
 

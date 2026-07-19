@@ -136,6 +136,35 @@ def extract_topics(cat_map):
     return scores
 
 
+GEO_KW = {
+    "kerala": ["kerala", "kozhikode", "thrissur", "kochi", "thiruvananthapuram", "malappuram",
+               "kannur", "palakkad", "kollam"],
+    "india": ["india", "indian", "delhi", "mumbai", "kolkata", "chennai", "bangalore", "hyderabad",
+              "rajasthan", "gujarat", "maharashtra", "uttar pradesh", "tamil nadu", "karnataka"],
+    "usa": ["united states", "american", "california", "new york", "texas", "florida",
+            "washington", "chicago", "los angeles"],
+    "uk": ["united kingdom", "british", "england", "london", "scotland", "wales"],
+    "middleeast": ["arab", "saudi", "iran", "iraq", "syria", "egypt", "turkey", "jordan",
+                   "lebanon", "palestine", "israel"],
+    "africa": ["africa", "nigeria", "kenya", "south africa", "ethiopia", "ghana", "tanzania"],
+    "europe": ["german", "french", "spain", "italy", "netherlands", "sweden", "poland",
+               "russia", "european"],
+    "asia": ["china", "chinese", "japan", "japanese", "korea", "korean", "vietnam", "thailand",
+             "indonesia", "malaysia", "philippines", "singapore", "bangladesh", "pakistan", "sri lanka"],
+}
+
+
+def extract_geo(cat_map):
+    scores = {}
+    for cats in cat_map.values():
+        for cat in cats:
+            cl = cat.lower()
+            for geo, keywords in GEO_KW.items():
+                if any(kw in cl for kw in keywords):
+                    scores[geo] = scores.get(geo, 0) + 1
+    return scores
+
+
 def build_recent_edits(contribs, limit=15):
     """List of recent edits with direct links to the diff and the article."""
     recent = []
@@ -168,11 +197,37 @@ def build_profile(username, contribs, cat_map):
     if not top_topics:
         top_topics = ["general"]
 
+    total = len(contribs)
+    revert_rate = edit_types.get("revert", 0) / max(total, 1)
+    quality_tier = "high" if revert_rate < .02 else "medium" if revert_rate < .06 else "developing"
+
+    geo_scores = extract_geo(cat_map)
+    top_geo = [g[0] for g in sorted(geo_scores.items(), key=lambda kv: kv[1], reverse=True)[:3]]
+
+    page_counts = {}
+    for c in articles:
+        page_counts[c["title"]] = page_counts.get(c["title"], 0) + 1
+    heavily_edited = [
+        {"title": title, "count": count}
+        for title, count in sorted(page_counts.items(), key=lambda kv: kv[1], reverse=True)
+        if count >= 3
+    ][:15]
+
+    created_articles = [
+        c["title"] for c in contribs
+        if (c.get("ns") or 0) == 0
+        and classify_edit(c.get("comment"), c.get("tags"), c.get("sizediff")) == "creation"
+    ][:20]
+
     return {
         "username": username,
-        "total": len(contribs),
+        "total": total,
         "uniqueArticles": len(unique_articles),
         "editTypes": edit_types,
         "topTopics": top_topics,
         "recentEdits": build_recent_edits(contribs, limit=15),
+        "qualityTier": quality_tier,
+        "topGeo": top_geo,
+        "heavilyEdited": heavily_edited,
+        "createdArticles": created_articles,
     }

@@ -6,6 +6,7 @@ __pycache__/
 *$py.class
 .env
 instance/
+<<<<<<< HEAD
 
 .vite
 frontend/.vite
@@ -17,3 +18,8 @@ frontend/dist
 dist-ssr
 *.local
 
+=======
+*.log
+response.json
+scratch.py
+>>>>>>> dev
