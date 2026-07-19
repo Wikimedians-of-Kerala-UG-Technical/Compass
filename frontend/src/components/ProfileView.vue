@@ -41,7 +41,7 @@ const recentEdits = computed(() => (props.profile?.recentEdits || []).slice(0, 5
           >W</text>
         </svg>
       </div>
-      <h1 class="onboard-card__heading">WikiTask Pro</h1>
+      <h1 class="onboard-card__heading">Compass</h1>
       <p class="onboard-card__sub">
         Enter your Wikipedia username to discover personalised article editing recommendations.
       </p>

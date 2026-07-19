@@ -121,7 +121,7 @@ function logout() {
             fill="#202122"
           >W</text>
         </svg>
-        <span class="wtp-header__title">WikiTask Pro</span>
+        <span class="wtp-header__title">Compass</span>
       </div>
       <div class="wtp-header__right">
         <span class="wtp-header__user">{{ username }}</span>

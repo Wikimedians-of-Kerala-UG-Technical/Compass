@@ -1,113 +1,69 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/zero-dependencies-1d1b16?style=flat-square" alt="Zero dependencies">
-  <img src="https://img.shields.io/badge/client--side-only-1d1b16?style=flat-square" alt="Client-side only">
-  <img src="https://img.shields.io/badge/no-backend-1d1b16?style=flat-square" alt="No backend">
-</p>
-
-<h1 align="center">WikiTask Pro</h1>
+<h1 align="center">Compass</h1>
 
 <p align="center">
   <strong>Your Wikipedia, Curated</strong><br>
-  <sub>A personalized task recommender for Wikipedia editors.<br>
-  Enter your username. Get ranked, actionable tasks matched to your expertise.</sub>
-</p>
-
-<p align="center">
-  <a href="https://nethahussain.github.io/wikitask-pro/"><strong>Open WikiTask Pro &rarr;</strong></a>
+  <sub>A personalized task recommender for Wikipedia editors.</sub>
 </p>
 
 ---
 
-### The problem
+## What is Compass?
 
-Wikipedia has millions of articles that need work, but no good way to match editors with tasks suited to their skills. Existing tools show generic maintenance lists. WikiTask Pro is different -- it studies *you* first, then recommends accordingly.
+Wikipedia has millions of articles that need work, but no good way to match editors with tasks suited to their skills. Existing tools just dump generic maintenance lists on everyone.
+
+Compass does the opposite: type in a Wikipedia username, and it studies that editor's own history first — what topics they write about, how they edit, what quality bar they hold themselves to — and only then hands back a ranked list of articles worth their time.
+
+There are no accounts and nothing to sign up for. You give it a public Wikipedia username, it reads that user's public contributions, and it returns recommendations.
 
 ---
 
-### How it works
+## What it does
+
+1. **Builds a profile from edit history** — pulls an editor's recent contributions and figures out their topic focus, edit types, activity patterns, and skill/quality tier.
+2. **Finds candidate tasks** — searches Wikipedia for articles matching the editor's topics that need references, are orphaned, or are tagged "citation needed."
+3. **Watches articles the editor already touched** — flags pages they previously edited or created that have since picked up new issues, so there's a natural follow-up trail.
+4. **Scores and ranks everything** — each task is weighted by relevance to the editor's interests, the article's impact (pageviews/importance), how feasible it is given their skill level, and urgency (staleness, trending status).
+5. **Surfaces context to help them act** — trending topics, relevant news, and per-article guides with suggested references pulled from Semantic Scholar, CrossRef, and PubMed.
+
+---
+
+## How it's built
+
+The project is split into a frontend and a backend that talks to Wikipedia and a few academic APIs on the frontend's behalf.
 
 ```
-Username  -->  Edit history analysis  -->  Deep profile  -->  Ranked tasks
-                     |                        |                    |
-              500+ recent edits        Skill mapping         Scored by
-              Category analysis        Topic focus           relevance,
-              Edit type breakdown      Activity patterns     impact &
-              Page info lookup         Quality tier          feasibility
+frontend/   Vue 3 + Vite single-page app — onboarding, dashboard, task list, article guide
+backend/    Flask API — builds profiles, discovers tasks, scores/ranks them
+legacy/     The original single-file vanilla JS prototype (kept for history, no longer active)
 ```
 
-WikiTask Pro runs entirely in your browser. No accounts, no backend, no data stored.
+**Backend routes** (`backend/routes/`):
+- `GET /api/profile/<username>` — builds an editor profile from their contribution history
+- `GET /api/tasks` — finds and ranks candidate tasks for the current profile
+- `GET /api/trends` — current trending Wikipedia topics and news
+- `GET /api/article/<title>/guide` — structural analysis and editing suggestions for one article
+- `GET /api/article/<title>/references` and `/external-references` — suggested citations
+
+**Frontend flow** (`frontend/src/App.vue`): user enters a username → app calls the profile, trends, and tasks endpoints in parallel → renders a dashboard with the profile summary, trending/news sidebars, the ranked task list, and an article guide panel for digging into a specific task.
+
+Data sources: the MediaWiki Action API and Wikimedia Pageviews for everything Wikipedia-side, plus Semantic Scholar, CrossRef, and PubMed for reference discovery.
 
 ---
 
-### Features
+## Running it locally
 
-| | Feature | Description |
-|---|---|---|
-| &#x1F50D; | **Deep profiling** | Skill level, geographic focus, edit velocity, quality tier, active hours, article age preference |
-| &#x26A1; | **20+ task types** | Orphans, dead-ends, bare URLs, disambig fixes, missing coords, uncategorized pages, BLP issues, wikification, short descriptions |
-| &#x1F514; | **Watchlist alerts** | Articles you edited that have since degraded -- new issues flagged since your last contribution |
-| &#x1F4CE; | **Reference discovery** | Section analysis, missing content detection, papers from Semantic Scholar, CrossRef & PubMed |
-| &#x1F4F0; | **News & trends** | Trending topics and current events relevant to your editing areas |
-| &#x1F3AF; | **Smart scoring** | Each task ranked by relevance, impact, feasibility, and urgency |
-| &#x1F4F1; | **Mobile-ready** | Responsive design, works on any device |
-
----
-
-### APIs
-
-WikiTask Pro queries five public APIs -- all from the client, no keys required:
-
-| Source | Data |
-|:---|:---|
-| MediaWiki Action API | Edit history, page metadata, categories, templates |
-| Wikimedia Pageviews | Article traffic, trending pages |
-| Semantic Scholar | Academic paper discovery |
-| CrossRef | DOI and citation metadata |
-| PubMed | Biomedical literature |
-
----
-
-### Task scoring
-
-Every task is scored across four dimensions:
-
-```
-Relevance   ████████░░  How well the task matches your topic expertise
-Impact      ██████████  Article pageviews, importance, visibility
-Feasibility ███████░░░  Estimated effort based on your skill profile
-Urgency     █████░░░░░  Staleness, trending status, degradation signals
-```
-
-Tasks are ranked by a weighted composite. Filters let you narrow by topic, type, or difficulty.
-
----
-
-### Quickstart
-
-**Use it online** -- no install needed:
-
-> **https://nethahussain.github.io/wikitask-pro/**
-
-**Run locally:**
+**Backend** (Flask, serves on `:5000`):
 
 ```bash
-git clone https://github.com/nethahussain/wikitask-pro.git
-cd wikitask-pro
-open index.html
+cd backend
+pip install -r requirements.txt
+python app.py
 ```
 
-**Deploy your own:** Fork this repo, enable GitHub Pages on `main`, done.
+**Frontend** (Vite dev server, expects the backend running on `:5000`):
 
----
-
-### Stack
-
-Vanilla HTML, CSS, and JavaScript. Single file. Zero dependencies.
-
-Fonts: Newsreader (serif) / DM Sans (sans-serif) / JetBrains Mono (mono).
-
----
-
-### License
-
-Open source. Contributions welcome.
+```bash
+cd frontend
+npm install
+npm run dev
+```
