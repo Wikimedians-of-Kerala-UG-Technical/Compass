@@ -125,23 +125,25 @@ function renderGuideResult(title, g, refs, extRefs) {
 
   var wikiRefsHtml = '';
   if (refs && refs.results && refs.results.length) {
+    var totalWiki = refs.total || refs.results.length;
     wikiRefsHtml =
-      '<div class="guide-col-title" style="margin-bottom:12px;">Suggested Wikimedia References</div>' +
-      '<div id="wikiRefsContainer" style="display: flex; flex-direction: column; gap: 6px;">' + generateRefsHtml(refs.results.slice(0, 10)) + '</div>' +
+      '<div class="guide-col-title" style="margin-bottom:12px;">Suggested Wikimedia References (' + totalWiki + ')</div>' +
+      '<div id="wikiRefsContainer" style="display: flex; flex-direction: column; gap: 6px;">' + generateRefsHtml(refs.results) + '</div>' +
       (refs.nextOffset ? '<button class="cdx-button" id="guideLoadMore" style="width:100%;margin-top:8px;">Load more references…</button>' : '');
   } else {
     wikiRefsHtml =
-      '<div class="guide-col-title" style="margin-bottom:12px;">Suggested Wikimedia References</div>' +
+      '<div class="guide-col-title" style="margin-bottom:12px;">Suggested Wikimedia References (0)</div>' +
       '<div class="empty-state"><div class="empty-state__icon">📄</div>No internal references found.</div>';
   }
 
   /* ── External References ───────────────── */
   var extRefsHtml = '';
   if (extRefs && extRefs.results && extRefs.results.length) {
+    var totalExt = extRefs.results.length;
     extRefsHtml =
-      '<div class="guide-col-title" style="margin-bottom:12px;">External Academic Research</div>' +
+      '<div class="guide-col-title" style="margin-bottom:12px;">External Academic Research (' + totalExt + ')</div>' +
       '<div style="display: flex; flex-direction: column; gap: 6px;">' +
-      extRefs.results.slice(0, 10).map(function(r) {
+      extRefs.results.map(function(r) {
         return '<a class="guide-ref-item" href="' + esc(r.url || '#') + '" target="_blank" rel="noopener" style="text-decoration:none; color:inherit; display:block;">' +
           '<div class="guide-ref-title">' + esc(r.title || 'Untitled') + '</div>' +
           '<div class="guide-ref-meta" style="margin-top: 6px;"><span class="wtp-badge wtp-badge--neutral" style="margin-right: 4px;">' + esc(r.source) + '</span> ' + 
@@ -151,7 +153,7 @@ function renderGuideResult(title, g, refs, extRefs) {
       }).join('') + '</div>';
   } else {
     extRefsHtml =
-      '<div class="guide-col-title" style="margin-bottom:12px;">External Academic Research</div>' +
+      '<div class="guide-col-title" style="margin-bottom:12px;">External Academic Research (0)</div>' +
       '<div class="empty-state"><div class="empty-state__icon">📄</div>No external research found.</div>';
   }
 

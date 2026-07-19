@@ -11,4 +11,5 @@ scratch.py
 frontend/js/api.js
 frontend/js/guide-view.js
 locustfile.py
-.pyc
+*.pyc
+
