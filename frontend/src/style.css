@@ -1,12 +1,12 @@
-/* =============================================================
-   WikiTask Pro — Codex-based stylesheet
+﻿/* =============================================================
+   WikiTask Pro ΓÇö Codex-based stylesheet
    All design tokens follow the Wikimedia Codex system.
    ============================================================= */
 
-/* ── Google Font (Linux Libertine is local; use Lato for UI) ── */
+/* ΓöÇΓöÇ Google Font (Linux Libertine is local; use Lato for UI) ΓöÇΓöÇ */
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
 
-/* ── RESET ─────────────────────────────────────────────────── */
+/* ΓöÇΓöÇ RESET ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
@@ -20,11 +20,11 @@ body {
 a { color: #3366cc; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ── SCREEN MANAGEMENT ──────────────────────────────────────── */
+/* ΓöÇΓöÇ SCREEN MANAGEMENT ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .screen { display: none; }
 .screen.active { display: block; }
 
-/* ── HEADER ─────────────────────────────────────────────────── */
+/* ΓöÇΓöÇ HEADER ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .wtp-header {
   background: #fff;
   border-bottom: 1px solid #a2a9b1;
@@ -60,7 +60,7 @@ a:hover { text-decoration: underline; }
   font-style: italic;
 }
 
-/* ── SHARED CARD ────────────────────────────────────────────── */
+/* ΓöÇΓöÇ SHARED CARD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .wtp-card {
   background: #fff;
   border: 1px solid #a2a9b1;
@@ -89,7 +89,7 @@ a:hover { text-decoration: underline; }
   margin-top: 4px;
 }
 
-/* ── BADGE ──────────────────────────────────────────────────── */
+/* ΓöÇΓöÇ BADGE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .wtp-badge {
   display: inline-flex;
   align-items: center;
@@ -105,7 +105,7 @@ a:hover { text-decoration: underline; }
 .wtp-badge--success { background: #d5fdf4; color: #14866d; border: 1px solid #14866d33; }
 .wtp-badge--error   { background: #ffe9e5; color: #d33; border: 1px solid #d3333333; }
 
-/* ── SKELETON LOADERS ───────────────────────────────────────── */
+/* ΓöÇΓöÇ SKELETON LOADERS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .wtp-card__skeleton { display: flex; flex-direction: column; gap: 10px; }
 .skeleton-line {
   height: 12px;
@@ -122,7 +122,7 @@ a:hover { text-decoration: underline; }
   100% { background-position: -200% 0; }
 }
 
-/* ── ONBOARDING ─────────────────────────────────────────────── */
+/* ΓöÇΓöÇ ONBOARDING ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 #onboard { min-height: calc(100dvh - 52px); display: flex; align-items: center; }
 .onboard-wrap {
   max-width: 640px;
@@ -175,7 +175,7 @@ a:hover { text-decoration: underline; }
 .onboard-feature__text { font-size: 0.8125rem; color: #54595d; line-height: 1.5; }
 .onboard-feature__text strong { color: #202122; display: block; margin-bottom: 2px; }
 
-/* ── LOADING ────────────────────────────────────────────────── */
+/* ΓöÇΓöÇ LOADING ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 #loading { min-height: calc(100dvh - 52px); display: flex; align-items: center; }
 .loading-wrap { max-width: 480px; margin: 0 auto; padding: 48px 24px; width: 100%; }
 .loading-card {
@@ -219,18 +219,18 @@ a:hover { text-decoration: underline; }
   position: relative;
 }
 .loading-stage::before {
-  content: '○';
+  content: 'Γùï';
   position: absolute;
   left: 0;
   color: #a2a9b1;
 }
 .loading-stage.is-done   { color: #14866d; }
-.loading-stage.is-done::before   { content: '✓'; color: #14866d; }
+.loading-stage.is-done::before   { content: 'Γ£ô'; color: #14866d; }
 .loading-stage.is-active { color: #3366cc; font-weight: bold; }
-.loading-stage.is-active::before { content: '●'; color: #3366cc; animation: pulse 0.9s infinite; }
+.loading-stage.is-active::before { content: 'ΓùÅ'; color: #3366cc; animation: pulse 0.9s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* ── DASHBOARD TOOLBAR ──────────────────────────────────────── */
+/* ΓöÇΓöÇ DASHBOARD TOOLBAR ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .dash-toolbar {
   background: #fff;
   border-bottom: 1px solid #eaecf0;
@@ -252,7 +252,7 @@ a:hover { text-decoration: underline; }
 }
 .dash-toolbar__actions { display: flex; gap: 8px; }
 
-/* ── DASHBOARD GRID ─────────────────────────────────────────── */
+/* ΓöÇΓöÇ DASHBOARD GRID ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .dash-grid {
   max-width: 1280px;
   margin: 24px auto;
@@ -276,7 +276,7 @@ a:hover { text-decoration: underline; }
   gap: 16px;
 }
 
-/* ── PROFILE CARD ───────────────────────────────────────────── */
+/* ΓöÇΓöÇ PROFILE CARD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .profile-header {
   display: flex;
   align-items: center;
@@ -337,7 +337,7 @@ a:hover { text-decoration: underline; }
 .diff-pos { color: #14866d; }
 .diff-neg { color: #d33; }
 
-/* ── TRENDING BOX ───────────────────────────────────────────── */
+/* ΓöÇΓöÇ TRENDING BOX ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .trending-title, .news-title {
   font-size: 0.6875rem;
   font-weight: bold;
@@ -367,7 +367,7 @@ a:hover { text-decoration: underline; }
 .trend-pill:hover { border-color: #3366cc; background: #eaf3ff; text-decoration: none; }
 .trend-pill__views { font-size: 0.6875rem; color: #54595d; }
 
-/* ── NEWS BOX ───────────────────────────────────────────────── */
+/* ΓöÇΓöÇ NEWS BOX ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .news-items { display: flex; flex-direction: column; gap: 10px; }
 .news-item {
   border-left: 3px solid #eaecf0;
@@ -400,7 +400,7 @@ a:hover { text-decoration: underline; }
 }
 .news-item__art:hover { background: #3366cc; color: #fff; text-decoration: none; }
 
-/* ── TASK FILTERS ───────────────────────────────────────────── */
+/* ΓöÇΓöÇ TASK FILTERS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .dash-task-filters { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .filter-btn {
   font-size: 0.75rem !important;
@@ -417,7 +417,7 @@ a:hover { text-decoration: underline; }
   border-color: #3366cc !important;
 }
 
-/* ── TASK ITEM ──────────────────────────────────────────────── */
+/* ΓöÇΓöÇ TASK ITEM ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .task-item {
   border: 1px solid #a2a9b1;
   border-left: 4px solid #3366cc;
@@ -466,7 +466,7 @@ a:hover { text-decoration: underline; }
 .task-item__scores { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .task-item__actions { display: flex; gap: 8px; align-items: center; }
 
-/* ── GUIDE SECTION ──────────────────────────────────────────── */
+/* ΓöÇΓöÇ GUIDE SECTION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .guide-search-row { display: flex; gap: 8px; margin-bottom: 16px; }
 .guide-result-grid {
   display: grid;
@@ -519,9 +519,9 @@ a:hover { text-decoration: underline; }
   font-size: 0.8125rem;
   color: #202122;
 }
-.guide-suggestion::before { content: '→'; color: #3366cc; flex-shrink: 0; }
+.guide-suggestion::before { content: 'ΓåÆ'; color: #3366cc; flex-shrink: 0; }
 
-/* ── EMPTY STATE ────────────────────────────────────────────── */
+/* ΓöÇΓöÇ EMPTY STATE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .empty-state {
   text-align: center;
   padding: 32px 16px;
@@ -530,7 +530,7 @@ a:hover { text-decoration: underline; }
 }
 .empty-state__icon { font-size: 2rem; margin-bottom: 8px; }
 
-/* ── FADE ANIMATION ─────────────────────────────────────────── */
+/* ΓöÇΓöÇ FADE ANIMATION ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .fade-in {
   animation: fadeUp 0.3s ease-out both;
 }
@@ -539,12 +539,12 @@ a:hover { text-decoration: underline; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── CDX OVERRIDES ──────────────────────────────────────────── */
+/* ΓöÇΓöÇ CDX OVERRIDES ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 /* Keep Codex progress bar looking native */
 .cdx-progress-bar { height: 4px !important; }
 .cdx-progress-bar__bar { transition: width 0.4s ease; }
 
-/* ── RESPONSIVE ─────────────────────────────────────────────── */
+/* ΓöÇΓöÇ RESPONSIVE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 @media (max-width: 900px) {
   .dash-grid { flex-direction: column; }
   .dash-sidebar { flex: none; width: 100%; }

@@ -6,6 +6,20 @@ __pycache__/
 *$py.class
 .env
 instance/
+<<<<<<< HEAD
+
+.vite
+frontend/.vite
+
+node_modules
+frontend/node_modules
+dist
+frontend/dist
+dist-ssr
+*.local
+
+=======
 *.log
 response.json
 scratch.py
+>>>>>>> dev
