@@ -1,5 +1,4 @@
-PLan.md
-UI_UX_Design.md
+
 Contributor_C_Testing_Guide
 __pycache__/
 *.py[cod]
@@ -9,3 +8,7 @@ instance/
 *.log
 response.json
 scratch.py
+frontend/js/api.js
+frontend/js/guide-view.js
+locustfile.py
+.pyc
