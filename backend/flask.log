@@ -5,38 +5,6 @@ WARNING: This is a development server. Do not use it in a production deployment.
 Press CTRL+C to quit
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 908-451-806
-127.0.0.1 - - [18/Jul/2026 17:24:36] "GET /api/profile/Jimbo_Wales HTTP/1.1" 200 -
-127.0.0.1 - - [18/Jul/2026 17:26:35] "GET /api/profile/Jimbo_Wales HTTP/1.1" 200 -
- * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 908-451-806
- * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 908-451-806
- * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 908-451-806
- * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\routes\\profile.py', reloading
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 908-451-806
- * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\routes\\profile.py', reloading
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 908-451-806
-127.0.0.1 - - [18/Jul/2026 17:38:10] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
-127.0.0.1 - - [18/Jul/2026 17:38:39] "GET /api/profile/Jimbo_Wales HTTP/1.1" 200 -
-127.0.0.1 - - [18/Jul/2026 18:00:18] "GET /api/profile/ranjithsaji HTTP/1.1" 404 -
-127.0.0.1 - - [18/Jul/2026 18:00:34] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
- * Detected change in 'C:\\Users\\ASUS\\Documents\\WTW26CUSAT-wikitask-pro\\backend\\services\\profile_service.py', reloading
- * Restarting with stat
- * Debugger is active!
- * Debugger PIN: 908-451-806
-127.0.0.1 - - [18/Jul/2026 18:07:06] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
-127.0.0.1 - - [18/Jul/2026 18:07:16] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
-127.0.0.1 - - [18/Jul/2026 18:09:48] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
-127.0.0.1 - - [18/Jul/2026 18:14:03] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
+ * Debugger PIN: 121-283-453
+127.0.0.1 - - [19/Jul/2026 13:57:47] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
+127.0.0.1 - - [19/Jul/2026 13:59:06] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
