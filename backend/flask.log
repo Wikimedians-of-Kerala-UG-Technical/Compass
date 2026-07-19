@@ -36,3 +36,7 @@ Press CTRL+C to quit
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 908-451-806
+127.0.0.1 - - [18/Jul/2026 18:07:06] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
+127.0.0.1 - - [18/Jul/2026 18:07:16] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
+127.0.0.1 - - [18/Jul/2026 18:09:48] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
+127.0.0.1 - - [18/Jul/2026 18:14:03] "GET /api/profile/ranjithsiji HTTP/1.1" 200 -
