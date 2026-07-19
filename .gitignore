@@ -17,3 +17,4 @@ dist-ssr
 *.log
 response.json
 scratch.py
+frontend/public/temperature.html

@@ -6,6 +6,7 @@ import TrendingBox from './components/TrendingBox.vue'
 import NewsBox from './components/NewsBox.vue'
 import TaskList from './components/TaskList.vue'
 import GuidePanel from './components/GuidePanel.vue'
+import DiscoverPanel from './components/DiscoverPanel.vue'
 import { getProfile, getTrends, getTasks } from './api.js'
 
 const screen = ref('onboard') // 'onboard' | 'loading' | 'dash'
@@ -159,6 +160,7 @@ function logout() {
 
       <div class="dash-main">
         <TaskList :tasks="tasks" />
+        <DiscoverPanel :username="username" />
         <GuidePanel />
       </div>
     </div>

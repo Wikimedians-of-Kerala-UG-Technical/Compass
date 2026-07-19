@@ -41,3 +41,14 @@ export function getExternalReferences(title) {
     API_BASE + '/api/article/' + encodeURIComponent(title) + '/external-references'
   ).then((r) => r.json())
 }
+
+export function getDiscover(username) {
+  return fetch(API_BASE + '/api/discover/' + encodeURIComponent(username)).then((r) => {
+    if (!r.ok) {
+      return r.json().then((e) => {
+        throw new Error(e.error || 'Discover API error ' + r.status)
+      })
+    }
+    return r.json()
+  })
+}
