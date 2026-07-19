@@ -69,7 +69,7 @@ function editHref(title) {
           </span>
           <span class="wtp-badge wtp-badge--notice">{{ t.type }}</span>
         </div>
-        <div v-if="t.topic" class="task-item__topic">🏷 {{ t.topic }}</div>
+        <div v-if="t.topic" class="task-item__topic">{{ t.topic }}</div>
         <div class="task-item__reason">{{ t.reason }}</div>
         <div class="task-item__actions">
           <a

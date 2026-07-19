@@ -30,9 +30,9 @@ function cap(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 }
 function sectionStatusText(s) {
-  if (s.status === 'missing') return '✗ Missing'
-  if (s.status === 'short') return '△ Thin section'
-  return '✓ Present'
+  if (s.status === 'missing') return 'Missing'
+  if (s.status === 'short') return 'Thin section'
+  return 'Present'
 }
 
 const sectionItems = computed(() => {
@@ -51,7 +51,7 @@ const sectionItems = computed(() => {
     return g.missingExpected.map((s) => ({
       name: s,
       cls: 'is-missing',
-      status: '✗ Missing',
+      status: 'Missing',
       tip: `expected for ${cap(g.articleType || 'general')} articles`,
     }))
   }

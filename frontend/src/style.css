@@ -219,15 +219,20 @@ a:hover { text-decoration: underline; }
   position: relative;
 }
 .loading-stage::before {
-  content: 'Γùï';
+  content: '';
   position: absolute;
-  left: 0;
-  color: #a2a9b1;
+  left: 4px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid #a2a9b1;
+  transform: translateY(-50%);
 }
 .loading-stage.is-done   { color: #14866d; }
-.loading-stage.is-done::before   { content: 'Γ£ô'; color: #14866d; }
+.loading-stage.is-done::before   { background: #14866d; border-color: #14866d; }
 .loading-stage.is-active { color: #3366cc; font-weight: bold; }
-.loading-stage.is-active::before { content: 'ΓùÅ'; color: #3366cc; animation: pulse 0.9s infinite; }
+.loading-stage.is-active::before { background: #3366cc; border-color: #3366cc; animation: pulse 0.9s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
 /* ΓöÇΓöÇ DASHBOARD TOOLBAR ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
@@ -515,11 +520,11 @@ a:hover { text-decoration: underline; }
   padding: 8px 12px;
   background: #f8f9fa;
   border: 1px solid #eaecf0;
+  border-left: 3px solid #3366cc;
   border-radius: 2px;
   font-size: 0.8125rem;
   color: #202122;
 }
-.guide-suggestion::before { content: 'ΓåÆ'; color: #3366cc; flex-shrink: 0; }
 
 /* ΓöÇΓöÇ EMPTY STATE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 .empty-state {
