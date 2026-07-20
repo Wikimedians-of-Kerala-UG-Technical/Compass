@@ -52,3 +52,18 @@ export function getDiscover(username) {
     return r.json()
   })
 }
+
+export function getRevisit(username, heavilyEdited, createdArticles) {
+  const params = new URLSearchParams({
+    watch: JSON.stringify(heavilyEdited || []),
+    mine: JSON.stringify(createdArticles || []),
+  })
+  return fetch(API_BASE + '/api/revisit/' + encodeURIComponent(username) + '?' + params.toString()).then((r) => {
+    if (!r.ok) {
+      return r.json().then((e) => {
+        throw new Error(e.error || 'Revisit API error ' + r.status)
+      })
+    }
+    return r.json()
+  })
+}
