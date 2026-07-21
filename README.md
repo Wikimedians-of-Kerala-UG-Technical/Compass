@@ -72,22 +72,13 @@ npm run dev
 
 ## Documentation
 
-Full developer documentation lives in [`wiki/`](wiki/) — written to be published as this repo's GitHub Wiki.
+Full developer documentation is available in our [GitHub Wiki](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki).
 
-- [Home](wiki/Home.md) — start here
-- [Architecture](wiki/Architecture.md) — how the pieces fit together
-- [External APIs](wiki/External-APIs.md) — every API we call, and the exact parameters
-- [API Reference](wiki/API-Reference.md) — request/response shapes for every endpoint
-- [Known Issues and Limitations](wiki/Known-Issues-and-Limitations.md) — what's approximate or fragile
+- [Home](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Home) — start here
+- [Architecture](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Architecture) — how the pieces fit together
+- [External APIs](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/External-APIs) — every API we call, and the exact parameters
+- [API Reference](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/API-Reference) — request/response shapes for every endpoint
+- [Known Issues and Limitations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Known-Issues-and-Limitations) — what's approximate or fragile
 
-Each feature has its own page: [Editor Profile](wiki/Feature-Editor-Profile.md), [Task Recommendations](wiki/Feature-Task-Recommendations.md), [Geographic Focus](wiki/Feature-Geographic-Focus.md), [Revisit](wiki/Feature-Revisit.md), [Discover](wiki/Feature-Discover.md), [Article Guide](wiki/Feature-Article-Guide.md), [Trends](wiki/Feature-Trends.md).
+Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends).
 
-### Publishing to the GitHub Wiki
-
-The filenames already follow GitHub's wiki naming convention (`Feature-Task-Recommendations.md` → *Feature Task Recommendations*), and `_Sidebar.md` becomes the nav sidebar automatically.
-
-```bash
-git clone https://github.com/<owner>/<repo>.wiki.git
-cp wiki/*.md <repo>.wiki/
-cd <repo>.wiki && git add . && git commit -m "Add developer documentation" && git push
-```
