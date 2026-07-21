@@ -67,3 +67,27 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## Documentation
+
+Full developer documentation lives in [`wiki/`](wiki/) — written to be published as this repo's GitHub Wiki.
+
+- [Home](wiki/Home.md) — start here
+- [Architecture](wiki/Architecture.md) — how the pieces fit together
+- [External APIs](wiki/External-APIs.md) — every API we call, and the exact parameters
+- [API Reference](wiki/API-Reference.md) — request/response shapes for every endpoint
+- [Known Issues and Limitations](wiki/Known-Issues-and-Limitations.md) — what's approximate or fragile
+
+Each feature has its own page: [Editor Profile](wiki/Feature-Editor-Profile.md), [Task Recommendations](wiki/Feature-Task-Recommendations.md), [Geographic Focus](wiki/Feature-Geographic-Focus.md), [Revisit](wiki/Feature-Revisit.md), [Discover](wiki/Feature-Discover.md), [Article Guide](wiki/Feature-Article-Guide.md), [Trends](wiki/Feature-Trends.md).
+
+### Publishing to the GitHub Wiki
+
+The filenames already follow GitHub's wiki naming convention (`Feature-Task-Recommendations.md` → *Feature Task Recommendations*), and `_Sidebar.md` becomes the nav sidebar automatically.
+
+```bash
+git clone https://github.com/<owner>/<repo>.wiki.git
+cp wiki/*.md <repo>.wiki/
+cd <repo>.wiki && git add . && git commit -m "Add developer documentation" && git push
+```
