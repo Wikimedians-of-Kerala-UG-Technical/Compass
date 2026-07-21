@@ -77,7 +77,7 @@ function runSearch() {
           weight="quiet"
           title="Refresh trends and tasks"
           aria-label="Refresh trends and tasks"
-          @click="store.loadTrendsAndTasks()"
+          @click="store.loadTrends(); store.loadTasks()"
         >
           <CdxIcon :icon="cdxIconReload" />
         </CdxButton>

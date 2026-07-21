@@ -1,4 +1,5 @@
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
@@ -12,11 +13,23 @@ TAG_RE = re.compile(r'<[^>]+>')
 LINK_RE = re.compile(r'<a[^>]+title="([^"]+)"[^>]*>')
 
 
-def wiki_get(params):
+def wiki_get(params, retries=3):
+    """Mirrors profile_service._wiki_get's 429 handling.
+
+    Without it a rate-limited search raised straight through into the callers'
+    `except Exception: return []`, silently turning throttling into "no results" —
+    the task feed would come back partially filled or empty with no error shown.
+    """
     params = dict(params, format='json')
-    r = session.get(WIKI, params=params)
-    r.raise_for_status()
-    return r.json()
+    for attempt in range(retries):
+        r = session.get(WIKI, params=params, timeout=15)
+        if r.status_code == 429:
+            wait = int(r.headers.get('Retry-After', 2)) * (attempt + 1)
+            time.sleep(wait)
+            continue
+        r.raise_for_status()
+        return r.json()
+    raise RuntimeError('MediaWiki API rate-limited us after retries')
 
 
 def _parse_list_items(html, source, limit):

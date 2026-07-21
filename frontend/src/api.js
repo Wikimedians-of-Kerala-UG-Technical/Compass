@@ -18,8 +18,16 @@ export function getTrends() {
   })
 }
 
-export function getTasks() {
-  return fetch(API_BASE + '/api/tasks').then((r) => {
+export function getTasks({ topics, editTypes, geo } = {}) {
+  // The backend falls back to a hardcoded generic topic list when `topics` is absent, and
+  // its topic-weight / affinity scoring terms go inert without `topics` + `editTypes` — so
+  // all three signals are forwarded, not just geo.
+  const q = new URLSearchParams()
+  if (topics && topics.length) q.set('topics', topics.join(','))
+  if (editTypes && editTypes.length) q.set('editTypes', editTypes.join(','))
+  if (geo) q.set('geo', geo)
+  const params = q.toString() ? '?' + q.toString() : ''
+  return fetch(API_BASE + '/api/tasks' + params).then((r) => {
     if (!r.ok) throw new Error('Failed to load tasks (' + r.status + ')')
     return r.json()
   })
@@ -47,6 +55,17 @@ export function getDiscover(username) {
     if (!r.ok) {
       return r.json().then((e) => {
         throw new Error(e.error || 'Discover API error ' + r.status)
+      })
+    }
+    return r.json()
+  })
+}
+
+export function getGeo(username) {
+  return fetch(API_BASE + '/api/geo/' + encodeURIComponent(username)).then((r) => {
+    if (!r.ok) {
+      return r.json().then((e) => {
+        throw new Error(e.error || 'Geo API error ' + r.status)
       })
     }
     return r.json()

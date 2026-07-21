@@ -18,3 +18,4 @@ dist-ssr
 response.json
 scratch.py
 frontend/public/temperature.html
+.claude

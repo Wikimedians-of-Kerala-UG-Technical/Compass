@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getProfile, getTrends, getTasks, getDiscover, getRevisit } from '../api.js'
+import { getProfile, getTrends, getTasks, getDiscover, getRevisit, getGeo } from '../api.js'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
@@ -29,10 +29,41 @@ export const useAppStore = defineStore('app', {
     revisitLoading: false,
     revisitError: '',
 
+    // geo focus — dynamic place hierarchy (city/district/state/country) resolved via
+    // Wikidata from the user's edited articles (prefetched in background, like discover)
+    geo: null,
+    geoLoading: false,
+    geoError: '',
+
     // universal top-bar search -> Guide view
     guideQuery: '',
     guideQuerySeq: 0, // bumped on every dispatch so GuideView can react even to a repeated query
+
+    tasksRequestSeq: 0, // guards against an older loadTasks() call resolving after a newer one
   }),
+
+  getters: {
+    // The most useful search term for region-specific tasks: the most-specific resolved
+    // place that isn't just the top-level country itself (e.g. "Kerala" over "India") --
+    // country-level alone is too broad to be an interesting regional signal. Falls back
+    // to the country if nothing more specific resolved.
+    geoFocusName(state) {
+      const places = state.geo?.topPlaces || []
+      const countryNames = new Set((state.geo?.topCountries || []).map((c) => c.name))
+      const specific = places.find((p) => !countryNames.has(p.name))
+      return specific?.name || state.geo?.topCountries?.[0]?.name || null
+    },
+
+    // The profile's edit-type histogram ({general: 788, references: 363, ...}) reduced to
+    // the labels the backend's AFFINITY map is keyed on, strongest first.
+    topEditTypes(state) {
+      const counts = state.profile?.editTypes || {}
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name]) => name)
+    },
+  },
 
   actions: {
     start(rawUsername) {
@@ -50,9 +81,16 @@ export const useAppStore = defineStore('app', {
           this.profile = p
           this.screen = 'dash'
           this.activeView = 'overview'
-          this.loadTrendsAndTasks()
+          this.loadTrends()
           this.fetchDiscover()
           this.fetchRevisit()
+          // Load tasks immediately using the profile's own topics + edit types — those
+          // alone already personalize the feed. Geo resolution is slow (many batched
+          // Wikidata round-trips), so waiting on it meant a failed/empty geo left the
+          // user permanently on the hardcoded generic feed. fetchGeo() re-runs this
+          // once a place resolves; tasksRequestSeq keeps the later result authoritative.
+          this.loadTasks()
+          this.fetchGeo()
         })
         .catch((err) => {
           this.screen = 'onboard'
@@ -60,15 +98,27 @@ export const useAppStore = defineStore('app', {
         })
     },
 
-    loadTrendsAndTasks() {
+    loadTrends() {
       this.trendsLoading = true
-      this.tasksLoading = true
       getTrends()
         .then((t) => { this.trends = t })
         .catch(() => { /* keep last-known trends, if any */ })
         .finally(() => { this.trendsLoading = false })
-      getTasks()
-        .then((ts) => { this.tasks = ts })
+    },
+
+    loadTasks() {
+      this.tasksLoading = true
+      // loadTasks() can be called again (manual refresh) before an earlier call's request
+      // has finished — whichever request completes last would otherwise silently win, even
+      // if it was the older one. Guard against that by only applying a response if no newer
+      // call has started since it went out.
+      const seq = ++this.tasksRequestSeq
+      getTasks({
+        topics: this.profile?.topTopics,
+        editTypes: this.topEditTypes,
+        geo: this.geoFocusName,
+      })
+        .then((ts) => { if (this.tasksRequestSeq === seq) this.tasks = ts })
         .catch(() => { /* keep last-known tasks, if any */ })
         .finally(() => { this.tasksLoading = false })
     },
@@ -89,6 +139,21 @@ export const useAppStore = defineStore('app', {
         .then((d) => { this.revisit = d.tasks || [] })
         .catch((err) => { this.revisitError = err.message || 'Failed to load your articles.' })
         .finally(() => { this.revisitLoading = false })
+    },
+
+    fetchGeo() {
+      this.geoLoading = true
+      this.geoError = ''
+      getGeo(this.username)
+        .then((d) => { this.geo = d })
+        .catch((err) => { this.geoError = err.message || 'Failed to load geographic focus.' })
+        .finally(() => {
+          this.geoLoading = false
+          // Only re-fetch when a place actually resolved — the profile-based feed from
+          // start() already stands, so a geo failure costs the regional bonus but never
+          // triggers a redundant second request.
+          if (this.geoFocusName) this.loadTasks()
+        })
     },
 
     goTo(view) {
@@ -113,6 +178,8 @@ export const useAppStore = defineStore('app', {
       this.discoverError = ''
       this.revisit = []
       this.revisitError = ''
+      this.geo = null
+      this.geoError = ''
       this.guideQuery = ''
     },
   },

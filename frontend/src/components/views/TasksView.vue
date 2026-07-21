@@ -18,6 +18,10 @@ const filteredTasks = computed(() =>
   activeFilter.value === 'all' ? store.tasks : store.tasks.filter((t) => t.type === activeFilter.value)
 )
 
+// Tasks now load straight from the profile's topics; geo resolves later and triggers a
+// second, region-weighted pass. Surface that refinement rather than blocking on it.
+const refiningWithGeo = computed(() => store.geoLoading && !store.tasksLoading)
+
 function wikiHref(title) {
   return 'https://en.wikipedia.org/wiki/' + encodeURIComponent((title || '').replace(/ /g, '_'))
 }
@@ -36,6 +40,10 @@ function editHref(title) {
     <p class="section-sub">Maintenance work ranked by relevance, impact, and feasibility for your profile.</p>
 
     <CdxToggleButtonGroup v-model="activeFilter" :buttons="filterButtons" style="margin-bottom: 16px" />
+
+    <div v-if="refiningWithGeo" class="geo-refining">
+      Ranked by your topics — still resolving where you edit, then these will be re-ranked for your region.
+    </div>
 
     <LoadingState
       v-if="store.tasksLoading"
@@ -69,3 +77,14 @@ function editHref(title) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.geo-refining {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-left: 3px solid #a2a9b1;
+  background: #f8f9fa;
+  color: #54595d;
+  font-size: 13px;
+}
+</style>

@@ -1,7 +1,13 @@
 <script setup>
 import { computed } from 'vue'
 import { CdxInfoChip, CdxIcon } from '@wikimedia/codex'
-import { cdxIconCheckAll, cdxIconWatchlist, cdxIconLightbulb, cdxIconArticleSearch } from '@wikimedia/codex-icons'
+import {
+  cdxIconCheckAll,
+  cdxIconWatchlist,
+  cdxIconLightbulb,
+  cdxIconArticleSearch,
+  cdxIconMapPin,
+} from '@wikimedia/codex-icons'
 import { useAppStore } from '../../stores/appStore.js'
 import TrendingCard from '../widgets/TrendingCard.vue'
 import NewsCard from '../widgets/NewsCard.vue'
@@ -11,6 +17,7 @@ const store = useAppStore()
 const profile = computed(() => store.profile)
 const topTopics = computed(() => profile.value?.topTopics || [])
 const userWikis = computed(() => store.discover?.userWikis || [])
+const geoPlaces = computed(() => store.geo?.topPlaces || [])
 
 const qualityLabel = computed(() => {
   const t = profile.value?.qualityTier
@@ -24,7 +31,11 @@ const dispatchCards = computed(() => [
   {
     key: 'tasks',
     icon: cdxIconCheckAll,
-    title: `${store.tasks.length || 0} tasks ready`,
+    title: store.tasksLoading
+      ? 'Finding tasks for you…'
+      : store.geoLoading
+        ? `${store.tasks.length || 0} tasks ready — refining for your region…`
+        : `${store.tasks.length || 0} tasks ready`,
     desc: 'Maintenance work matched to your topics — references, orphans, citations.',
   },
   {
@@ -80,6 +91,34 @@ const dispatchCards = computed(() => [
       <span v-if="!topTopics.length && !userWikis.length" style="font-size: 0.8125rem; color: var(--color-subtle)">
         Building your topic profile…
       </span>
+    </div>
+
+    <div class="panel" style="margin-bottom: 20px">
+      <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px">
+        <CdxIcon :icon="cdxIconMapPin" size="small" />
+        Geographic focus
+      </div>
+      <p style="font-size: 0.75rem; color: var(--color-subtle); margin-bottom: 10px">
+        Recalculated every visit — persistent caching is planned once accounts are supported, so this
+        won't need to re-run each time.
+      </p>
+
+      <div v-if="store.geoLoading && !store.geo" class="fade-in">
+        <div class="skeleton-line skeleton-line--wide"></div>
+        <div class="skeleton-line skeleton-line--narrow"></div>
+      </div>
+
+      <p v-else-if="store.geoError" style="font-size: 0.8125rem; color: var(--color-error)">{{ store.geoError }}</p>
+
+      <div v-else-if="geoPlaces.length" class="chip-row" style="margin-bottom: 0">
+        <CdxInfoChip v-for="p in geoPlaces" :key="p.name" status="subtle">
+          {{ p.name }} <strong>({{ p.count }})</strong>
+        </CdxInfoChip>
+      </div>
+
+      <p v-else style="font-size: 0.8125rem; color: var(--color-subtle)">
+        No resolvable geographic signal found in your edits yet.
+      </p>
     </div>
 
     <div class="two-col">
