@@ -1,37 +1,19 @@
 <script setup>
-const props = defineProps({
-  status: { type: String, default: 'Starting…' },
-  sub: { type: String, default: 'Connecting to Wikipedia…' },
-  progress: { type: Number, default: 0 },
-  stage: { type: Number, default: 1 },
-})
+import { CdxProgressBar } from '@wikimedia/codex'
+import { useAppStore } from '../stores/appStore.js'
 
-const stages = [
-  'Fetch edit history',
-  'Build contribution profile',
-  'Scan news & trends',
-  'Find task gaps',
-  'Score & rank tasks',
-]
-
-function stageClass(idx) {
-  const n = idx + 1
-  return { 'is-done': n < props.stage, 'is-active': n === props.stage }
-}
+const store = useAppStore()
 </script>
 
 <template>
-  <div class="loading-wrap">
-    <div class="loading-card">
-      <div class="loading-card__spinner" aria-hidden="true"></div>
-      <h2 class="loading-card__title">{{ status }}</h2>
-      <p class="loading-card__sub">{{ sub }}</p>
-      <div class="cdx-progress-bar" role="progressbar" aria-label="Loading progress">
-        <div class="cdx-progress-bar__bar" :style="{ width: progress + '%' }"></div>
-      </div>
-      <ul class="loading-stages">
-        <li v-for="(s, i) in stages" :key="i" class="loading-stage" :class="stageClass(i)">{{ s }}</li>
-      </ul>
+  <div class="loading-screen" role="main" aria-live="polite">
+    <div class="loading-screen__card">
+      <CdxProgressBar aria-label="Loading" />
+      <h2 class="loading-screen__title">Loading {{ store.username }}'s profile…</h2>
+      <p class="loading-screen__sub">
+        Fetching edit history — this can take a minute or two for accounts with a lot of edits. Trends,
+        tasks, and article suggestions will load in the background once you're in.
+      </p>
     </div>
   </div>
 </template>

@@ -12,6 +12,7 @@ TASK_META = {
     'add_citations': {'label': 'Add Citations', 'effort': 'low', 'min': 10},
     'watchlist':     {'label': 'Your Watchlist', 'effort': 'med', 'min': 15},
     'followup':      {'label': 'Your Article', 'effort': 'med', 'min': 20},
+    'expand_stub':   {'label': 'Expand Stub', 'effort': 'low', 'min': 5},
 }
 
 URGENCY = {
@@ -20,6 +21,7 @@ URGENCY = {
     'add_citations': .65,
     'watchlist': .66,
     'followup': .68,
+    'expand_stub': .45,
 }
 
 # task type -> profile edit-type keys that indicate the user has relevant experience
@@ -124,7 +126,10 @@ def score_and_rank(tasks, top_topics=None, top_edit_types=None, geo=None, pagevi
         trend_bonus = 0.05 if pv['trend'] > 30 else 0
         stale_days = stale_data.get(t['title'])
         stale_score = min(stale_days / 365, 1) if stale_days else 0
-        geo_bonus = 0.06 if geo and t.get('topic') == 'geography' else 0
+        # Bonus applies when the task was actually found *via* the user's resolved place
+        # (topic == geo, e.g. "Kerala") -- a real regional match, not just anything
+        # generically tagged 'geography'.
+        geo_bonus = 0.4 if geo and t.get('topic') == geo else 0
 
         composite = round(
             0.35 * tw + 0.25 * urgency + 0.15 * pv_score + 0.1 * effort_bonus + 0.1 * affinity

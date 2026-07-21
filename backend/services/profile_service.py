@@ -47,6 +47,33 @@ def fetch_global_editcount(username):
     return sum(wiki.get("editcount", 0) for wiki in merged)
 
 
+def fetch_user_wikis(username, min_edits=10):
+    """Wikipedia-project wikis (not Commons/Wikidata/Meta/etc.) where the user
+    has at least `min_edits` edits, via globaluserinfo's per-wiki breakdown.
+    This is used as the user's "known languages" signal.
+    """
+    data = _wiki_get(
+        {"action": "query", "meta": "globaluserinfo", "guiuser": username, "guiprop": "merged"},
+        api_url=META_API,
+    )
+    info = (data.get("query") or {}).get("globaluserinfo") or {}
+    merged = info.get("merged") or []
+    wikis = []
+    for wiki in merged:
+        url = wiki.get("url", "")
+        editcount = wiki.get("editcount", 0)
+        m = re.match(r"^https://([a-z0-9-]+)\.wikipedia\.org$", url)
+        if m and editcount >= min_edits:
+            wikis.append({
+                "dbname": wiki.get("wiki"),
+                "lang": m.group(1),
+                "url": url,
+                "editcount": editcount,
+            })
+    wikis.sort(key=lambda w: w["editcount"], reverse=True)
+    return wikis
+
+
 def fetch_contribs(username, limit=20000):
     """Paginated action=query&list=usercontribs, 500/batch (API hard cap), up to `limit` total."""
     all_contribs = []

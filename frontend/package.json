@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@wikimedia/codex": "^2.6.0",
+    "@wikimedia/codex-icons": "^2.6.0",
+    "pinia": "^4.0.2",
     "vue": "^3.5.39"
   },
   "devDependencies": {
