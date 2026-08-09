@@ -3,6 +3,7 @@ import re
 from services.http_client import session
 
 WIKI_API = "https://en.wikipedia.org/w/api.php"
+META_API = "https://meta.wikimedia.org/w/api.php"
 
 TOPIC_KW = {
     "medicine": ["medic", "disease", "health", "hospital", "drug", "pharma", "anatomy", "surg",
@@ -22,10 +23,10 @@ TOPIC_KW = {
 }
 
 
-def _wiki_get(params, retries=3):
+def _wiki_get(params, retries=3, api_url=WIKI_API):
     params = {**params, "format": "json"}
     for attempt in range(retries):
-        r = session.get(WIKI_API, params=params, timeout=15)
+        r = session.get(api_url, params=params, timeout=15)
         if r.status_code == 429:
             wait = int(r.headers.get("Retry-After", 2)) * (attempt + 1)
             time.sleep(wait)
@@ -33,6 +34,44 @@ def _wiki_get(params, retries=3):
         r.raise_for_status()
         return r.json()
     raise RuntimeError("MediaWiki API rate-limited us after retries")
+
+
+def fetch_global_editcount(username):
+    """action=query&meta=globaluserinfo&guiprop=merged — sums editcount across every merged wiki."""
+    data = _wiki_get(
+        {"action": "query", "meta": "globaluserinfo", "guiuser": username, "guiprop": "merged"},
+        api_url=META_API,
+    )
+    info = (data.get("query") or {}).get("globaluserinfo") or {}
+    merged = info.get("merged") or []
+    return sum(wiki.get("editcount", 0) for wiki in merged)
+
+
+def fetch_user_wikis(username, min_edits=10):
+    """Wikipedia-project wikis (not Commons/Wikidata/Meta/etc.) where the user
+    has at least `min_edits` edits, via globaluserinfo's per-wiki breakdown.
+    This is used as the user's "known languages" signal.
+    """
+    data = _wiki_get(
+        {"action": "query", "meta": "globaluserinfo", "guiuser": username, "guiprop": "merged"},
+        api_url=META_API,
+    )
+    info = (data.get("query") or {}).get("globaluserinfo") or {}
+    merged = info.get("merged") or []
+    wikis = []
+    for wiki in merged:
+        url = wiki.get("url", "")
+        editcount = wiki.get("editcount", 0)
+        m = re.match(r"^https://([a-z0-9-]+)\.wikipedia\.org$", url)
+        if m and editcount >= min_edits:
+            wikis.append({
+                "dbname": wiki.get("wiki"),
+                "lang": m.group(1),
+                "url": url,
+                "editcount": editcount,
+            })
+    wikis.sort(key=lambda w: w["editcount"], reverse=True)
+    return wikis
 
 
 def fetch_contribs(username, limit=20000):
@@ -182,7 +221,7 @@ def build_recent_edits(contribs, limit=15):
     return recent
 
 
-def build_profile(username, contribs, cat_map):
+def build_profile(username, contribs, cat_map, global_editcount):
     """Trimmed buildDeepProfile() — v1 scope only."""
     articles = [c for c in contribs if (c.get("ns") or 0) == 0]
     unique_articles = list({c["title"] for c in articles})
@@ -221,7 +260,7 @@ def build_profile(username, contribs, cat_map):
 
     return {
         "username": username,
-        "total": total,
+        "total": global_editcount,
         "uniqueArticles": len(unique_articles),
         "editTypes": edit_types,
         "topTopics": top_topics,
