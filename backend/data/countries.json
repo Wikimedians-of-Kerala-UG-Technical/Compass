@@ -1,0 +1,1277 @@
+{
+"Afghanistan": {
+"a2": "AF",
+"a3": "afg",
+"qid": "Q889"
+},
+"Albania": {
+"a2": "AL",
+"a3": "alb",
+"qid": "Q222"
+},
+"Algeria": {
+"a2": "DZ",
+"a3": "dza",
+"qid": "Q262"
+},
+"American Samoa": {
+"a2": "AS",
+"a3": "asm",
+"qid": "Q16641"
+},
+"Andorra": {
+"a2": "AD",
+"a3": "and",
+"qid": "Q228"
+},
+"Angola": {
+"a2": "AO",
+"a3": "ago",
+"qid": "Q916"
+},
+"Anguilla": {
+"a2": "AI",
+"a3": "aia",
+"qid": "Q25228"
+},
+"Antarctic Treaty area": {
+"a2": "AQ",
+"a3": "ata",
+"qid": "Q10372207"
+},
+"Antarctica": {
+"a2": "AQ",
+"a3": "ata",
+"qid": "Q51"
+},
+"Antigua and Barbuda": {
+"a2": "AG",
+"a3": "atg",
+"qid": "Q781"
+},
+"Argentina": {
+"a2": "AR",
+"a3": "arg",
+"qid": "Q414"
+},
+"Armenia": {
+"a2": "AM",
+"a3": "arm",
+"qid": "Q399"
+},
+"Aruba": {
+"a2": "AW",
+"a3": "abw",
+"qid": "Q21203"
+},
+"Ascension": {
+"a2": "AC",
+"a3": "asc",
+"qid": "Q31890709"
+},
+"Australia": {
+"a2": "AU",
+"a3": "aus",
+"qid": "Q408"
+},
+"Austria": {
+"a2": "AT",
+"a3": "aut",
+"qid": "Q40"
+},
+"Azerbaijan": {
+"a2": "AZ",
+"a3": "aze",
+"qid": "Q227"
+},
+"Bahrain": {
+"a2": "BH",
+"a3": "bhr",
+"qid": "Q398"
+},
+"Bangladesh": {
+"a2": "BD",
+"a3": "bgd",
+"qid": "Q902"
+},
+"Barbados": {
+"a2": "BB",
+"a3": "brb",
+"qid": "Q244"
+},
+"Belarus": {
+"a2": "BY",
+"a3": "blr",
+"qid": "Q184"
+},
+"Belgium": {
+"a2": "BE",
+"a3": "bel",
+"qid": "Q31"
+},
+"Belize": {
+"a2": "BZ",
+"a3": "blz",
+"qid": "Q242"
+},
+"Benin": {
+"a2": "BJ",
+"a3": "ben",
+"qid": "Q962"
+},
+"Bermuda": {
+"a2": "BM",
+"a3": "bmu",
+"qid": "Q23635"
+},
+"Bhutan": {
+"a2": "BT",
+"a3": "btn",
+"qid": "Q917"
+},
+"Bolivia": {
+"a2": "BO",
+"a3": "bol",
+"qid": "Q750"
+},
+"Bosnia and Herzegovina": {
+"a2": "BA",
+"a3": "bih",
+"qid": "Q225"
+},
+"Botswana": {
+"a2": "BW",
+"a3": "bwa",
+"qid": "Q963"
+},
+"Bouvet Island": {
+"a2": "BV",
+"a3": "bvt",
+"qid": "Q23408"
+},
+"Brazil": {
+"a2": "BR",
+"a3": "bra",
+"qid": "Q155"
+},
+"British Indian Ocean Territory": {
+"a2": "IO",
+"a3": "iot",
+"qid": "Q43448"
+},
+"British Virgin Islands": {
+"a2": "VG",
+"a3": "vgb",
+"qid": "Q25305"
+},
+"Brunei": {
+"a2": "BN",
+"a3": "brn",
+"qid": "Q921"
+},
+"Bulgaria": {
+"a2": "BG",
+"a3": "bgr",
+"qid": "Q219"
+},
+"Burkina Faso": {
+"a2": "BF",
+"a3": "bfa",
+"qid": "Q965"
+},
+"Burundi": {
+"a2": "BI",
+"a3": "bdi",
+"qid": "Q967"
+},
+"Cambodia": {
+"a2": "KH",
+"a3": "khm",
+"qid": "Q424"
+},
+"Cameroon": {
+"a2": "CM",
+"a3": "cmr",
+"qid": "Q1009"
+},
+"Canada": {
+"a2": "CA",
+"a3": "can",
+"qid": "Q16"
+},
+"Cape Verde": {
+"a2": "CV",
+"a3": "cpv",
+"qid": "Q1011"
+},
+"Caribbean Netherlands": {
+"a2": "BQ",
+"a3": "bes",
+"qid": "Q27561"
+},
+"Cayman Islands": {
+"a2": "KY",
+"a3": "cym",
+"qid": "Q5785"
+},
+"Central African Republic": {
+"a2": "CF",
+"a3": "caf",
+"qid": "Q929"
+},
+"Chad": {
+"a2": "TD",
+"a3": "tcd",
+"qid": "Q657"
+},
+"Chile": {
+"a2": "CL",
+"a3": "chl",
+"qid": "Q298"
+},
+"China": {
+"a2": "CN",
+"a3": "chn",
+"qid": "Q148"
+},
+"Christmas Island": {
+"a2": "CX",
+"a3": "cxr",
+"qid": "Q31063"
+},
+"Cocos (Keeling) Islands": {
+"a2": "CC",
+"a3": "cck",
+"qid": "Q36004"
+},
+"Colombia": {
+"a2": "CO",
+"a3": "col",
+"qid": "Q739"
+},
+"Comoros": {
+"a2": "KM",
+"a3": "com",
+"qid": "Q970"
+},
+"Cook Islands": {
+"a2": "CK",
+"a3": "cok",
+"qid": "Q26988"
+},
+"Costa Rica": {
+"a2": "CR",
+"a3": "cri",
+"qid": "Q800"
+},
+"Croatia": {
+"a2": "HR",
+"a3": "hrv",
+"qid": "Q224"
+},
+"Cuba": {
+"a2": "CU",
+"a3": "cub",
+"qid": "Q241"
+},
+"Curaçao": {
+"a2": "CW",
+"a3": "cuw",
+"qid": "Q25279"
+},
+"Cyprus": {
+"a2": "CY",
+"a3": "cyp",
+"qid": "Q229"
+},
+"Czech Republic": {
+"a2": "CZ",
+"a3": "cze",
+"qid": "Q213"
+},
+"Democratic Republic of the Congo": {
+"a2": "CD",
+"a3": "cod",
+"qid": "Q974"
+},
+"Denmark": {
+"a2": "DK",
+"a3": "dnk",
+"qid": "Q35"
+},
+"Djibouti": {
+"a2": "DJ",
+"a3": "dji",
+"qid": "Q977"
+},
+"Dominica": {
+"a2": "DM",
+"a3": "dma",
+"qid": "Q784"
+},
+"Dominican Republic": {
+"a2": "DO",
+"a3": "dom",
+"qid": "Q786"
+},
+"Ecuador": {
+"a2": "EC",
+"a3": "ecu",
+"qid": "Q736"
+},
+"Egypt": {
+"a2": "EG",
+"a3": "egy",
+"qid": "Q79"
+},
+"El Salvador": {
+"a2": "SV",
+"a3": "slv",
+"qid": "Q792"
+},
+"Equatorial Guinea": {
+"a2": "GQ",
+"a3": "gnq",
+"qid": "Q983"
+},
+"Eritrea": {
+"a2": "ER",
+"a3": "eri",
+"qid": "Q986"
+},
+"Estonia": {
+"a2": "EE",
+"a3": "est",
+"qid": "Q191"
+},
+"Eswatini": {
+"a2": "SZ",
+"a3": "swz",
+"qid": "Q1050"
+},
+"Ethiopia": {
+"a2": "ET",
+"a3": "eth",
+"qid": "Q115"
+},
+"Falkland Islands": {
+"a2": "FK",
+"a3": "flk",
+"qid": "Q9648"
+},
+"Faroe Islands": {
+"a2": "FO",
+"a3": "fro",
+"qid": "Q4628"
+},
+"Federated States of Micronesia": {
+"a2": "FM",
+"a3": "fsm",
+"qid": "Q702"
+},
+"Fiji": {
+"a2": "FJ",
+"a3": "fji",
+"qid": "Q712"
+},
+"Finland": {
+"a2": "FI",
+"a3": "fin",
+"qid": "Q33"
+},
+"France": {
+"a2": "FR",
+"a3": "fra",
+"qid": "Q142"
+},
+"French Guiana": {
+"a2": "GF",
+"a3": "guf",
+"qid": "Q3769"
+},
+"French Polynesia": {
+"a2": "PF",
+"a3": "pyf",
+"qid": "Q30971"
+},
+"French Southern and Antarctic Lands": {
+"a2": "TF",
+"a3": "atf",
+"qid": "Q129003"
+},
+"Gabon": {
+"a2": "GA",
+"a3": "gab",
+"qid": "Q1000"
+},
+"Georgia": {
+"a2": "GE",
+"a3": "geo",
+"qid": "Q230"
+},
+"Germany": {
+"a2": "DE",
+"a3": "deu",
+"qid": "Q183"
+},
+"Ghana": {
+"a2": "GH",
+"a3": "gha",
+"qid": "Q117"
+},
+"Gibraltar": {
+"a2": "GI",
+"a3": "gib",
+"qid": "Q1410"
+},
+"Greece": {
+"a2": "GR",
+"a3": "grc",
+"qid": "Q41"
+},
+"Greenland": {
+"a2": "GL",
+"a3": "grl",
+"qid": "Q223"
+},
+"Grenada": {
+"a2": "GD",
+"a3": "grd",
+"qid": "Q769"
+},
+"Guadeloupe": {
+"a2": "GP",
+"a3": "glp",
+"qid": "Q17012"
+},
+"Guam": {
+"a2": "GU",
+"a3": "gum",
+"qid": "Q16635"
+},
+"Guatemala": {
+"a2": "GT",
+"a3": "gtm",
+"qid": "Q774"
+},
+"Guernsey": {
+"a2": "GG",
+"a3": "ggy",
+"qid": "Q25230"
+},
+"Guinea": {
+"a2": "GN",
+"a3": "gin",
+"qid": "Q1006"
+},
+"Guinea-Bissau": {
+"a2": "GW",
+"a3": "gnb",
+"qid": "Q1007"
+},
+"Guyana": {
+"a2": "GY",
+"a3": "guy",
+"qid": "Q734"
+},
+"Haiti": {
+"a2": "HT",
+"a3": "hti",
+"qid": "Q790"
+},
+"Heard Island and McDonald Islands": {
+"a2": "HM",
+"a3": "hmd",
+"qid": "Q131198"
+},
+"Honduras": {
+"a2": "HN",
+"a3": "hnd",
+"qid": "Q783"
+},
+"Hong Kong": {
+"a2": "HK",
+"a3": "hkg",
+"qid": "Q8646"
+},
+"Hungary": {
+"a2": "HU",
+"a3": "hun",
+"qid": "Q28"
+},
+"Iceland": {
+"a2": "IS",
+"a3": "isl",
+"qid": "Q189"
+},
+"India": {
+"a2": "IN",
+"a3": "ind",
+"qid": "Q668"
+},
+"Indonesia": {
+"a2": "ID",
+"a3": "idn",
+"qid": "Q252"
+},
+"Iran": {
+"a2": "IR",
+"a3": "irn",
+"qid": "Q794"
+},
+"Iraq": {
+"a2": "IQ",
+"a3": "irq",
+"qid": "Q796"
+},
+"Ireland": {
+"a2": "IE",
+"a3": "irl",
+"qid": "Q27"
+},
+"Isle of Man": {
+"a2": "IM",
+"a3": "imn",
+"qid": "Q9676"
+},
+"Israel": {
+"a2": "IL",
+"a3": "isr",
+"qid": "Q801"
+},
+"Italy": {
+"a2": "IT",
+"a3": "ita",
+"qid": "Q38"
+},
+"Ivory Coast": {
+"a2": "CI",
+"a3": "civ",
+"qid": "Q1008"
+},
+"Jamaica": {
+"a2": "JM",
+"a3": "jam",
+"qid": "Q766"
+},
+"Japan": {
+"a2": "JP",
+"a3": "jpn",
+"qid": "Q17"
+},
+"Jersey": {
+"a2": "JE",
+"a3": "jey",
+"qid": "Q785"
+},
+"Jordan": {
+"a2": "JO",
+"a3": "jor",
+"qid": "Q810"
+},
+"Kazakhstan": {
+"a2": "KZ",
+"a3": "kaz",
+"qid": "Q232"
+},
+"Kenya": {
+"a2": "KE",
+"a3": "ken",
+"qid": "Q114"
+},
+"Kingdom of the Netherlands": {
+"a2": "NL",
+"a3": "nld",
+"qid": "Q29999"
+},
+"Kiribati": {
+"a2": "KI",
+"a3": "kir",
+"qid": "Q710"
+},
+"Kosovo": {
+"a2": "XK",
+"a3": "xks",
+"qid": "Q1246"
+},
+"Kuwait": {
+"a2": "KW",
+"a3": "kwt",
+"qid": "Q817"
+},
+"Kyrgyzstan": {
+"a2": "KG",
+"a3": "kgz",
+"qid": "Q813"
+},
+"Laos": {
+"a2": "LA",
+"a3": "lao",
+"qid": "Q819"
+},
+"Latvia": {
+"a2": "LV",
+"a3": "lva",
+"qid": "Q211"
+},
+"Lebanon": {
+"a2": "LB",
+"a3": "lbn",
+"qid": "Q822"
+},
+"Lesotho": {
+"a2": "LS",
+"a3": "lso",
+"qid": "Q1013"
+},
+"Liberia": {
+"a2": "LR",
+"a3": "lbr",
+"qid": "Q1014"
+},
+"Libya": {
+"a2": "LY",
+"a3": "lby",
+"qid": "Q1016"
+},
+"Liechtenstein": {
+"a2": "LI",
+"a3": "lie",
+"qid": "Q347"
+},
+"Lithuania": {
+"a2": "LT",
+"a3": "ltu",
+"qid": "Q37"
+},
+"Luxembourg": {
+"a2": "LU",
+"a3": "lux",
+"qid": "Q32"
+},
+"Macau": {
+"a2": "MO",
+"a3": "mac",
+"qid": "Q14773"
+},
+"Madagascar": {
+"a2": "MG",
+"a3": "mdg",
+"qid": "Q1019"
+},
+"Malawi": {
+"a2": "MW",
+"a3": "mwi",
+"qid": "Q1020"
+},
+"Malaysia": {
+"a2": "MY",
+"a3": "mys",
+"qid": "Q833"
+},
+"Maldives": {
+"a2": "MV",
+"a3": "mdv",
+"qid": "Q826"
+},
+"Mali": {
+"a2": "ML",
+"a3": "mli",
+"qid": "Q912"
+},
+"Malta": {
+"a2": "MT",
+"a3": "mlt",
+"qid": "Q233"
+},
+"Marshall Islands": {
+"a2": "MH",
+"a3": "mhl",
+"qid": "Q709"
+},
+"Martinique": {
+"a2": "MQ",
+"a3": "mtq",
+"qid": "Q17054"
+},
+"Mauritania": {
+"a2": "MR",
+"a3": "mrt",
+"qid": "Q1025"
+},
+"Mauritius": {
+"a2": "MU",
+"a3": "mus",
+"qid": "Q1027"
+},
+"Mayotte": {
+"a2": "YT",
+"a3": "myt",
+"qid": "Q17063"
+},
+"Mexico": {
+"a2": "MX",
+"a3": "mex",
+"qid": "Q96"
+},
+"Moldova": {
+"a2": "MD",
+"a3": "mda",
+"qid": "Q217"
+},
+"Monaco": {
+"a2": "MC",
+"a3": "mco",
+"qid": "Q235"
+},
+"Mongolia": {
+"a2": "MN",
+"a3": "mng",
+"qid": "Q711"
+},
+"Montenegro": {
+"a2": "ME",
+"a3": "mne",
+"qid": "Q236"
+},
+"Montserrat": {
+"a2": "MS",
+"a3": "msr",
+"qid": "Q13353"
+},
+"Morocco": {
+"a2": "MA",
+"a3": "mar",
+"qid": "Q1028"
+},
+"Mozambique": {
+"a2": "MZ",
+"a3": "moz",
+"qid": "Q1029"
+},
+"Myanmar": {
+"a2": "MM",
+"a3": "mmr",
+"qid": "Q836"
+},
+"Namibia": {
+"a2": "NA",
+"a3": "nam",
+"qid": "Q1030"
+},
+"Nauru": {
+"a2": "NR",
+"a3": "nru",
+"qid": "Q697"
+},
+"Nepal": {
+"a2": "NP",
+"a3": "npl",
+"qid": "Q837"
+},
+"Netherlands": {
+"a2": "NL",
+"a3": "nld",
+"qid": "Q55"
+},
+"New Caledonia": {
+"a2": "NC",
+"a3": "ncl",
+"qid": "Q33788"
+},
+"New Zealand": {
+"a2": "NZ",
+"a3": "nzl",
+"qid": "Q664"
+},
+"Nicaragua": {
+"a2": "NI",
+"a3": "nic",
+"qid": "Q811"
+},
+"Niger": {
+"a2": "NE",
+"a3": "ner",
+"qid": "Q1032"
+},
+"Nigeria": {
+"a2": "NG",
+"a3": "nga",
+"qid": "Q1033"
+},
+"Niue": {
+"a2": "NU",
+"a3": "niu",
+"qid": "Q34020"
+},
+"Norfolk Island": {
+"a2": "NF",
+"a3": "nfk",
+"qid": "Q31057"
+},
+"North Korea": {
+"a2": "KP",
+"a3": "prk",
+"qid": "Q423"
+},
+"North Macedonia": {
+"a2": "MK",
+"a3": "mkd",
+"qid": "Q221"
+},
+"Northern Mariana Islands": {
+"a2": "MP",
+"a3": "mnp",
+"qid": "Q16644"
+},
+"Norway": {
+"a2": "NO",
+"a3": "nor",
+"qid": "Q20"
+},
+"Oman": {
+"a2": "OM",
+"a3": "omn",
+"qid": "Q842"
+},
+"Pakistan": {
+"a2": "PK",
+"a3": "pak",
+"qid": "Q843"
+},
+"Palau": {
+"a2": "PW",
+"a3": "plw",
+"qid": "Q695"
+},
+"Palestine": {
+"a2": "PS",
+"a3": "pse",
+"qid": "Q219060"
+},
+"Panama": {
+"a2": "PA",
+"a3": "pan",
+"qid": "Q804"
+},
+"Papua New Guinea": {
+"a2": "PG",
+"a3": "png",
+"qid": "Q691"
+},
+"Paraguay": {
+"a2": "PY",
+"a3": "pry",
+"qid": "Q733"
+},
+"People's Republic of China": {
+"a2": "CN",
+"a3": "chn",
+"qid": "Q148"
+},
+"Peru": {
+"a2": "PE",
+"a3": "per",
+"qid": "Q419"
+},
+"Philippines": {
+"a2": "PH",
+"a3": "phl",
+"qid": "Q928"
+},
+"Pitcairn Islands": {
+"a2": "PN",
+"a3": "pcn",
+"qid": "Q35672"
+},
+"Poland": {
+"a2": "PL",
+"a3": "pol",
+"qid": "Q36"
+},
+"Portugal": {
+"a2": "PT",
+"a3": "prt",
+"qid": "Q45"
+},
+"Puerto Rico": {
+"a2": "PR",
+"a3": "pri",
+"qid": "Q1183"
+},
+"Qatar": {
+"a2": "QA",
+"a3": "qat",
+"qid": "Q846"
+},
+"Republic of the Congo": {
+"a2": "CG",
+"a3": "cog",
+"qid": "Q971"
+},
+"Romania": {
+"a2": "RO",
+"a3": "rou",
+"qid": "Q218"
+},
+"Russia": {
+"a2": "RU",
+"a3": "rus",
+"qid": "Q159"
+},
+"Rwanda": {
+"a2": "RW",
+"a3": "rwa",
+"qid": "Q1037"
+},
+"Réunion": {
+"a2": "RE",
+"a3": "reu",
+"qid": "Q17070"
+},
+"Saint Barthélemy": {
+"a2": "BL",
+"a3": "blm",
+"qid": "Q25362"
+},
+"Saint Helena, Ascension and Tristan da Cunha": {
+"a2": "SH",
+"a3": "shn",
+"qid": "Q192184"
+},
+"Saint Kitts and Nevis": {
+"a2": "KN",
+"a3": "kna",
+"qid": "Q763"
+},
+"Saint Lucia": {
+"a2": "LC",
+"a3": "lca",
+"qid": "Q760"
+},
+"Saint Pierre and Miquelon": {
+"a2": "PM",
+"a3": "spm",
+"qid": "Q34617"
+},
+"Saint Vincent and the Grenadines": {
+"a2": "VC",
+"a3": "vct",
+"qid": "Q757"
+},
+"Saint-Martin": {
+"a2": "MF",
+"a3": "maf",
+"qid": "Q126125"
+},
+"Samoa": {
+"a2": "WS",
+"a3": "wsm",
+"qid": "Q683"
+},
+"San Marino": {
+"a2": "SM",
+"a3": "smr",
+"qid": "Q238"
+},
+"Sark": {
+"a2": "CQ",
+"a3": "crq",
+"qid": "Q3405693"
+},
+"Saudi Arabia": {
+"a2": "SA",
+"a3": "sau",
+"qid": "Q851"
+},
+"Senegal": {
+"a2": "SN",
+"a3": "sen",
+"qid": "Q1041"
+},
+"Serbia": {
+"a2": "RS",
+"a3": "srb",
+"qid": "Q403"
+},
+"Seychelles": {
+"a2": "SC",
+"a3": "syc",
+"qid": "Q1042"
+},
+"Sierra Leone": {
+"a2": "SL",
+"a3": "sle",
+"qid": "Q1044"
+},
+"Singapore": {
+"a2": "SG",
+"a3": "sgp",
+"qid": "Q334"
+},
+"Sint Maarten": {
+"a2": "SX",
+"a3": "sxm",
+"qid": "Q26273"
+},
+"Slovakia": {
+"a2": "SK",
+"a3": "svk",
+"qid": "Q214"
+},
+"Slovenia": {
+"a2": "SI",
+"a3": "svn",
+"qid": "Q215"
+},
+"Solomon Islands": {
+"a2": "SB",
+"a3": "slb",
+"qid": "Q685"
+},
+"Somalia": {
+"a2": "SO",
+"a3": "som",
+"qid": "Q1045"
+},
+"South Africa": {
+"a2": "ZA",
+"a3": "zaf",
+"qid": "Q258"
+},
+"South Georgia and the South Sandwich Islands": {
+"a2": "GS",
+"a3": "sgs",
+"qid": "Q35086"
+},
+"South Korea": {
+"a2": "KR",
+"a3": "kor",
+"qid": "Q884"
+},
+"South Sudan": {
+"a2": "SS",
+"a3": "ssd",
+"qid": "Q958"
+},
+"Spain": {
+"a2": "ES",
+"a3": "esp",
+"qid": "Q29"
+},
+"Sri Lanka": {
+"a2": "LK",
+"a3": "lka",
+"qid": "Q854"
+},
+"Sudan": {
+"a2": "SD",
+"a3": "sdn",
+"qid": "Q1049"
+},
+"Suriname": {
+"a2": "SR",
+"a3": "sur",
+"qid": "Q730"
+},
+"Svalbard and Jan Mayen": {
+"a2": "SJ",
+"a3": "sjm",
+"qid": "Q842829"
+},
+"Sweden": {
+"a2": "SE",
+"a3": "swe",
+"qid": "Q34"
+},
+"Switzerland": {
+"a2": "CH",
+"a3": "che",
+"qid": "Q39"
+},
+"Syria": {
+"a2": "SY",
+"a3": "syr",
+"qid": "Q858"
+},
+"São Tomé and Príncipe": {
+"a2": "ST",
+"a3": "stp",
+"qid": "Q1039"
+},
+"Taiwan": {
+"a2": "TW",
+"a3": "twn",
+"qid": "Q865"
+},
+"Tajikistan": {
+"a2": "TJ",
+"a3": "tjk",
+"qid": "Q863"
+},
+"Tanzania": {
+"a2": "TZ",
+"a3": "tza",
+"qid": "Q924"
+},
+"Thailand": {
+"a2": "TH",
+"a3": "tha",
+"qid": "Q869"
+},
+"The Bahamas": {
+"a2": "BS",
+"a3": "bhs",
+"qid": "Q778"
+},
+"The Gambia": {
+"a2": "GM",
+"a3": "gmb",
+"qid": "Q1005"
+},
+"Timor-Leste": {
+"a2": "TL",
+"a3": "tls",
+"qid": "Q574"
+},
+"Togo": {
+"a2": "TG",
+"a3": "tgo",
+"qid": "Q945"
+},
+"Tokelau": {
+"a2": "TK",
+"a3": "tkl",
+"qid": "Q36823"
+},
+"Tonga": {
+"a2": "TO",
+"a3": "ton",
+"qid": "Q678"
+},
+"Trinidad and Tobago": {
+"a2": "TT",
+"a3": "tto",
+"qid": "Q754"
+},
+"Tunisia": {
+"a2": "TN",
+"a3": "tun",
+"qid": "Q948"
+},
+"Turkey": {
+"a2": "TR",
+"a3": "tur",
+"qid": "Q43"
+},
+"Turkmenistan": {
+"a2": "TM",
+"a3": "tkm",
+"qid": "Q874"
+},
+"Turks and Caicos Islands": {
+"a2": "TC",
+"a3": "tca",
+"qid": "Q18221"
+},
+"Tuvalu": {
+"a2": "TV",
+"a3": "tuv",
+"qid": "Q672"
+},
+"Uganda": {
+"a2": "UG",
+"a3": "uga",
+"qid": "Q1036"
+},
+"Ukraine": {
+"a2": "UA",
+"a3": "ukr",
+"qid": "Q212"
+},
+"United Arab Emirates": {
+"a2": "AE",
+"a3": "are",
+"qid": "Q878"
+},
+"United Kingdom": {
+"a2": "GB",
+"a3": "gbr",
+"qid": "Q145"
+},
+"United States": {
+"a2": "US",
+"a3": "usa",
+"qid": "Q30"
+},
+"United States Minor Outlying Islands": {
+"a2": "UM",
+"a3": "umi",
+"qid": "Q16645"
+},
+"United States Virgin Islands": {
+"a2": "VI",
+"a3": "vir",
+"qid": "Q11703"
+},
+"Uruguay": {
+"a2": "UY",
+"a3": "ury",
+"qid": "Q77"
+},
+"Uzbekistan": {
+"a2": "UZ",
+"a3": "uzb",
+"qid": "Q265"
+},
+"Vanuatu": {
+"a2": "VU",
+"a3": "vut",
+"qid": "Q686"
+},
+"Vatican City": {
+"a2": "VA",
+"a3": "vat",
+"qid": "Q237"
+},
+"Venezuela": {
+"a2": "VE",
+"a3": "ven",
+"qid": "Q717"
+},
+"Vietnam": {
+"a2": "VN",
+"a3": "vnm",
+"qid": "Q881"
+},
+"Wallis and Futuna": {
+"a2": "WF",
+"a3": "wlf",
+"qid": "Q35555"
+},
+"Western Sahara": {
+"a2": "EH",
+"a3": "esh",
+"qid": "Q6250"
+},
+"Yemen": {
+"a2": "YE",
+"a3": "yem",
+"qid": "Q805"
+},
+"Zambia": {
+"a2": "ZM",
+"a3": "zmb",
+"qid": "Q953"
+},
+"Zimbabwe": {
+"a2": "ZW",
+"a3": "zwe",
+"qid": "Q954"
+},
+"Åland": {
+"a2": "AX",
+"a3": "ala",
+"qid": "Q5689"
+}
+}
