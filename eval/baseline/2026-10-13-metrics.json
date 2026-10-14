@@ -1,0 +1,619 @@
+{
+ "run": "2026-10-13",
+ "cohort": {
+  "users": 15,
+  "errors": [],
+  "titlesIn3Plus": [
+   [
+    "Dictionary of National Biography",
+    9
+   ],
+   [
+    "Orlando: A Biography",
+    9
+   ],
+   [
+    "Kerala",
+    3
+   ],
+   [
+    "Kerala Gulf diaspora",
+    3
+   ],
+   [
+    "Education in Kerala",
+    3
+   ],
+   [
+    "Kerala Sahitya Akademi",
+    3
+   ],
+   [
+    "Local government in Kerala",
+    3
+   ],
+   [
+    "The Times of India",
+    3
+   ]
+  ],
+  "usersAllTop10Literal": 9,
+  "revisitItems": 132,
+  "revisitWeakShare": 0.36,
+  "discoverEmpty": [
+   "Cwmhiraeth",
+   "Hog Farm",
+   "Newcomer A",
+   "Newcomer B"
+  ],
+  "nonOkStatuses": [],
+  "latency": {
+   "profile": {
+    "median": 16.3,
+    "max": 136.6
+   },
+   "tasks1": {
+    "median": 6.2,
+    "max": 33.9
+   },
+   "revisit": {
+    "median": 1.2,
+    "max": 5.6
+   },
+   "geo": {
+    "median": 76.1,
+    "max": 150.2
+   },
+   "tasks2": {
+    "median": 13.7,
+    "max": 52.0
+   },
+   "discover": {
+    "median": 95.2,
+    "max": 195.4
+   }
+  }
+ },
+ "users": [
+  {
+   "user": "Ainali",
+   "globalEdits": 263800,
+   "enwikiUniqueArticles": 440,
+   "topTopics": [
+    "biography",
+    "history",
+    "culture"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 7,
+   "geoFocus": "Stockholm County",
+   "tasks": 47,
+   "literalTop10": 3,
+   "pv0Top10": 8,
+   "revisitItems": 5,
+   "discoverSuggestions": 309,
+   "discoverLanguages": 46,
+   "secs": {
+    "profile": 8.0,
+    "tasks1": 6.5,
+    "revisit": 1.1,
+    "geo": 121.7,
+    "tasks2": 9.7,
+    "discover": 195.4
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Athulvis",
+   "globalEdits": 238531,
+   "enwikiUniqueArticles": 22,
+   "topTopics": [
+    "culture",
+    "india",
+    "education"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 0,
+   "geoFocus": "Kerala",
+   "tasks": 51,
+   "literalTop10": 10,
+   "pv0Top10": 8,
+   "revisitItems": 1,
+   "discoverSuggestions": 345,
+   "discoverLanguages": 3,
+   "secs": {
+    "profile": 2.0,
+    "tasks1": 6.0,
+    "revisit": 0.4,
+    "geo": 9.0,
+    "tasks2": 7.7,
+    "discover": 39.9
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 10
+  },
+  {
+   "user": "Bobbyshabangu",
+   "globalEdits": 11161,
+   "enwikiUniqueArticles": 749,
+   "topTopics": [
+    "biography",
+    "politics",
+    "history"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 20,
+   "geoFocus": "Gauteng",
+   "tasks": 46,
+   "literalTop10": 5,
+   "pv0Top10": 7,
+   "revisitItems": 20,
+   "discoverSuggestions": 292,
+   "discoverLanguages": 12,
+   "secs": {
+    "profile": 18.6,
+    "tasks1": 33.9,
+    "revisit": 1.5,
+    "geo": 83.8,
+    "tasks2": 17.2,
+    "discover": 94.4
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Cwmhiraeth",
+   "globalEdits": 139938,
+   "enwikiUniqueArticles": 3477,
+   "topTopics": [
+    "biography",
+    "culture",
+    "history"
+   ],
+   "qualityTier": "developing",
+   "createdDetected": 20,
+   "geoFocus": "Russian Empire",
+   "tasks": 47,
+   "literalTop10": 7,
+   "pv0Top10": 8,
+   "revisitItems": 15,
+   "discoverSuggestions": 0,
+   "discoverLanguages": 1,
+   "secs": {
+    "profile": 106.0,
+    "tasks1": 8.5,
+    "revisit": 5.6,
+    "geo": 76.1,
+    "tasks2": 11.8,
+    "discover": 95.2
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 10
+  },
+  {
+   "user": "Doc James",
+   "globalEdits": 2073445,
+   "enwikiUniqueArticles": 2633,
+   "topTopics": [
+    "medicine",
+    "science",
+    "technology"
+   ],
+   "qualityTier": "developing",
+   "createdDetected": 13,
+   "geoFocus": "Kentucky",
+   "tasks": 49,
+   "literalTop10": 10,
+   "pv0Top10": 7,
+   "revisitItems": 21,
+   "discoverSuggestions": 237,
+   "discoverLanguages": 77,
+   "secs": {
+    "profile": 136.6,
+    "tasks1": 25.7,
+    "revisit": 1.5,
+    "geo": 44.3,
+    "tasks2": 10.5,
+    "discover": 100.4
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Hog Farm",
+   "globalEdits": 61888,
+   "enwikiUniqueArticles": 1454,
+   "topTopics": [
+    "biography",
+    "history",
+    "education"
+   ],
+   "qualityTier": "medium",
+   "createdDetected": 20,
+   "geoFocus": "Arkansas",
+   "tasks": 48,
+   "literalTop10": 10,
+   "pv0Top10": 7,
+   "revisitItems": 5,
+   "discoverSuggestions": 0,
+   "discoverLanguages": 1,
+   "secs": {
+    "profile": 115.1,
+    "tasks1": 5.9,
+    "revisit": 1.7,
+    "geo": 40.0,
+    "tasks2": 12.1,
+    "discover": 58.7
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Netha Hussain",
+   "globalEdits": 251719,
+   "enwikiUniqueArticles": 3804,
+   "topTopics": [
+    "biography",
+    "india",
+    "medicine"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 20,
+   "geoFocus": "Kerala",
+   "tasks": 51,
+   "literalTop10": 10,
+   "pv0Top10": 8,
+   "revisitItems": 20,
+   "discoverSuggestions": 339,
+   "discoverLanguages": 4,
+   "secs": {
+    "profile": 60.3,
+    "tasks1": 5.7,
+    "revisit": 1.3,
+    "geo": 86.9,
+    "tasks2": 15.1,
+    "discover": 97.3
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 10
+  },
+  {
+   "user": "Newcomer A",
+   "globalEdits": 255,
+   "enwikiUniqueArticles": 75,
+   "topTopics": [
+    "geography",
+    "history",
+    "biography"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 0,
+   "geoFocus": "England",
+   "tasks": 50,
+   "literalTop10": 10,
+   "pv0Top10": 8,
+   "revisitItems": 4,
+   "discoverSuggestions": 0,
+   "discoverLanguages": 1,
+   "secs": {
+    "profile": 2.8,
+    "tasks1": 7.0,
+    "revisit": 0.7,
+    "geo": 56.0,
+    "tasks2": 52.0,
+    "discover": 74.4
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Newcomer B",
+   "globalEdits": 136,
+   "enwikiUniqueArticles": 135,
+   "topTopics": [
+    "biography",
+    "culture",
+    "history"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 0,
+   "geoFocus": "California",
+   "tasks": 51,
+   "literalTop10": 10,
+   "pv0Top10": 8,
+   "revisitItems": 0,
+   "discoverSuggestions": 0,
+   "discoverLanguages": 1,
+   "secs": {
+    "profile": 3.7,
+    "tasks1": 6.2,
+    "revisit": 0.0,
+    "geo": 70.5,
+    "tasks2": 37.3,
+    "discover": 60.9
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Olaniyan Olushola",
+   "globalEdits": 12968,
+   "enwikiUniqueArticles": 481,
+   "topTopics": [
+    "biography",
+    "history",
+    "politics"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 20,
+   "geoFocus": "Lagos State",
+   "tasks": 47,
+   "literalTop10": 6,
+   "pv0Top10": 8,
+   "revisitItems": 10,
+   "discoverSuggestions": 240,
+   "discoverLanguages": 5,
+   "secs": {
+    "profile": 16.3,
+    "tasks1": 6.0,
+    "revisit": 1.2,
+    "geo": 83.9,
+    "tasks2": 31.5,
+    "discover": 113.0
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Ranjithsiji",
+   "globalEdits": 429502,
+   "enwikiUniqueArticles": 1006,
+   "topTopics": [
+    "india",
+    "culture",
+    "geography"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 20,
+   "geoFocus": "Kerala",
+   "tasks": 50,
+   "literalTop10": 10,
+   "pv0Top10": 5,
+   "revisitItems": 13,
+   "discoverSuggestions": 250,
+   "discoverLanguages": 7,
+   "secs": {
+    "profile": 13.7,
+    "tasks1": 6.1,
+    "revisit": 1.0,
+    "geo": 40.1,
+    "tasks2": 7.4,
+    "discover": 50.3
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 10
+  },
+  {
+   "user": "Ravidreams",
+   "globalEdits": 38841,
+   "enwikiUniqueArticles": 180,
+   "topTopics": [
+    "india",
+    "culture",
+    "biography"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 0,
+   "geoFocus": "Tamil Nadu",
+   "tasks": 51,
+   "literalTop10": 10,
+   "pv0Top10": 5,
+   "revisitItems": 3,
+   "discoverSuggestions": 247,
+   "discoverLanguages": 8,
+   "secs": {
+    "profile": 4.4,
+    "tasks1": 6.1,
+    "revisit": 0.5,
+    "geo": 65.5,
+    "tasks2": 18.4,
+    "discover": 73.3
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 5
+  },
+  {
+   "user": "Rosiestep",
+   "globalEdits": 557433,
+   "enwikiUniqueArticles": 5898,
+   "topTopics": [
+    "biography",
+    "history",
+    "education"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 20,
+   "geoFocus": "Russian Empire",
+   "tasks": 47,
+   "literalTop10": 7,
+   "pv0Top10": 8,
+   "revisitItems": 2,
+   "discoverSuggestions": 246,
+   "discoverLanguages": 17,
+   "secs": {
+    "profile": 108.8,
+    "tasks1": 8.6,
+    "revisit": 2.7,
+    "geo": 92.9,
+    "tasks2": 12.7,
+    "discover": 148.9
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 10
+  },
+  {
+   "user": "Satdeep Gill",
+   "globalEdits": 67937,
+   "enwikiUniqueArticles": 1441,
+   "topTopics": [
+    "biography",
+    "india",
+    "culture"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 20,
+   "geoFocus": "Punjab",
+   "tasks": 47,
+   "literalTop10": 10,
+   "pv0Top10": 8,
+   "revisitItems": 6,
+   "discoverSuggestions": 288,
+   "discoverLanguages": 18,
+   "secs": {
+    "profile": 14.2,
+    "tasks1": 5.7,
+    "revisit": 0.9,
+    "geo": 134.6,
+    "tasks2": 32.7,
+    "discover": 123.8
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Titodutta",
+   "globalEdits": 313457,
+   "enwikiUniqueArticles": 7471,
+   "topTopics": [
+    "culture",
+    "india",
+    "biography"
+   ],
+   "qualityTier": "high",
+   "createdDetected": 8,
+   "geoFocus": "Kamikawa Subprefecture",
+   "tasks": 41,
+   "literalTop10": 4,
+   "pv0Top10": 6,
+   "revisitItems": 7,
+   "discoverSuggestions": 283,
+   "discoverLanguages": 28,
+   "secs": {
+    "profile": 101.0,
+    "tasks1": 8.7,
+    "revisit": 1.5,
+    "geo": 150.2,
+    "tasks2": 13.7,
+    "discover": 140.4
+   },
+   "statuses": {
+    "profile": 200,
+    "tasks1": 200,
+    "revisit": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200
+   },
+   "sharedTop10": 3
+  }
+ ]
+}

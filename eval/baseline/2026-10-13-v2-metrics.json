@@ -1,0 +1,821 @@
+{
+ "run": "2026-10-13-v2",
+ "cohort": {
+  "users": 15,
+  "errors": [],
+  "titlesIn3Plus": [],
+  "usersAllTop10Literal": 0,
+  "revisitItems": 326,
+  "revisitWeakShare": 0.42,
+  "discoverEmpty": [
+   "Cwmhiraeth",
+   "Hog Farm",
+   "Newcomer A",
+   "Newcomer B"
+  ],
+  "personalTop10Mean": 7.5,
+  "hugeTop10Total": 3,
+  "pv0Top10Total": 6,
+  "homeWikis": {
+   "svwiki": 1,
+   "mlwiki": 2,
+   "enwiki": 10,
+   "tawiki": 1,
+   "pawiki": 1
+  },
+  "nonOkStatuses": [],
+  "latency": {
+   "profile": {
+    "median": 10.7,
+    "max": 24.4
+   },
+   "trends": {
+    "median": 4.8,
+    "max": 8.1
+   },
+   "tasks1": {
+    "median": 7.7,
+    "max": 32.1
+   },
+   "revisit": {
+    "median": 6.7,
+    "max": 18.9
+   },
+   "geo": {
+    "median": 23.8,
+    "max": 45.6
+   },
+   "tasks2": {
+    "median": 5.7,
+    "max": 26.4
+   },
+   "discover": {
+    "median": 6.6,
+    "max": 9.4
+   },
+   "contribute": {
+    "median": 3.9,
+    "max": 61.3
+   }
+  }
+ },
+ "users": [
+  {
+   "user": "Ainali",
+   "homeWiki": "svwiki",
+   "globalEdits": 263800,
+   "enwikiUniqueArticles": 639,
+   "topTopics": [
+    "Biography",
+    "STEM",
+    "Media"
+   ],
+   "qualityTier": "reverted 1.5%",
+   "createdDetected": 377,
+   "geoFocus": {
+    "local": "Stockholm Municipality",
+    "region": "Stockholm County"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 1,
+   "personalTop10": 7,
+   "hugeTop10": 0,
+   "revisitItems": 12,
+   "discoverSuggestions": 60,
+   "discoverSections": 25,
+   "discoverRegionGaps": 13,
+   "discoverLanguages": 3,
+   "monolingual": false,
+   "unusedPhotos": 10,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 12.7,
+    "trends": 7.7,
+    "revisit": 5.3,
+    "tasks1": 22.5,
+    "geo": 37.3,
+    "tasks2": 5.9,
+    "discover": 6.9,
+    "contribute": 5.3
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Athulvis",
+   "homeWiki": "mlwiki",
+   "globalEdits": 238531,
+   "enwikiUniqueArticles": 35,
+   "topTopics": [
+    "Biography",
+    "Media",
+    "STEM"
+   ],
+   "qualityTier": "reverted 0.0%",
+   "createdDetected": 7,
+   "geoFocus": {
+    "local": "Palakkad district",
+    "region": "Kerala"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 2,
+   "personalTop10": 8,
+   "hugeTop10": 0,
+   "revisitItems": 6,
+   "discoverSuggestions": 48,
+   "discoverSections": 12,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 1,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 3.6,
+    "trends": 0.0,
+    "revisit": 1.3,
+    "tasks1": 23.4,
+    "geo": 13.7,
+    "tasks2": 4.9,
+    "discover": 5.2,
+    "contribute": 3.3
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Bobbyshabangu",
+   "homeWiki": "enwiki",
+   "globalEdits": 11161,
+   "enwikiUniqueArticles": 532,
+   "topTopics": [
+    "Biography",
+    "Media",
+    "Music"
+   ],
+   "qualityTier": "reverted 3.2%",
+   "createdDetected": 156,
+   "geoFocus": {
+    "local": "City of Johannesburg Metropolitan Municipality",
+    "region": "Gauteng"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 10,
+   "hugeTop10": 0,
+   "revisitItems": 33,
+   "discoverSuggestions": 60,
+   "discoverSections": 30,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 3,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 10.6,
+    "trends": 3.5,
+    "revisit": 6.8,
+    "tasks1": 21.2,
+    "geo": 29.1,
+    "tasks2": 4.8,
+    "discover": 7.1,
+    "contribute": 27.0
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Cwmhiraeth",
+   "homeWiki": "enwiki",
+   "globalEdits": 139937,
+   "enwikiUniqueArticles": 225,
+   "topTopics": [
+    "Media",
+    "STEM",
+    "Biography"
+   ],
+   "qualityTier": "reverted 4.8%",
+   "createdDetected": 1000,
+   "geoFocus": {
+    "local": "West Midlands",
+    "region": "England"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 3,
+   "hugeTop10": 1,
+   "revisitItems": 17,
+   "discoverSuggestions": 0,
+   "discoverSections": 0,
+   "discoverRegionGaps": 0,
+   "discoverLanguages": 0,
+   "monolingual": true,
+   "unusedPhotos": 8,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 10.0,
+    "trends": 0.0,
+    "revisit": 10.3,
+    "tasks1": 6.9,
+    "geo": 44.0,
+    "tasks2": 5.7,
+    "discover": 0.0,
+    "contribute": 10.7
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Doc James",
+   "homeWiki": "enwiki",
+   "globalEdits": 2073437,
+   "enwikiUniqueArticles": 512,
+   "topTopics": [
+    "STEM",
+    "Medicine & Health",
+    "Biology"
+   ],
+   "qualityTier": "reverted 0.8%",
+   "createdDetected": 1000,
+   "geoFocus": {
+    "local": null,
+    "region": null
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 9,
+   "hugeTop10": 0,
+   "revisitItems": 40,
+   "discoverSuggestions": 48,
+   "discoverSections": 12,
+   "discoverRegionGaps": 0,
+   "discoverLanguages": 1,
+   "monolingual": false,
+   "unusedPhotos": 3,
+   "wikidataGaps": 0,
+   "secs": {
+    "profile": 11.7,
+    "trends": 5.0,
+    "revisit": 6.7,
+    "tasks1": 7.1,
+    "geo": 22.2,
+    "discover": 9.4,
+    "contribute": 2.6
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Hog Farm",
+   "homeWiki": "enwiki",
+   "globalEdits": 61888,
+   "enwikiUniqueArticles": 286,
+   "topTopics": [
+    "Military and warfare",
+    "Transportation",
+    "Biography"
+   ],
+   "qualityTier": "reverted 0.4%",
+   "createdDetected": 663,
+   "geoFocus": {
+    "local": "Sevier County",
+    "region": "Arkansas"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 8,
+   "hugeTop10": 0,
+   "revisitItems": 22,
+   "discoverSuggestions": 0,
+   "discoverSections": 0,
+   "discoverRegionGaps": 0,
+   "discoverLanguages": 0,
+   "monolingual": true,
+   "unusedPhotos": 9,
+   "wikidataGaps": 6,
+   "secs": {
+    "profile": 10.6,
+    "trends": 2.2,
+    "revisit": 5.8,
+    "tasks1": 6.9,
+    "geo": 45.6,
+    "tasks2": 4.1,
+    "discover": 0.0,
+    "contribute": 3.4
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Netha Hussain",
+   "homeWiki": "enwiki",
+   "globalEdits": 251719,
+   "enwikiUniqueArticles": 1204,
+   "topTopics": [
+    "STEM",
+    "Biography",
+    "Food and drink"
+   ],
+   "qualityTier": "reverted 0.1%",
+   "createdDetected": 648,
+   "geoFocus": {
+    "local": null,
+    "region": "Kerala"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 7,
+   "hugeTop10": 0,
+   "revisitItems": 26,
+   "discoverSuggestions": 48,
+   "discoverSections": 12,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 1,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 10.7,
+    "trends": 3.3,
+    "revisit": 7.9,
+    "tasks1": 6.1,
+    "geo": 36.8,
+    "discover": 7.0,
+    "contribute": 10.5
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Newcomer A",
+   "homeWiki": "enwiki",
+   "globalEdits": 93,
+   "enwikiUniqueArticles": 54,
+   "topTopics": [
+    "Biography",
+    "Media",
+    "STEM"
+   ],
+   "qualityTier": "reverted 5.0%",
+   "createdDetected": 2,
+   "geoFocus": {
+    "local": null,
+    "region": null
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 4,
+   "hugeTop10": 0,
+   "revisitItems": 1,
+   "discoverSuggestions": 0,
+   "discoverSections": 0,
+   "discoverRegionGaps": 0,
+   "discoverLanguages": 0,
+   "monolingual": true,
+   "unusedPhotos": 0,
+   "wikidataGaps": 0,
+   "secs": {
+    "profile": 5.1,
+    "trends": 7.3,
+    "revisit": 1.8,
+    "tasks1": 9.6,
+    "geo": 18.1,
+    "discover": 0.0,
+    "contribute": 0.5
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 2
+  },
+  {
+   "user": "Newcomer B",
+   "homeWiki": "enwiki",
+   "globalEdits": 144,
+   "enwikiUniqueArticles": 47,
+   "topTopics": [
+    "Media",
+    "Music",
+    "Biography"
+   ],
+   "qualityTier": "reverted 1.6%",
+   "createdDetected": 0,
+   "geoFocus": {
+    "local": null,
+    "region": "Avannaata"
+   },
+   "tasks": 60,
+   "literalTop10": 1,
+   "pv0Top10": 0,
+   "personalTop10": 6,
+   "hugeTop10": 0,
+   "revisitItems": 3,
+   "discoverSuggestions": 0,
+   "discoverSections": 0,
+   "discoverRegionGaps": 0,
+   "discoverLanguages": 0,
+   "monolingual": true,
+   "unusedPhotos": 0,
+   "wikidataGaps": 0,
+   "secs": {
+    "profile": 4.4,
+    "trends": 3.5,
+    "revisit": 1.1,
+    "tasks1": 6.0,
+    "geo": 11.6,
+    "discover": 0.0,
+    "contribute": 61.3
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Olaniyan Olushola",
+   "homeWiki": "enwiki",
+   "globalEdits": 12968,
+   "enwikiUniqueArticles": 365,
+   "topTopics": [
+    "Biography",
+    "Media",
+    "Women"
+   ],
+   "qualityTier": "reverted 0.1%",
+   "createdDetected": 117,
+   "geoFocus": {
+    "local": "Lagos",
+    "region": "Lagos State"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 8,
+   "hugeTop10": 0,
+   "revisitItems": 35,
+   "discoverSuggestions": 48,
+   "discoverSections": 12,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 1,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 11.0,
+    "trends": 5.2,
+    "revisit": 7.3,
+    "tasks1": 8.9,
+    "geo": 23.8,
+    "tasks2": 6.7,
+    "discover": 6.4,
+    "contribute": 4.5
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Ranjithsiji",
+   "homeWiki": "mlwiki",
+   "globalEdits": 429502,
+   "enwikiUniqueArticles": 273,
+   "topTopics": [
+    "Media",
+    "Films",
+    "Biography"
+   ],
+   "qualityTier": "reverted 0.1%",
+   "createdDetected": 1000,
+   "geoFocus": {
+    "local": "Ernakulam district",
+    "region": "Kerala"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 10,
+   "hugeTop10": 0,
+   "revisitItems": 15,
+   "discoverSuggestions": 48,
+   "discoverSections": 12,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 1,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 11.6,
+    "trends": 8.1,
+    "revisit": 5.9,
+    "tasks1": 7.7,
+    "geo": 20.3,
+    "tasks2": 9.3,
+    "discover": 5.4,
+    "contribute": 3.9
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Ravidreams",
+   "homeWiki": "tawiki",
+   "globalEdits": 38841,
+   "enwikiUniqueArticles": 673,
+   "topTopics": [
+    "Media",
+    "Biography",
+    "Films"
+   ],
+   "qualityTier": "reverted 0.3%",
+   "createdDetected": 978,
+   "geoFocus": {
+    "local": "Sivaganga district",
+    "region": "Tamil Nadu"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 8,
+   "hugeTop10": 0,
+   "revisitItems": 25,
+   "discoverSuggestions": 48,
+   "discoverSections": 12,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 1,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 24.4,
+    "trends": 5.2,
+    "revisit": 4.6,
+    "tasks1": 7.7,
+    "geo": 18.4,
+    "tasks2": 26.4,
+    "discover": 6.8,
+    "contribute": 3.6
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Rosiestep",
+   "homeWiki": "enwiki",
+   "globalEdits": 557441,
+   "enwikiUniqueArticles": 640,
+   "topTopics": [
+    "Biography",
+    "Women",
+    "History"
+   ],
+   "qualityTier": "reverted 0.2%",
+   "createdDetected": 1000,
+   "geoFocus": {
+    "local": "South West England",
+    "region": "England"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 9,
+   "hugeTop10": 2,
+   "revisitItems": 27,
+   "discoverSuggestions": 60,
+   "discoverSections": 26,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 3,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 10.6,
+    "trends": 4.8,
+    "revisit": 8.3,
+    "tasks1": 7.7,
+    "geo": 43.5,
+    "tasks2": 5.5,
+    "discover": 9.2,
+    "contribute": 19.8
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Satdeep Gill",
+   "homeWiki": "pawiki",
+   "globalEdits": 67938,
+   "enwikiUniqueArticles": 1162,
+   "topTopics": [
+    "Biography",
+    "Philosophy and religion",
+    "Media"
+   ],
+   "qualityTier": "reverted 0.1%",
+   "createdDetected": 1000,
+   "geoFocus": {
+    "local": "Amritsar district",
+    "region": "Punjab"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 3,
+   "personalTop10": 6,
+   "hugeTop10": 0,
+   "revisitItems": 31,
+   "discoverSuggestions": 60,
+   "discoverSections": 30,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 3,
+   "monolingual": false,
+   "unusedPhotos": 20,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 10.9,
+    "trends": 8.1,
+    "revisit": 18.9,
+    "tasks1": 6.9,
+    "geo": 39.6,
+    "tasks2": 4.1,
+    "discover": 6.8,
+    "contribute": 3.7
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  },
+  {
+   "user": "Titodutta",
+   "homeWiki": "enwiki",
+   "globalEdits": 313457,
+   "enwikiUniqueArticles": 1136,
+   "topTopics": [
+    "Media",
+    "Films",
+    "Biography"
+   ],
+   "qualityTier": "reverted 0.8%",
+   "createdDetected": 1000,
+   "geoFocus": {
+    "local": "Bhubaneswar",
+    "region": "Odisha"
+   },
+   "tasks": 60,
+   "literalTop10": 0,
+   "pv0Top10": 0,
+   "personalTop10": 10,
+   "hugeTop10": 0,
+   "revisitItems": 33,
+   "discoverSuggestions": 60,
+   "discoverSections": 30,
+   "discoverRegionGaps": 20,
+   "discoverLanguages": 3,
+   "monolingual": false,
+   "unusedPhotos": 0,
+   "wikidataGaps": 20,
+   "secs": {
+    "profile": 12.4,
+    "trends": 2.1,
+    "revisit": 7.4,
+    "tasks1": 32.1,
+    "geo": 14.6,
+    "tasks2": 5.8,
+    "discover": 6.6,
+    "contribute": 1.7
+   },
+   "statuses": {
+    "profile": 200,
+    "trends": 200,
+    "revisit": 200,
+    "tasks1": 200,
+    "geo": 200,
+    "tasks2": 200,
+    "discover": 200,
+    "contribute": 200
+   },
+   "sharedTop10": 0
+  }
+ ]
+}

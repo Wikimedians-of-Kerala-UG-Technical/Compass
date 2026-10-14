@@ -22,3 +22,6 @@ locustfile.py
 *.pyc
 frontend/public/temperature.html
 .claude
+
+# evaluation raw outputs (large; see eval/README.md)
+eval/runs/
