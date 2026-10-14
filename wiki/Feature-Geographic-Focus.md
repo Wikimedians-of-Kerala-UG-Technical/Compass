@@ -39,4 +39,6 @@ Example: Ranjithsiji (mlwiki) → region കേരളം (Kerala, 58), local എ
 - **Discover:** items located directly in `local` or `region` that have an English article but none in the editor's language.
 - **Commons & Wikidata:** items in `local` (any depth) missing a description in the editor's language.
 
-Results are cached 6 h per (wiki, article set); claims are cached 7 days.
+Only articles that could be about a place or a person are looked up: ones with coordinates, a country label, or a geography or biography topic (from the signals the profile already loaded). For a medical editor that is about a quarter of their articles. Wikidata items are fetched 5 at a time in parallel, because a state or country item is about 1 MB.
+
+Results are cached 6 h per (wiki, article set); the place facts are cached 7 days on disk, so editors from the same region share them.

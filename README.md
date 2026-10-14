@@ -33,7 +33,7 @@ There are no accounts and nothing to sign up for. It reads public contributions 
 
 ```
 frontend/   Vue 3 + Vite + Pinia + Wikimedia Codex
-backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, in-memory caches
+backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, TTL caches (memory + SQLite)
 eval/       Reproducible evaluation harness (see eval/README.md and EVALUATION.md)
 legacy/     The original single-file prototype (inactive)
 ```

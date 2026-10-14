@@ -25,6 +25,7 @@ Dependencies: `flask`, `flask-cors`, `requests`, `beautifulsoup4`.
 | `FLASK_DEBUG` | off | `1` for the auto-reloader and debugger |
 | `COMPASS_HOST` / `COMPASS_PORT` | `127.0.0.1` / `5000` | Bind address |
 | `COMPASS_CORS_ORIGINS` | `*` | Comma-separated allowed origins |
+| `COMPASS_CACHE_PATH` | `backend/.cache/compass.sqlite3` | Disk cache shared by restarts and workers. Empty = memory only. Delete the file to start cold |
 | `COMPASS_USER_AGENT` | `Compass/2.0 (repo URL)` | Add a contact address when you deploy ([User-Agent policy](https://meta.wikimedia.org/wiki/User-Agent_policy)) |
 | `SEMANTIC_SCHOLAR_API_KEY` | unset | Enables Semantic Scholar in Sources |
 
@@ -74,6 +75,6 @@ locust -f locustfile.py
 
 ## Production notes
 
-- Run under a WSGI server (e.g. `gunicorn -w 2 --threads 8 'app:create_app()'`). The in-memory caches are per process.
+- Run under a WSGI server (e.g. `gunicorn -w 2 --threads 8 'app:create_app()'`). Workers share the SQLite disk cache; each also keeps its own in-memory copy.
 - Set `COMPASS_USER_AGENT` with a contact address, and `COMPASS_CORS_ORIGINS` to your frontend's origin.
 - `npm run build` writes `frontend/dist`. Build it with `VITE_API_BASE` set to the deployed backend.
