@@ -20,7 +20,7 @@ from services.article_service import analyze_article
 CITOID = 'https://en.wikipedia.org/api/rest_v1/data/citation/mediawiki/'
 SEMANTIC_SCHOLAR_KEY = os.environ.get('SEMANTIC_SCHOLAR_API_KEY')
 MEDICAL_TOPICS = ('Medicine & Health', 'Biology')
-_cache = wiki.TTLCache(ttl=6 * 3600, maxsize=500)
+_cache = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='sources')
 
 
 def _english_title(dbname, title):

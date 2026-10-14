@@ -109,7 +109,7 @@ def _pageviews(dbname, title):
     project = f'{wiki.lang(dbname)}.wikipedia'
     url = (f'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/all-access/user/'
            f'{wiki.quote_title(title).replace("/", "%2F")}/daily/{start}/{end}')
-    data = wiki.get_json(url, retries=2, timeout=15)
+    data = wiki.get_json(url, retries=2, timeout=8)
     if data is None:
         raise RuntimeError('pageviews unavailable')  # rate-limited, or the API is down
     items = data.get('items') or []
@@ -291,7 +291,7 @@ def find_tasks(profile, place=None):
             return None
 
     shown = tasks[:PAGEVIEW_TOP]
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    with ThreadPoolExecutor(max_workers=6) as pool:
         for task, v in zip(shown, pool.map(views, shown)):
             task['pageviews'] = v
             if v:

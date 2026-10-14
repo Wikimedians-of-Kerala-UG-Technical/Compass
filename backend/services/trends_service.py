@@ -19,7 +19,7 @@ LI_RE = re.compile(r'<li[^>]*>([\s\S]*?)</li>', re.IGNORECASE)
 TAG_RE = re.compile(r'<[^>]+>')
 LINK_RE = re.compile(r'<a[^>]+title="([^"]+)"[^>]*>')
 SKIP = re.compile(r'^(Main_Page|Special:|Wikipedia:|Portal:|File:|Help:|Talk:|User:|-$)')
-_cache = wiki.TTLCache(ttl=3 * 3600, maxsize=200)
+_cache = wiki.TTLCache(ttl=3 * 3600, maxsize=200, name='trends')
 
 
 def _days():

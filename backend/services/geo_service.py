@@ -6,12 +6,15 @@ Kerala -> India. Statements are read by rank (preferred first, deprecated skippe
 dissolved entities (P576, e.g. "Kingdom of Great Britain") are skipped, so historical
 states don't become someone's "focus".
 """
+from concurrent.futures import ThreadPoolExecutor
+
 from services import wiki
+from services.signals import article_signals
 
 MAX_HOPS = 6
 HUMAN_QID = 'Q5'
-_claims_cache = wiki.TTLCache(ttl=7 * 24 * 3600, maxsize=50000)
-_geo_cache = wiki.TTLCache(ttl=6 * 3600, maxsize=500)
+_claims_cache = wiki.TTLCache(ttl=7 * 24 * 3600, maxsize=50000, name='wikidata-places')
+_geo_cache = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='geo')
 
 
 def _targets(claims, prop):
@@ -39,11 +42,19 @@ def _coord(claims):
 
 def _fetch_claims(qids, language):
     need = [q for q in dict.fromkeys(qids) if q and _claims_cache.get((q, language)) is None]
-    for i in range(0, len(need), 50):
-        data = wiki.api('wikidatawiki', {
-            'action': 'wbgetentities', 'ids': '|'.join(need[i:i + 50]), 'props': 'claims|labels',
+    # Batches of 20, a few in parallel: a state or country item is ~1 MB of claims, so
+    # one 50-item batch can take several seconds. wiki.py caps Wikidata concurrency.
+    batches = [need[i:i + 20] for i in range(0, len(need), 20)]
+
+    def fetch(batch):
+        return wiki.api('wikidatawiki', {
+            'action': 'wbgetentities', 'ids': '|'.join(batch), 'props': 'claims|labels',
             'languages': f'{language}|en', 'languagefallback': 1,
         }, post=True)
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        results = list(pool.map(fetch, batches))
+    for data in results:
         for qid, entity in (data.get('entities') or {}).items():
             claims = entity.get('claims') or {}
             labels = entity.get('labels') or {}
@@ -63,6 +74,14 @@ def _fetch_claims(qids, language):
                 'p27': _targets(claims, 'P27'),
             })
     return {q: _claims_cache.get((q, language)) for q in qids if _claims_cache.get((q, language))}
+
+
+def _parent(info, language, exclude=()):
+    """The place one level up. An item can have several best-rank P131 values (a
+    village listed in its old and new district); a dissolved one is the last choice."""
+    parents = [p for p in (info['p131'] or info['p17']) if p not in exclude]
+    live = [p for p in parents if not (_claims_cache.get((p, language)) or {}).get('dissolved')]
+    return (live or parents or [None])[0]
 
 
 def _anchor(qid, info):
@@ -91,13 +110,31 @@ def resolve_geo(dbname, titles):
     return _geo_cache.get_or_compute(key, lambda: _resolve(dbname, titles))
 
 
+def _maybe_geo(sig):
+    """Could this article be about a place, or a person with a birthplace? Decided from
+    the signals the profile already loaded, so Compass doesn't download full Wikidata
+    items for, say, 150 drug and disease articles to find 9 places. Articles without
+    signals are kept. Only items in a P131 hierarchy, or people, count (see `_anchor`),
+    and those nearly always have coordinates, a country label or a geography/biography
+    topic. (Coordinates and topics alone missed 12 of Ranjithsiji's 88 places.)"""
+    if sig is None:
+        return True
+    return bool(sig['coord'] or sig['countries']) or any(t.startswith(('Geography.', 'Culture.Biography')) for t in sig['topics'])
+
+
 def _resolve(dbname, titles):
     language = wiki.lang(dbname)
+    sigs = article_signals(dbname, titles)  # cached by the profile
+    titles = [t for t in titles if _maybe_geo(sigs.get(t))]
     qid_of = {}
-    for page in wiki.api_pages(dbname, titles, {'action': 'query', 'prop': 'pageprops', 'ppprop': 'wikibase_item'}):
-        q = (page.get('pageprops') or {}).get('wikibase_item')
-        if q:
-            qid_of[page['title']] = q
+    params = {'action': 'query', 'prop': 'pageprops', 'ppprop': 'wikibase_item'}
+    batches = [titles[i:i + 50] for i in range(0, len(titles), 50)]
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for pages in pool.map(lambda b: list(wiki.api_pages(dbname, b, params)), batches):
+            for page in pages:
+                q = (page.get('pageprops') or {}).get('wikibase_item')
+                if q:
+                    qid_of[page['title']] = q
     infos = _fetch_claims(list(qid_of.values()), language)
 
     anchors = {}
@@ -105,7 +142,7 @@ def _resolve(dbname, titles):
         a, include_self = _anchor(q, infos.get(q))
         if a:
             anchors[title] = (a, include_self)
-    # Fetch the hierarchy one level at a time, in batches, before walking it.
+    # Fetch the hierarchy one level at a time, in parallel batches, before walking it.
     known = {a for a, _ in anchors.values()}
     frontier = set(known)
     for _ in range(MAX_HOPS):
@@ -115,10 +152,10 @@ def _resolve(dbname, titles):
             info = batch.get(q)
             if not info or info['is_country']:
                 continue
-            parents = info['p131'] or info['p17']
-            if parents and parents[0] not in known:
-                known.add(parents[0])
-                nxt.add(parents[0])
+            parent = _parent(info, language)
+            if parent and parent not in known:
+                known.add(parent)
+                nxt.add(parent)
         if not nxt:
             break
         frontier = nxt
@@ -136,11 +173,9 @@ def _resolve(dbname, titles):
             path.append(current)
             if info['is_country']:
                 break
-            parents = info['p131'] or info['p17']
-            parents = [p for p in parents if p not in path]
-            if not parents:
+            current = _parent(info, language, exclude=path)
+            if not current:
                 break
-            current = parents[0]
         chain_cache[start] = path
         return path
 

@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from services import wiki
 
-_cache = wiki.TTLCache(ttl=24 * 3600, maxsize=20000)
+_cache = wiki.TTLCache(ttl=24 * 3600, maxsize=20000, name='signals')
 
 with open(os.path.join(os.path.dirname(__file__), '..', 'data', 'countries.json'), encoding='utf-8') as f:
     COUNTRIES = json.load(f)  # English country name -> {a2, a3, qid}

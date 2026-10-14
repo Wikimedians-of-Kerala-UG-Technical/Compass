@@ -66,7 +66,7 @@ RECOMMENDATIONS = {
 # Tasks the recommender searches for (stub/disputed/npov are only reported in Revisit).
 TASK_KEYS = ['add_refs', 'add_citations', 'more_refs', 'fix_orphan', 'dead_links', 'expand']
 
-_cache = wiki.TTLCache(ttl=7 * 24 * 3600)
+_cache = wiki.TTLCache(ttl=7 * 24 * 3600, name='maintenance')
 
 
 def _local_names(dbname, ns_prefix, names):

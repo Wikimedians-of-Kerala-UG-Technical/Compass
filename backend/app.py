@@ -9,6 +9,8 @@ def create_app():
     app = Flask(__name__)
     app.json.ensure_ascii = False  # Malayalam, Tamil… titles stay readable in responses
     CORS(app, origins=os.environ.get('COMPASS_CORS_ORIGINS', '*').split(','))
+    from services.wiki import purge_expired_cache
+    purge_expired_cache()
     import routes
     for _, name, _ in pkgutil.iter_modules(routes.__path__):
         mod = importlib.import_module(f"routes.{name}")
