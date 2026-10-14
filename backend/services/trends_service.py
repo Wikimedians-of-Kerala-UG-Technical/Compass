@@ -1,132 +1,153 @@
+"""Trends: what readers are reading right now *that needs work*, near the editor.
+
+- Readers in the editor's country (`pageviews/top-per-country/<ISO alpha-2>`), across
+  the editor's Wikipedias.
+- The editor's home wiki's most-read articles (`pageviews/top/<lang>.wikipedia`).
+- Only articles that carry a maintenance tag or a Growth suggestion are kept, so every
+  item is something a volunteer can improve while readers are looking.
+- Headlines from enwiki's Portal:Current events.
+"""
 import re
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
-from services.http_client import session
+from services import wiki, maintenance
+from services.signals import article_signals
 
-WIKI = 'https://en.wikipedia.org/w/api.php'
-PAGEVIEWS = 'https://wikimedia.org/api/rest_v1'
-
+PAGEVIEWS = 'https://wikimedia.org/api/rest_v1/metrics/pageviews'
 LI_RE = re.compile(r'<li[^>]*>([\s\S]*?)</li>', re.IGNORECASE)
 TAG_RE = re.compile(r'<[^>]+>')
 LINK_RE = re.compile(r'<a[^>]+title="([^"]+)"[^>]*>')
+SKIP = re.compile(r'^(Main_Page|Special:|Wikipedia:|Portal:|File:|Help:|Talk:|User:|-$)')
+_cache = wiki.TTLCache(ttl=3 * 3600, maxsize=200)
 
 
-def wiki_get(params, retries=3):
-    """Mirrors profile_service._wiki_get's 429 handling.
+def _days():
+    """Pageview dumps lag a day or two; try the most recent dates first."""
+    today = datetime.now(timezone.utc)
+    return [(today - timedelta(days=d)).strftime('%Y/%m/%d') for d in (1, 2, 3)]
 
-    Without it a rate-limited search raised straight through into the callers'
-    `except Exception: return []`, silently turning throttling into "no results" —
-    the task feed would come back partially filled or empty with no error shown.
-    """
-    params = dict(params, format='json')
-    for attempt in range(retries):
-        r = session.get(WIKI, params=params, timeout=15)
-        if r.status_code == 429:
-            wait = int(r.headers.get('Retry-After', 2)) * (attempt + 1)
-            time.sleep(wait)
+
+def _main_namespace(dbname):
+    """Main page titles differ per wiki; the Action API gives us the localized one."""
+    return wiki.api(dbname, {'action': 'query', 'meta': 'siteinfo', 'siprop': 'general'})['query']['general']['mainpage']
+
+
+def top_per_country(a2, projects, limit=40):
+    for day in _days():
+        data = wiki.get_json(f'{PAGEVIEWS}/top-per-country/{a2}/all-access/{day}', retries=1, timeout=20)
+        items = ((data or {}).get('items') or [{}])[0].get('articles') or []
+        if items:
+            out = []
+            for a in items:
+                project = a.get('project', '')
+                if project not in projects or SKIP.match(a['article']):
+                    continue
+                out.append({'title': a['article'].replace('_', ' '), 'views': a.get('views_ceil') or a.get('views'),
+                            'wiki': project.replace('.wikipedia', '').replace('-', '_') + 'wiki', 'day': day})
+                if len(out) >= limit:
+                    break
+            return out
+    return []
+
+
+def top_on_wiki(dbname, limit=40):
+    project = f'{wiki.lang(dbname)}.wikipedia'
+    try:
+        main = _main_namespace(dbname).replace(' ', '_')
+    except Exception:
+        main = 'Main_Page'
+    for day in _days():
+        data = wiki.get_json(f'{PAGEVIEWS}/top/{project}/all-access/{day}', retries=1, timeout=20)
+        items = ((data or {}).get('items') or [{}])[0].get('articles') or []
+        if items:
+            out = [{'title': a['article'].replace('_', ' '), 'views': a['views'], 'wiki': dbname, 'day': day}
+                   for a in items if a['article'] != main and not SKIP.match(a['article']) and ':' not in a['article']]
+            return out[:limit]
+    return []
+
+
+def _needing_work(items):
+    """Keeps only articles with maintenance tags or Growth suggestions, annotated."""
+    by_wiki = {}
+    for it in items:
+        by_wiki.setdefault(it['wiki'], []).append(it)
+    out = []
+    for dbname, its in by_wiki.items():
+        try:
+            sigs = article_signals(dbname, [i['title'] for i in its])
+        except Exception:
             continue
-        r.raise_for_status()
-        return r.json()
-    raise RuntimeError('MediaWiki API rate-limited us after retries')
+        for it in its:
+            sig = sigs.get(it['title'])
+            if not sig:
+                continue
+            issues = maintenance.issues_of(dbname, sig)
+            if not issues:
+                continue
+            out.append({
+                **it,
+                'url': wiki.page_url(dbname, it['title']),
+                'editUrl': wiki.edit_url(dbname, it['title']),
+                'issues': [{'key': k, 'label': maintenance.meta(k)['short']} for k in issues],
+                'quality': sig.get('quality'),
+            })
+    return sorted(out, key=lambda i: -(i.get('views') or 0))
 
 
-def _parse_list_items(html, source, limit):
+def current_events():
+    try:
+        d = wiki.api('enwiki', {'action': 'parse', 'page': 'Portal:Current_events', 'prop': 'text', 'section': 0})
+        html = (d.get('parse') or {}).get('text', '')
+    except Exception:
+        return []
     items = []
     for m in LI_RE.finditer(html):
-        if len(items) >= limit:
-            break
         li = m.group(1)
-        text = TAG_RE.sub(' ', li)
-        text = re.sub(r'\s+', ' ', text).strip()
-        if len(text) < 15:
+        if '<li' in li:  # a heading that wraps a nested list — its children are separate items
             continue
-        articles = []
-        for lm in LINK_RE.finditer(li):
-            title = lm.group(1)
-            if ':' not in title and title not in articles:
-                articles.append(title)
+        text = re.sub(r'\s+', ' ', TAG_RE.sub(' ', li)).strip()
+        if len(text) < 40:
+            continue
+        articles = list(dict.fromkeys(t for t in LINK_RE.findall(li) if ':' not in t))
         if articles:
-            items.append({'text': text[:200], 'articles': articles, 'source': source})
+            items.append({'text': text[:220], 'articles': articles[:4], 'source': 'current_events', 'wiki': 'enwiki'})
+        if len(items) >= 12:
+            break
     return items
 
 
-def parse_current_events_deep():
-    try:
-        d = wiki_get({'action': 'parse', 'page': 'Portal:Current_events', 'prop': 'text', 'section': 0})
-        html = (d.get('parse') or {}).get('text', {}).get('*', '')
-        return _parse_list_items(html, 'current_events', 25)
-    except Exception:
-        return []
+def get_trends(country_a2=None, dbname='enwiki', languages=None):
+    key = (country_a2, dbname, tuple(languages or []))
+    return _cache.get_or_compute(key, lambda: _trends(country_a2, dbname, languages or []))
 
 
-def parse_recent_deaths():
-    try:
-        d = wiki_get({
-            'action': 'query', 'list': 'categorymembers', 'cmtitle': 'Category:Recent_deaths',
-            'cmlimit': 12, 'cmtype': 'page', 'cmnamespace': 0, 'cmsort': 'timestamp', 'cmdir': 'desc'
-        })
-        members = (d.get('query') or {}).get('categorymembers', [])
-        return [{'text': f"{m['title']} — recently deceased", 'articles': [m['title']], 'source': 'recent_deaths'} for m in members]
-    except Exception:
-        return []
-
-
-def parse_ongoing():
-    try:
-        d = wiki_get({
-            'action': 'query', 'list': 'categorymembers', 'cmtitle': 'Category:Ongoing_events',
-            'cmlimit': 12, 'cmtype': 'page', 'cmnamespace': 0
-        })
-        members = (d.get('query') or {}).get('categorymembers', [])
-        return [{'text': f"{m['title']} — ongoing event", 'articles': [m['title']], 'source': 'ongoing'} for m in members]
-    except Exception:
-        return []
-
-
-def parse_dyk():
-    try:
-        d = wiki_get({'action': 'parse', 'page': 'Template:Did_you_know', 'prop': 'text'})
-        html = (d.get('parse') or {}).get('text', {}).get('*', '')
-        return _parse_list_items(html, 'dyk', 10)
-    except Exception:
-        return []
-
-
-def fetch_wiki_trending():
-    try:
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-        date_path = yesterday.strftime('%Y/%m/%d')
-        r = session.get(f'{PAGEVIEWS}/metrics/pageviews/top/en.wikipedia/all-access/{date_path}', headers={'Accept': 'application/json'})
-        if not r.ok:
-            return []
-        data = r.json()
-        items = (data.get('items') or [{}])[0].get('articles', [])
-        skip_prefixes = ('Special:', 'Wikipedia:', 'Portal:')
-        filtered = [
-            a for a in items
-            if not a['article'].startswith(skip_prefixes)
-            and a['article'] != 'Main_Page' and a['article'] != '-'
-        ]
-        return [
-            {'title': a['article'].replace('_', ' '), 'views': a['views'], 'source': 'wiki_trending'}
-            for a in filtered[:30]
-        ]
-    except Exception:
-        return []
-
-
-def get_trends():
-    with ThreadPoolExecutor(max_workers=5) as pool:
-        futures = {
-            'current_events': pool.submit(parse_current_events_deep),
-            'recent_deaths': pool.submit(parse_recent_deaths),
-            'ongoing': pool.submit(parse_ongoing),
-            'dyk': pool.submit(parse_dyk),
-            'wiki_trending': pool.submit(fetch_wiki_trending),
-        }
-        results = {k: f.result() for k, f in futures.items()}
-
-    news = results['current_events'] + results['recent_deaths'] + results['ongoing'] + results['dyk']
-    return {'news': news, 'trending': results['wiki_trending']}
+def _trends(country_a2, dbname, languages):
+    projects = {f'{wiki.lang(dbname)}.wikipedia', 'en.wikipedia'} | {f'{l}.wikipedia' for l in languages}
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        regional_f = pool.submit(top_per_country, country_a2, projects) if country_a2 else None
+        home_f = pool.submit(top_on_wiki, dbname)
+        news_f = pool.submit(current_events)
+        regional = regional_f.result() if regional_f else []
+        home = home_f.result()
+        news = news_f.result()
+    regional_work = _needing_work(regional)
+    home_work = _needing_work(home)
+    # Alternate the two lists: the home wiki's numbers are much smaller than enwiki's,
+    # so sorting by views alone would hide it.
+    seen, trending = set(), []
+    for i in range(max(len(regional_work), len(home_work))):
+        for source, lst in (('wiki', home_work), ('country', regional_work)):
+            if i < len(lst):
+                it = lst[i]
+                k = (it['wiki'], it['title'])
+                if k not in seen:
+                    seen.add(k)
+                    trending.append({**it, 'source': source})
+    return {
+        'country': country_a2,
+        'wiki': dbname,
+        'trending': trending[:20],
+        'checked': {'country': len(regional), 'wiki': len(home)},
+        'news': news,
+    }

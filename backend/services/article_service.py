@@ -1,254 +1,298 @@
-import httpx
-import re
-import urllib.parse
+"""Article Guide: what exactly needs work in one article, on any Wikipedia.
+
+Reads Parsoid HTML (`rest.php/v1/page/{title}/html`), where every section is a
+<section> and every template carries its parameters in `data-mw`. That lets the guide
+point at the exact uncited paragraph, list each inline tag with its date, find dead
+links and bare URLs, and compare the article with its Wikidata item (image, birth date…)
+and with the same article in other languages (missing sections, via Content Translation).
+"""
+import json
 import os
-import asyncio
+import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 
-# Configure robust session
-def get_client():
-    limits = httpx.Limits(max_keepalive_connections=20, max_connections=50)
-    return httpx.AsyncClient(
-        headers={'User-Agent': 'WikiTaskPro/1.0 (Python/ContributorC; ContributorC@wikitaskpro.local) - API Backend'},
-        limits=limits,
-        timeout=5.0
-    )
+from bs4 import BeautifulSoup
 
-WIKI_API_URL = "https://en.wikipedia.org/w/api.php"
+from services import wiki
+from services.signals import article_signals, dated_tags
+from services.discover_service import cx_url
 
-# Simple manual caches for async functions
-_cache_analyze = {}
-_cache_analyze_light = {}
-_cache_find_refs = {}
-_cache_ext_refs = {}
+_cache = wiki.TTLCache(ttl=3600, maxsize=500)
+CXSERVER = 'https://cxserver.wikimedia.org/v2/suggest/sections'
 
-async def analyze_article(title):
-    if title in _cache_analyze: return _cache_analyze[title]
-    
-    if os.environ.get("STRESS_TEST") == "1":
-        await asyncio.sleep(0.1)
-        return {
-            "title": title, "articleType": "general", "sections": [{"name": "History", "level": 2, "index": "1", "charCount": 500, "status": "ok", "refCount": 5}],
-            "missingExpected": ["Description", "References"], "suggestions": [], "currentSize": 5000, "totalRefs": 5, "hasInfobox": True, "hasImages": True, "cats": ["general"]
-        }
+# English names of inline problem templates (lowercase, first letter-insensitive).
+INLINE_TAGS = {
+    'citation needed': 'Citation needed', 'cn': 'Citation needed', 'fact': 'Citation needed',
+    'dead link': 'Dead link', 'failed verification': 'Failed verification',
+    'better source needed': 'Better source needed', 'better source': 'Better source needed',
+    'clarify': 'Clarify', 'who?': 'Who?', 'when?': 'When?', 'which?': 'Which?', 'by whom?': 'By whom?',
+    'page needed': 'Page number needed', 'update inline': 'Needs update', 'according to whom?': 'According to whom?',
+    'unreliable source?': 'Unreliable source?', 'self-published inline': 'Self-published source',
+    'vague': 'Vague', 'dubious': 'Dubious', 'year needed': 'Year needed',
+}
+SKIP_SECTIONS = re.compile(r'^(references|notes|citations|footnotes|sources|bibliography|external links|see also|further reading|works|filmography|discography|gallery)$', re.I)
+QUALITY_NEXT = {
+    'Stub': 'Start-class needs a few paragraphs of sourced prose covering the main points.',
+    'Start': 'C-class needs most sections written and the major claims cited.',
+    'C': 'B-class needs every claim cited, broad coverage, a lead that summarises, and an image or infobox where relevant.',
+    'B': 'Good Article: a full review (WP:GACR): well-written, broad, neutral, stable, illustrated, verifiable.',
+}
+LEAD_MIN_CHARS = 250
 
-    params = {"action": "parse", "page": title, "prop": "sections|wikitext|categories", "redirects": "true", "format": "json"}
+
+def _template_name(target_wt):
+    name = (target_wt or '').strip().split('|')[0].replace('_', ' ')
+    name = name.split(':', 1)[1] if name.lower().startswith('template:') else name
+    return name.strip()
+
+
+def _local_inline_names(dbname):
+    """Local names of the inline templates on this wiki (Template:Citation needed -> ഫലകം:തെളിവ്)."""
+    if dbname == 'enwiki':
+        return {}
+    from services.maintenance import _local_names
     try:
-        async with get_client() as client:
-            response = await client.get(WIKI_API_URL, params=params)
-            response.raise_for_status()
-            data = response.json()
-    except httpx.HTTPError as e:
-        return {"title": title, "articleType": "general", "sections": [], "missingExpected": [], "suggestions": [{"type": "error", "text": "Wikipedia API failure"}], "currentSize": 0, "totalRefs": 0, "hasInfobox": False, "hasImages": False, "cats": [], "error": str(e)}
-    
-    if "parse" not in data:
-        return {"error": "Article not found", "title": title}
-        
-    parse_data = data["parse"]
-    raw_sections = parse_data.get("sections", [])
-    wt = parse_data.get("wikitext", {}).get("*", "")
-    raw_cats = parse_data.get("categories", [])
-    
-    sections = [{"name": s["line"], "level": int(s["level"]), "index": s["index"]} for s in raw_sections]
-    cats = [c["*"].lower() for c in raw_cats if "*" in c]
-    current_size = len(wt)
-    
-    is_bio = any("living people" in c or "deaths" in c or "births" in c for c in cats)
-    is_med = any("disease" in c or "medic" in c or "drug" in c or "syndrome" in c for c in cats)
-    is_place = any("city" in c or "village" in c or "district" in c for c in cats)
-    is_event = any("event" in c or "war" in c or "election" in c for c in cats)
-    
-    if is_bio: expected = ['Early life', 'Career', 'Personal life', 'Awards', 'Legacy', 'References']; article_type = 'biography'
-    elif is_med: expected = ['Signs and symptoms', 'Causes', 'Diagnosis', 'Treatment', 'Epidemiology', 'References']; article_type = 'medical'
-    elif is_place: expected = ['History', 'Geography', 'Demographics', 'Economy', 'References']; article_type = 'place'
-    elif is_event: expected = ['Background', 'Timeline', 'Aftermath', 'Reactions', 'References']; article_type = 'event'
-    else: expected = ['History', 'Description', 'References']; article_type = 'general'
-        
-    existing_sections = [s["name"].lower() for s in sections]
-    missing_expected = [e for e in expected if not any(e.lower() in ex for ex in existing_sections)]
-    
-    s_texts = re.split(r'^=+[^=]+=+$', wt, flags=re.MULTILINE)
-    for i, s in enumerate(sections):
-        t = s_texts[i + 1] if (i + 1) < len(s_texts) else ""
-        s["charCount"] = len(t)
-        s["status"] = "short" if len(t) < 200 else "ok"
-        s["refCount"] = len(re.findall(r'<ref', t, flags=re.IGNORECASE))
-        
-    total_refs = len(re.findall(r'<ref', wt, flags=re.IGNORECASE))
-    has_infobox = bool(re.search(r'\{\{[Ii]nfobox', wt))
-    has_images = bool(re.search(r'\[\[File:|\[\[Image:', wt))
-    
-    suggestions = []
-    if not has_infobox: suggestions.append({"type": "structure", "text": "Add an infobox"})
-    if not has_images: suggestions.append({"type": "media", "text": "Add images from Wikimedia Commons"})
-    if total_refs < 3: suggestions.append({"type": "refs", "text": f"Very few references ({total_refs}) — needs sourcing"})
-    for s in missing_expected: suggestions.append({"type": "section", "text": f'Add "{s}" section'})
-    for s in sections:
-        if s["status"] == "short" and s["name"] not in ("References", "External links"):
-            suggestions.append({"type": "expand", "text": f'Expand "{s["name"]}" — very short ({s["charCount"]} chars)'})
-        if s["refCount"] == 0 and s["charCount"] > 200 and s["name"] not in ("See also", "External links"):
-            suggestions.append({"type": "refs", "text": f'Add refs to "{s["name"]}" — no citations'})
-            
-    res = {"title": title, "articleType": article_type, "sections": sections, "missingExpected": missing_expected, "suggestions": suggestions, "currentSize": current_size, "totalRefs": total_refs, "hasInfobox": has_infobox, "hasImages": has_images, "cats": cats}
-    _cache_analyze[title] = res
-    return res
+        mapped = _local_names(dbname, 'Template', sorted({v for v in INLINE_TAGS.values()}))
+    except Exception:
+        return {}
+    return {local.lower(): english for english, local in mapped.items()}
 
-async def analyze_article_light(title):
-    if title in _cache_analyze_light: return _cache_analyze_light[title]
-    if os.environ.get("STRESS_TEST") == "1":
-        await asyncio.sleep(0.05)
-        return {"missingExpected": ["Description", "References"], "suggestions": [{"type": "section", "text": "Add Description section"}]}
 
-    params = {"action": "parse", "page": title, "prop": "sections|categories|templates", "redirects": "true", "format": "json"}
-    try:
-        async with get_client() as client:
-            response = await client.get(WIKI_API_URL, params=params)
-            response.raise_for_status()
-            data = response.json()
-    except httpx.HTTPError:
-        return {"missingExpected": [], "suggestions": [{"type": "error", "text": "API Failure"}]}
-        
-    if "parse" not in data: return {"missingExpected": [], "suggestions": []}
-        
-    parse_data = data["parse"]
-    raw_sections = parse_data.get("sections", [])
-    raw_cats = parse_data.get("categories", [])
-    raw_templates = parse_data.get("templates", [])
-    
-    sections = [{"name": s["line"], "level": int(s["level"])} for s in raw_sections]
-    cats = [c["*"].lower() for c in raw_cats if "*" in c]
-    
-    is_bio = any("living people" in c or "deaths" in c or "births" in c for c in cats)
-    is_med = any("disease" in c or "medic" in c or "drug" in c or "syndrome" in c for c in cats)
-    is_place = any("city" in c or "village" in c or "district" in c for c in cats)
-    is_event = any("event" in c or "war" in c or "election" in c for c in cats)
-    
-    if is_bio: expected = ['Early life', 'Career', 'Personal life', 'Awards', 'Legacy', 'References']
-    elif is_med: expected = ['Signs and symptoms', 'Causes', 'Diagnosis', 'Treatment', 'Epidemiology', 'References']
-    elif is_place: expected = ['History', 'Geography', 'Demographics', 'Economy', 'References']
-    elif is_event: expected = ['Background', 'Timeline', 'Aftermath', 'Reactions', 'References']
-    else: expected = ['History', 'Description', 'References']
-        
-    existing_sections = [s["name"].lower() for s in sections]
-    missing_expected = [e for e in expected if not any(e.lower() in ex for ex in existing_sections)]
-    
-    has_infobox = any("infobox" in t.get("*", "").lower() for t in raw_templates)
-    
-    suggestions = []
-    if not has_infobox: suggestions.append({"type": "structure", "text": "Add an infobox"})
-    for s in missing_expected: suggestions.append({"type": "section", "text": f'Add "{s}" section'})
-        
-    res = {"missingExpected": missing_expected, "suggestions": suggestions}
-    _cache_analyze_light[title] = res
-    return res
+def _parse_html(html, dbname):
+    soup = BeautifulSoup(html, 'html.parser')
+    local_inline = _local_inline_names(dbname)
+    sections, inline, templates, bare_urls, dead_links = [], [], [], 0, 0
+    cited_urls = set()
+    infobox = bool(soup.select_one('table.infobox, .infobox'))
+    images = len(soup.select('figure, [typeof~="mw:File"], [typeof~="mw:File/Thumb"], [typeof~="mw:File/Frame"]'))
 
-async def _process_single_reference(item, original_title):
-    if item["title"].lower() == original_title.lower(): return None
-    analysis = await analyze_article_light(item["title"])
+    for el in soup.select('[typeof~="mw:Transclusion"]'):
+        try:
+            dm = json.loads(el.get('data-mw') or '{}')
+        except ValueError:
+            continue
+        for part in dm.get('parts') or []:
+            if not isinstance(part, dict) or 'template' not in part:
+                continue
+            t = part['template']
+            name = _template_name((t.get('target') or {}).get('wt'))
+            params = {k: (v or {}).get('wt', '') for k, v in (t.get('params') or {}).items()}
+            templates.append((name, params, el))
+            key = name.lower()
+            english = INLINE_TAGS.get(key) or local_inline.get(key)
+            if english:
+                inline.append({'tag': english, 'template': name, 'date': params.get('date') or None, 'el': el})
+            if english == 'Dead link':
+                dead_links += 1
+            url = params.get('url')
+            if url:
+                cited_urls.add(url.strip())
+                if params.get('url-status') == 'dead' and not params.get('archive-url'):
+                    dead_links += 1
+
+    for a in soup.select('ol.mw-references a.external, ol.references a.external'):
+        href = a.get('href', '')
+        # A citation that is only a URL renders as a "free" external link.
+        if 'free' in (a.get('class') or []) and not a.find_parent('cite'):
+            bare_urls += 1
+        cited_urls.add(href)
+
+    def section_of(el):
+        sec = el.find_parent('section')
+        return sec.get('data-mw-section-id') if sec else None
+
+    for sec in soup.find_all('section'):
+        heading = sec.find(['h2', 'h3', 'h4', 'h5', 'h6'], recursive=False)
+        name = heading.get_text(' ', strip=True) if heading else '(Lead)'
+        level = int(heading.name[1]) if heading else 1
+        sid = sec.get('data-mw-section-id')
+        paras = [p for p in sec.find_all('p', recursive=False) if len(p.get_text(strip=True)) > 0]
+        text_len = sum(len(p.get_text(' ', strip=True)) for p in paras)
+        refs = sum(len(p.select('sup.mw-ref, [typeof~="mw:Extension/ref"]')) for p in paras)
+        uncited = []
+        if not SKIP_SECTIONS.match(name):
+            for p in paras:
+                text = p.get_text(' ', strip=True)
+                if len(text) >= 150 and not p.select('sup.mw-ref, [typeof~="mw:Extension/ref"]'):
+                    uncited.append(re.sub(r'\s+', ' ', text)[:140])
+        sections.append({
+            'id': sid, 'name': name, 'level': level, 'chars': text_len, 'refCount': refs,
+            'uncitedParagraphs': uncited,
+            'inlineTags': [],
+        })
+
+    by_id = {s['id']: s for s in sections}
+    for tag in inline:
+        sec = by_id.get(section_of(tag['el']))
+        sentence = ''
+        parent = tag['el'].find_parent(['p', 'li', 'td'])
+        if parent:
+            sentence = re.sub(r'\s+', ' ', parent.get_text(' ', strip=True))[:140]
+        item = {'tag': tag['tag'], 'template': tag['template'], 'date': tag['date'], 'context': sentence}
+        if sec is not None:
+            sec['inlineTags'].append(item)
+
+    lead = by_id.get('0') or (sections[0] if sections else None)
     return {
-        "title": item["title"],
-        "authors": "Wikipedia Contributors",
-        "year": item.get("timestamp", "")[:4],
-        "venue": "English Wikipedia",
-        "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(item['title'].replace(' ', '_'))}",
-        "citations": item.get("wordcount", 0),
-        "source": "Wikipedia API",
-        "doi": "",
-        "whatToEdit": analysis.get("suggestions", []),
-        "missingSections": analysis.get("missingExpected", [])
+        'sections': sections,
+        'templates': [(n, p) for n, p, _ in templates],
+        'inline': [{k: v for k, v in t.items() if k != 'el'} for t in inline],
+        'infobox': infobox,
+        'images': images,
+        'bareUrls': bare_urls,
+        'deadLinks': dead_links,
+        'citedUrls': sorted(u for u in cited_urls if u),
+        'leadChars': lead['chars'] if lead else 0,
     }
 
-async def find_references(title, offset=0):
-    cache_key = f"{title}_{offset}"
-    if cache_key in _cache_find_refs: return _cache_find_refs[cache_key]
 
-    if os.environ.get("STRESS_TEST") == "1":
-        await asyncio.sleep(0.2)
-        fake_results = [{"title": f"Fake_Ref_{i}", "timestamp": "2024-01-01T00:00:00Z", "wordcount": 1000} for i in range(5)]
-        tasks = [_process_single_reference(res, title) for res in fake_results]
-        results = await asyncio.gather(*tasks)
-        refs = [res for res in results if res is not None]
-        return {"results": refs, "nextOffset": int(offset) + 5, "total": 10000}
+def _wikidata(dbname, title):
+    """Wikidata item for the article: image (P18), Commons category (P373), birth/death
+    dates, and which languages already have an article."""
+    data = wiki.api(dbname, {'action': 'query', 'titles': title, 'prop': 'pageprops', 'ppprop': 'wikibase_item', 'redirects': 1})
+    pages = (data.get('query') or {}).get('pages') or []
+    qid = ((pages[0].get('pageprops') or {}).get('wikibase_item')) if pages else None
+    if not qid:
+        return None
+    ent = (wiki.api('wikidatawiki', {'action': 'wbgetentities', 'ids': qid, 'props': 'claims|sitelinks'})
+           .get('entities') or {}).get(qid) or {}
+    claims = ent.get('claims') or {}
 
-    search_params = {"action": "query", "list": "search", "srsearch": title, "utf8": "1", "format": "json", "srlimit": 15, "sroffset": offset}
+    def first(prop):
+        for s in claims.get(prop, []):
+            if s.get('rank') == 'deprecated':
+                continue
+            try:
+                return s['mainsnak']['datavalue']['value']
+            except (KeyError, TypeError):
+                continue
+        return None
+
+    image = first('P18')
+    born = first('P569')
+    died = first('P570')
+    return {
+        'qid': qid,
+        'url': f'https://www.wikidata.org/wiki/{qid}',
+        'image': image,
+        'imageUrl': f'https://commons.wikimedia.org/wiki/Special:FilePath/{wiki.quote_title(image)}?width=320' if image else None,
+        'commonsCategory': first('P373'),
+        'born': born['time'][1:11] if isinstance(born, dict) and born.get('time') else None,
+        'died': died['time'][1:11] if isinstance(died, dict) and died.get('time') else None,
+        'sitelinks': sorted((ent.get('sitelinks') or {}).keys()),
+    }
+
+
+def _missing_sections(dbname, title, sitelinks):
+    """Sections the English article has that this one lacks, with the heading already
+    translated, from Content Translation's section-mapping service (cxserver)."""
+    lang = wiki.lang(dbname)
+    if lang == 'en' or 'enwiki' not in (sitelinks or []):
+        return []
+    en_title = None
+    for page in wiki.api_pages(dbname, [title], {'action': 'query', 'prop': 'langlinks', 'lllang': 'en'}):
+        links = page.get('langlinks') or []
+        en_title = links[0]['title'] if links else None
+    if not en_title:
+        return []
+    data = wiki.get_json(f'{CXSERVER}/{wiki.quote_title(en_title).replace("/", "%2F")}/en/{lang}', retries=1, timeout=30)
+    mapping = (data or {}).get('sections') or {}
+    return [{'section': sec, 'targetHeading': heading,
+             'translateUrl': cx_url(dbname, en_title, 'en', lang, sec)}
+            for sec, heading in (mapping.get('missing') or {}).items()
+            if sec not in ('References', 'External links', 'See also', 'Notes', 'Further reading', 'Sources', 'Bibliography')]
+
+
+def analyze_article(title, dbname='enwiki'):
+    if os.environ.get('STRESS_TEST') == '1':
+        # Canned response for locustfile.py, so load tests never hit Wikimedia.
+        time.sleep(0.1)
+        return {'title': title, 'wiki': dbname, 'sections': [], 'suggestions': [], 'missingSections': [],
+                'inlineTags': [], 'citedUrls': [], 'topics': [], 'totalRefs': 0, 'currentSize': 0,
+                'hasInfobox': False, 'hasImages': False, 'wikidata': None, 'quality': None}
+    key = (dbname, title)
+    cached = _cache.get(key)
+    if cached:
+        return cached
+    t0 = time.time()
     try:
-        async with get_client() as client:
-            r = await client.get(WIKI_API_URL, params=search_params)
-            r.raise_for_status()
-            data = r.json()
-        search_results = data.get("query", {}).get("search", [])
-        
-        tasks = [_process_single_reference(res, title) for res in search_results]
-        results = await asyncio.gather(*tasks)
-        
-        refs = [res for res in results if res is not None]
-        next_offset = data.get("continue", {}).get("sroffset")
-        total_hits = data.get("query", {}).get("searchinfo", {}).get("totalhits", 0)
-        
-        res = {"results": refs, "nextOffset": next_offset, "total": total_hits}
-        _cache_find_refs[cache_key] = res
-        return res
+        html = wiki.get_text(f'https://{wiki.host(dbname)}/w/rest.php/v1/page/{wiki.quote_title(title).replace("/", "%2F")}/html')
     except Exception as e:
-        return {"results": [], "nextOffset": None, "total": 0, "error": str(e)}
+        return {'error': f'Could not load “{title}” from {dbname}: {e}', 'title': title}
 
-async def fetch_semantic_scholar(title):
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        sig_f = pool.submit(article_signals, dbname, [title])
+        wd_f = pool.submit(_wikidata, dbname, title)
+        parsed = _parse_html(html, dbname)
+        sig = sig_f.result().get(title) or {}
+        try:
+            wd = wd_f.result()
+        except Exception:
+            wd = None
     try:
-        async with get_client() as client:
-            r = await client.get("https://api.semanticscholar.org/graph/v1/paper/search", params={"query": title, "limit": 10, "fields": "title,url,citationCount"})
-            if r.status_code == 200:
-                return [{"title": p.get("title"), "url": p.get("url"), "citations": p.get("citationCount"), "source": "Semantic Scholar"} for p in r.json().get("data", [])]
-    except Exception: pass
-    return []
+        missing = _missing_sections(dbname, title, (wd or {}).get('sitelinks'))
+    except Exception:
+        missing = []
 
-async def fetch_crossref(title):
-    try:
-        async with get_client() as client:
-            r = await client.get("https://api.crossref.org/works", params={"query.bibliographic": title, "select": "title,URL,is-referenced-by-count", "rows": 10})
-            if r.status_code == 200:
-                return [{"title": p.get("title", [""])[0], "url": p.get("URL"), "citations": p.get("is-referenced-by-count"), "source": "CrossRef"} for p in r.json().get("message", {}).get("items", [])]
-    except Exception: pass
-    return []
+    suggestions = []
+    for sec in parsed['sections']:
+        for p in sec['uncitedParagraphs']:
+            suggestions.append({'type': 'refs', 'section': sec['name'],
+                                'text': f'Cite the paragraph in “{sec["name"]}” starting “{p[:90]}…”'})
+        for tag in sec['inlineTags']:
+            when = f' (since {tag["date"]})' if tag['date'] else ''
+            where = 'a citation' if SKIP_SECTIONS.match(sec['name']) else f'“{sec["name"]}”'
+            suggestions.append({'type': 'inline', 'section': sec['name'],
+                                'text': f'{tag["tag"]}{when} in {where}: “{tag["context"][:100]}…”'})
+    tags = dated_tags(sig.get('categories') or [])
+    for issue, since in sorted(tags.items(), key=lambda kv: kv[1]):
+        if issue.startswith(('Use ', 'Articles with short description', 'Pages ', 'Wikipedia articles written')):
+            continue
+        suggestions.append({'type': 'banner', 'text': f'{issue} (tagged {since})'})
+    if parsed['deadLinks']:
+        suggestions.append({'type': 'links', 'text': f'{parsed["deadLinks"]} dead link(s) — replace or add an archive URL'})
+    if parsed['bareUrls']:
+        suggestions.append({'type': 'refs', 'text': f'{parsed["bareUrls"]} bare URL reference(s) — expand into full citations'})
+    if parsed['leadChars'] < LEAD_MIN_CHARS and sum(s['chars'] for s in parsed['sections']) > 3000:
+        suggestions.append({'type': 'structure', 'text': f'Lead is only {parsed["leadChars"]} characters — summarise the article in it'})
+    if not parsed['images'] and wd and wd.get('image'):
+        suggestions.append({'type': 'media', 'text': f'Add the Wikidata image “{wd["image"]}”', 'image': wd['imageUrl']})
+    elif not parsed['images'] and wd and wd.get('commonsCategory'):
+        suggestions.append({'type': 'media', 'text': f'Pick an image from Commons category “{wd["commonsCategory"]}”',
+                            'url': f'https://commons.wikimedia.org/wiki/Category:{wiki.quote_title(wd["commonsCategory"])}'})
+    if 'image' in (sig.get('recommendations') or []) and not parsed['images']:
+        suggestions.append({'type': 'media', 'text': 'Wikipedia has a suggested image for this article (Add an image task)'})
+    for m in missing[:6]:
+        suggestions.append({'type': 'section', 'text': f'Add “{m["targetHeading"]}” ({m["section"]}) — exists in the English article',
+                            'url': m['translateUrl']})
+    if wd and wd.get('born') and not re.search(wd['born'][:4], html[:20000]):
+        suggestions.append({'type': 'facts', 'text': f'Wikidata has a birth date ({wd["born"]}) that the article may be missing'})
 
-MEDICAL_HINTS = ('medic', 'disease', 'health', 'hospital', 'drug', 'pharma', 'anatom', 'surg', 'radiol', 'pathol', 'diagnos', 'therap', 'clinic', 'symptom', 'syndrome', 'cancer', 'infect', 'epidem', 'virus', 'bacter', 'vaccine')
-
-async def fetch_pubmed(title):
-    try:
-        async with get_client() as client:
-            r = await client.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi", params={"db": "pubmed", "term": title, "retmode": "json", "retmax": 10})
-            if r.status_code == 200:
-                ids = r.json().get("esearchresult", {}).get("idlist", [])
-                if ids:
-                    r2 = await client.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi", params={"db": "pubmed", "id": ",".join(ids), "retmode": "json"})
-                    if r2.status_code == 200:
-                        data = r2.json().get("result", {})
-                        return [{"title": data[uid].get("title"), "url": f"https://pubmed.ncbi.nlm.nih.gov/{uid}/", "citations": 0, "source": "PubMed"} for uid in ids if uid in data]
-    except Exception: pass
-    return []
-
-async def find_external_references(title):
-    if title in _cache_ext_refs: return _cache_ext_refs[title]
-    is_medical = any(kw in title.lower() for kw in MEDICAL_HINTS)
-    
-    tasks = [fetch_semantic_scholar(title), fetch_crossref(title)]
-    if is_medical: tasks.append(fetch_pubmed(title))
-    
-    results = await asyncio.gather(*tasks)
-    sources = [results[0], results[1], results[2] if is_medical else []]
-    
-    merged = []
-    for i in range(max((len(s) for s in sources), default=0)):
-        for s in sources:
-            if i < len(s): merged.append(s[i])
-            
-    seen = set()
-    deduped = []
-    for r in merged:
-        t = r.get("title") or ""
-        tl = t.lower().strip()
-        if tl and tl not in seen:
-            seen.add(tl)
-            deduped.append(r)
-            
-    res = {"results": deduped}
-    _cache_ext_refs[title] = res
+    quality = sig.get('quality')
+    total_refs = sum(s['refCount'] for s in parsed['sections'])
+    res = {
+        'title': title,
+        'wiki': dbname,
+        'url': wiki.page_url(dbname, title),
+        'editUrl': wiki.edit_url(dbname, title),
+        'quality': quality,
+        'qualityNext': QUALITY_NEXT.get(quality),
+        'importance': sig.get('importance'),
+        'wikiprojects': sig.get('wikiprojects') or [],
+        'topics': [k.split('.')[-1].rstrip('*').replace('_', ' ') for k, w in
+                   sorted((sig.get('topics') or {}).items(), key=lambda kv: -kv[1])][:4],
+        'currentSize': sig.get('bytes') or len(html),
+        'totalRefs': total_refs,
+        'hasInfobox': parsed['infobox'],
+        'hasImages': parsed['images'] > 0,
+        'sections': [{k: v for k, v in s.items()} for s in parsed['sections']],
+        'inlineTags': parsed['inline'],
+        'missingSections': missing,
+        'wikidata': wd,
+        'citedUrls': parsed['citedUrls'],
+        'suggestions': suggestions,
+        'secs': round(time.time() - t0, 1),
+    }
+    _cache.set(key, res)
     return res

@@ -1,5 +1,4 @@
 flask
 flask-cors
 requests
-asgiref
-httpx
+beautifulsoup4

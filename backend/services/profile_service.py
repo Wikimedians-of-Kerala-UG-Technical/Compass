@@ -1,272 +1,377 @@
-import time
+"""Editor profile, built on the editor's home Wikipedia (not just enwiki).
+
+Topics and countries come from Wikipedia's own ML labels on the articles the editor
+works on (`cirrusdoc` weighted_tags), so they work in every language and for every
+subject, instead of a hand-written keyword list.
+"""
+import math
 import re
-from services.http_client import session
+import time
+from concurrent.futures import ThreadPoolExecutor
 
-WIKI_API = "https://en.wikipedia.org/w/api.php"
-META_API = "https://meta.wikimedia.org/w/api.php"
+from services import wiki
+from services.signals import article_signals, aggregate_profile, topic_label, topic_slug, \
+    is_region_topic, country_info
 
-TOPIC_KW = {
-    "medicine": ["medic", "disease", "health", "hospital", "drug", "pharma", "anatomy", "surg",
-                 "radiol", "pathol", "diagnos", "therap", "clinic", "symptom", "syndrome",
-                 "cancer", "infect", "epidem", "virus", "bacter"],
-    "science": ["science", "physic", "chemi", "biolog", "math", "astrono", "geolog", "ecolog", "genetic"],
-    "technology": ["technol", "comput", "software", "internet", "digital", "program", "engineer", "robot"],
-    "geography": ["geograph", "countr", "city", "cities", "district", "village", "town", "region", "province"],
-    "history": ["histor", "ancient", "mediev", "century", "war ", "empire", "dynasty", "colonial"],
-    "culture": ["cultur", "music", "film", "art ", "literat", "novel", "poet", "theater", "cinema"],
-    "biography": ["birth", "death", "people", "person", "biograph", "living people", "alumni"],
-    "education": ["educat", "universit", "school", "college", "academ"],
-    "india": ["india", "kerala", "tamil", "hindi", "bengal", "mumbai", "delhi", "malay", "karnatak"],
-    "politics": ["politic", "govern", "election", "parliament", "president", "minister"],
-    "sports": ["sport", "football", "cricket", "basketball", "olympic", "athlet", "soccer"],
-    "environment": ["environ", "climate", "conserv", "species", "wildlife", "ocean", "forest"],
-}
+CONTRIBS_LIMIT = 2000
+SIGNAL_ARTICLES = 200
+CREATIONS_LIMIT = 1000
+LANGUAGE_MIN_EDITS = 100
+
+_profiles = wiki.TTLCache(ttl=6 * 3600, maxsize=500)
+_globals = wiki.TTLCache(ttl=6 * 3600, maxsize=500)
+
+REVERT_TAGS = ('mw-rollback', 'mw-undo', 'mw-manual-revert')
 
 
-def _wiki_get(params, retries=3, api_url=WIKI_API):
-    params = {**params, "format": "json"}
-    for attempt in range(retries):
-        r = session.get(api_url, params=params, timeout=15)
-        if r.status_code == 429:
-            wait = int(r.headers.get("Retry-After", 2)) * (attempt + 1)
-            time.sleep(wait)
-            continue
-        r.raise_for_status()
-        return r.json()
-    raise RuntimeError("MediaWiki API rate-limited us after retries")
-
-
-def fetch_global_editcount(username):
-    """action=query&meta=globaluserinfo&guiprop=merged — sums editcount across every merged wiki."""
-    data = _wiki_get(
-        {"action": "query", "meta": "globaluserinfo", "guiuser": username, "guiprop": "merged"},
-        api_url=META_API,
-    )
-    info = (data.get("query") or {}).get("globaluserinfo") or {}
-    merged = info.get("merged") or []
-    return sum(wiki.get("editcount", 0) for wiki in merged)
-
-
-def fetch_user_wikis(username, min_edits=10):
-    """Wikipedia-project wikis (not Commons/Wikidata/Meta/etc.) where the user
-    has at least `min_edits` edits, via globaluserinfo's per-wiki breakdown.
-    This is used as the user's "known languages" signal.
-    """
-    data = _wiki_get(
-        {"action": "query", "meta": "globaluserinfo", "guiuser": username, "guiprop": "merged"},
-        api_url=META_API,
-    )
-    info = (data.get("query") or {}).get("globaluserinfo") or {}
-    merged = info.get("merged") or []
-    wikis = []
-    for wiki in merged:
-        url = wiki.get("url", "")
-        editcount = wiki.get("editcount", 0)
-        m = re.match(r"^https://([a-z0-9-]+)\.wikipedia\.org$", url)
-        if m and editcount >= min_edits:
-            wikis.append({
-                "dbname": wiki.get("wiki"),
-                "lang": m.group(1),
-                "url": url,
-                "editcount": editcount,
-            })
-    wikis.sort(key=lambda w: w["editcount"], reverse=True)
-    return wikis
-
-
-def fetch_contribs(username, limit=20000):
-    """Paginated action=query&list=usercontribs, 500/batch (API hard cap), up to `limit` total."""
-    all_contribs = []
-    cont = None
-    while len(all_contribs) < limit:
-        params = {
-            "action": "query",
-            "list": "usercontribs",
-            "ucuser": username,
-            "uclimit": 500,
-            "ucprop": "title|timestamp|comment|sizediff|tags|size|ids",
-            "ucdir": "older",
-        }
-        if cont:
-            params["uccontinue"] = cont
-        data = _wiki_get(params)
-        batch = (data.get("query") or {}).get("usercontribs") or []
-        if not batch:
-            break
-        all_contribs.extend(batch)
-        cont = (data.get("continue") or {}).get("uccontinue")
-        if not cont:
-            break
-        time.sleep(0.25)
-    if not all_contribs:
-        raise ValueError(f'No edits found for "{username}".')
-    return all_contribs[:limit]
-
-
-def classify_edit(comment, tags, sizediff):
-    """Mirrors classifyEdit() from the original JS."""
-    c = (comment or "").lower()
-    tags = tags or []
-    if any(t in ("mw-rollback", "mw-undo", "mw-manual-revert") for t in tags):
-        return "revert"
-    if re.search(r"\bstub", c):
-        return "stub_work"
-    if re.search(r"copyedit|copy edit|grammar|spelling|typo", c):
-        return "copyedit"
-    if re.search(r"categor|recat", c):
-        return "categorization"
-    if re.search(r"\bref|citation|source|\bcite\b", c):
-        return "references"
-    if re.search(r"image|file:|photo", c):
-        return "media"
-    if re.search(r"infobox|template|navbox", c):
-        return "template"
-    if re.search(r"creat|new article", c):
-        return "creation"
-    if re.search(r"wikidata|wikilink|interwiki", c):
-        return "wikilinks"
-    if re.search(r"\blink|orphan|dead.?end", c):
-        return "linking"
-    if re.search(r"short desc", c):
-        return "shortdesc"
-    if re.search(r"merge|redirect", c):
-        return "merge"
-    if re.search(r"disambig|dab", c):
-        return "disambig"
-    if (sizediff or 0) > 500:
-        return "major_add"
-    if (sizediff or 0) < -500:
-        return "major_remove"
-    if abs(sizediff or 0) < 50:
-        return "minor"
-    return "general"
-
-
-def fetch_categories(titles):
-    """Batches of 50, mirrors fetchCategories()."""
-    cat_map = {}
-    for i in range(0, len(titles), 50):
-        batch = titles[i:i + 50]
-        data = _wiki_get({
-            "action": "query",
-            "titles": "|".join(batch),
-            "prop": "categories",
-            "cllimit": "max",
-            "clshow": "!hidden",
+def fetch_global_user(username):
+    """globaluserinfo: global edit count and per-wiki edit counts."""
+    def compute():
+        data = wiki.api('metawiki', {
+            'action': 'query', 'meta': 'globaluserinfo', 'guiuser': username, 'guiprop': 'merged|editcount',
         })
-        pages = (data.get("query") or {}).get("pages") or {}
-        for pg in pages.values():
-            title = pg.get("title")
-            if not title:
-                continue
-            cat_map[title] = [c["title"].replace("Category:", "") for c in pg.get("categories", [])]
-        time.sleep(0.25)
+        info = (data.get('query') or {}).get('globaluserinfo') or {}
+        if info.get('missing') is not None or not info.get('merged'):
+            raise ValueError(f'No Wikimedia account named "{username}".')
+        per_wiki = {}
+        for w in info.get('merged') or []:
+            db = w.get('wiki')
+            if w.get('editcount', 0) > 0:
+                per_wiki[db] = {'dbname': db, 'url': w.get('url'), 'editcount': w.get('editcount', 0)}
+        return {'name': info.get('name', username), 'editcount': info.get('editcount', 0), 'wikis': per_wiki}
+    return _globals.get_or_compute(username, compute)
+
+
+def content_wikis(global_user, min_edits=1):
+    """The user's Wikipedias (no Commons/Wikidata/test wikis), most edits first."""
+    wikis = [w for db, w in global_user['wikis'].items()
+             if wiki.is_content_wikipedia(db) and wiki.dbname_from_url(w['url']) == db
+             and w['editcount'] >= min_edits]
+    for w in wikis:
+        w['lang'] = wiki.lang(w['dbname'])
+    return sorted(wikis, key=lambda w: w['editcount'], reverse=True)
+
+
+def home_wiki(global_user):
+    wikis = content_wikis(global_user)
+    return wikis[0]['dbname'] if wikis else 'enwiki'
+
+
+def fetch_contribs(dbname, username, limit=CONTRIBS_LIMIT, namespace=None, show=None,
+                   prop='title|timestamp|comment|sizediff|tags|size|ids|flags'):
+    out, cont = [], None
+    while len(out) < limit:
+        params = {
+            'action': 'query', 'list': 'usercontribs', 'ucuser': username,
+            'uclimit': min(500, limit - len(out)), 'ucprop': prop, 'ucdir': 'older',
+        }
+        if namespace is not None:
+            params['ucnamespace'] = namespace
+        if show:
+            params['ucshow'] = show
+        if cont:
+            params['uccontinue'] = cont
+        data = wiki.api(dbname, params)
+        batch = (data.get('query') or {}).get('usercontribs') or []
+        out.extend(batch)
+        cont = (data.get('continue') or {}).get('uccontinue')
+        if not batch or not cont:
+            break
+    return out
+
+
+def fetch_babel(dbname, username):
+    try:
+        data = wiki.api(dbname, {'action': 'query', 'meta': 'babel', 'babuser': username})
+        return (data.get('query') or {}).get('babel') or {}
+    except Exception:
+        return {}
+
+
+def fetch_categories(dbname, titles):
+    """Visible (non-hidden) categories of each title."""
+    cat_map = {}
+    for page in wiki.api_pages(dbname, titles, {
+        'action': 'query', 'prop': 'categories', 'cllimit': 'max', 'clshow': '!hidden',
+    }):
+        cat_map[page['title']] = [c['title'].split(':', 1)[1] for c in page.get('categories') or []]
     return cat_map
 
 
-def extract_topics(cat_map):
-    scores = {}
-    for cats in cat_map.values():
+# Maintenance/tracking categories that some wikis don't mark as hidden.
+NON_TOPICAL = re.compile(
+    r'(CS1|Pages (using|with)|Articles (with|containing|needing|lacking)|^All |Wikipedia|Webarchive|'
+    r'^Use |Short description|Coordinates|Commons category|Wikidata|stub|template|\(\w{2,3}(-\w+)?\)$)',
+    re.IGNORECASE)
+MEGA_CATEGORY = 5000
+ADMIN_CATEGORY = 'Q15647814'  # Wikidata: Wikimedia administration category
+
+
+GENERIC_CATEGORIES = ['Living people', 'Possibly living people', 'Year of birth missing (living people)']
+_generic_cache = wiki.TTLCache(ttl=7 * 24 * 3600)
+
+
+def generic_categories(dbname):
+    """Local names of categories that hold everyone (e.g. ml: ജീവിച്ചിരിക്കുന്നവർ)."""
+    from services.maintenance import _local_names
+    return _generic_cache.get_or_compute(
+        dbname, lambda: list(_local_names(dbname, 'Category', GENERIC_CATEGORIES).values()))
+
+
+def topical_categories(dbname, cat_counts, cat_weight=None, limit=15):
+    """The user's categories, minus tracking ones and ones that hold everyone.
+
+    Uses each category's Wikidata item, which works in any language: categories that
+    say what they're about (P301 main topic, or P4224 "contains") rank first; births and
+    deaths categories (P4224 human with a P569/P570 qualifier) and Wikimedia administration
+    (maintenance) categories (P31 Q15647814) are dropped. Categories
+    with no Wikidata item at all are often local maintenance categories (tawiki's
+    "articles needing wikification" isn't hidden), so they rank last. Categories over
+    5,000 pages are dropped too.
+    """
+    generic = set(generic_categories(dbname))
+    cat_weight = cat_weight or cat_counts
+    ranked = [(c, k) for c, k in sorted(cat_counts.items(), key=lambda kv: cat_weight[kv[0]], reverse=True)
+              if k >= 2 and not NON_TOPICAL.search(c) and c not in generic][:40]
+    sizes, items = {}, {}
+    for page in wiki.api_pages(dbname, [f'Category:{c}' for c, _ in ranked], {
+        'action': 'query', 'prop': 'categoryinfo|pageprops', 'ppprop': 'wikibase_item',
+    }):
+        name = page['title'].split(':', 1)[1]
+        sizes[name] = (page.get('categoryinfo') or {}).get('pages', 0)
+        q = (page.get('pageprops') or {}).get('wikibase_item')
+        if q:
+            items[name] = q
+    kinds = {}
+    qids = list(set(items.values()))
+    for i in range(0, len(qids), 50):
+        data = wiki.api('wikidatawiki', {'action': 'wbgetentities', 'ids': '|'.join(qids[i:i + 50]), 'props': 'claims'}, post=True)
+        for qid, ent in (data.get('entities') or {}).items():
+            claims = ent.get('claims') or {}
+            people_by_date = any(set(s.get('qualifiers') or {}) & {'P569', 'P570'} for s in claims.get('P4224', []))
+            admin = any(((s.get('mainsnak') or {}).get('datavalue') or {}).get('value', {}).get('id') == ADMIN_CATEGORY
+                        for s in claims.get('P31', []))
+            kinds[qid] = ('skip' if people_by_date or admin
+                          else 'topical' if ('P301' in claims or 'P4224' in claims) else 'plain')
+    weight = {'topical': 1.0, 'plain': 0.7, None: 0.4}
+    out = []
+    for c, k in ranked:
+        kind = kinds.get(items.get(c))
+        if kind == 'skip' or sizes.get(c, 0) > MEGA_CATEGORY:
+            continue
+        out.append({'name': c, 'count': k, 'size': sizes.get(c, 0), 'rank': cat_weight[c] * weight.get(kind, 0.4)})
+    out.sort(key=lambda x: x['rank'], reverse=True)
+    return [{k: v for k, v in x.items() if k != 'rank'} for x in out[:limit]]
+
+
+def classify_edit(contrib):
+    """Edit type from MediaWiki change tags first (language-independent), then from the
+    edit summary (English-only heuristics), then from the size of the change."""
+    tags = contrib.get('tags') or []
+    ns = contrib.get('ns') or 0
+    if any(t in REVERT_TAGS for t in tags):
+        return 'revert'
+    if any(t.startswith('contenttranslation') for t in tags):
+        return 'translation'
+    if any(t.startswith('newcomer task') for t in tags):
+        return 'newcomer_task'
+    if 'mw-new-redirect' in tags or 'mw-changed-redirect-target' in tags:
+        return 'redirect'
+    if ns != 0:
+        if ns % 2 == 1 or ns == 4:
+            return 'discussion'
+        if ns == 14:
+            return 'categorization'
+        if ns == 6:
+            return 'media'
+        if ns == 10:
+            return 'template'
+        return 'other_namespace'
+    if 'editcheck-newreference' in tags:
+        return 'references'
+    c = (contrib.get('comment') or '').lower()
+    sizediff = contrib.get('sizediff') or 0
+    if contrib.get('new') is not None:
+        return 'creation'
+    if re.search(r'copyedit|copy edit|grammar|spelling|typo', c):
+        return 'copyedit'
+    if re.search(r'categor|recat|hotcat', c):
+        return 'categorization'
+    if re.search(r'\bref|citation|source|\bcite\b', c):
+        return 'references'
+    if re.search(r'image|file:|photo', c):
+        return 'media'
+    if re.search(r'infobox|template|navbox', c):
+        return 'template'
+    if re.search(r'\blink|orphan|dead.?end', c):
+        return 'linking'
+    if re.search(r'short desc', c) or 'shortdesc helper' in tags:
+        return 'shortdesc'
+    if sizediff > 500:
+        return 'major_add'
+    if sizediff < -500:
+        return 'major_remove'
+    if abs(sizediff) < 50:
+        return 'minor'
+    return 'general'
+
+
+def reverted_by_others(contribs):
+    """Share of the user's article edits that were reverted by someone else.
+    `mw-reverted` also marks edits the user undid themselves, so an edit counts as
+    self-reverted when the user's own next edit on that page is a revert."""
+    by_title = {}
+    for c in reversed(contribs):  # oldest first
+        by_title.setdefault(c['title'], []).append(c)
+    reverted = 0
+    for edits in by_title.values():
+        for i, c in enumerate(edits):
+            if 'mw-reverted' not in (c.get('tags') or []):
+                continue
+            nxt = edits[i + 1] if i + 1 < len(edits) else None
+            if nxt and any(t in REVERT_TAGS for t in nxt.get('tags') or []):
+                continue
+            reverted += 1
+    total = len(contribs)
+    return {'count': reverted, 'of': total, 'share': round(reverted / total, 4) if total else 0}
+
+
+def build_profile(username, dbname=None):
+    key = (username, dbname)
+    return _profiles.get_or_compute(key, lambda: _build_profile(username, dbname))
+
+
+def _build_profile(username, dbname):
+    t0 = time.time()
+    gu = fetch_global_user(username)
+    wikis = content_wikis(gu)
+    home = dbname or home_wiki(gu)
+    pool = ThreadPoolExecutor(max_workers=4)
+    created_f = pool.submit(fetch_contribs, home, username, CREATIONS_LIMIT, 0, 'new', 'title|timestamp')
+    babel_f = pool.submit(fetch_babel, home, username)
+    contribs = fetch_contribs(home, username)
+    if not contribs:
+        raise ValueError(f'"{username}" has no edits on {home}.')
+
+    articles = [c for c in contribs if (c.get('ns') or 0) == 0]
+    page_counts, last_edit = {}, {}
+    for c in articles:
+        page_counts[c['title']] = page_counts.get(c['title'], 0) + 1
+        last_edit.setdefault(c['title'], c['timestamp'])  # contribs are newest first
+    recent_titles = list(dict.fromkeys(c['title'] for c in articles))
+    by_count = sorted(page_counts, key=page_counts.get, reverse=True)
+    signal_titles = list(dict.fromkeys(by_count[:50] + recent_titles))[:SIGNAL_ARTICLES]
+
+    cats_f = pool.submit(fetch_categories, home, signal_titles[:150])
+    sigs = article_signals(home, signal_titles)
+    # Articles the editor keeps coming back to say more about them than one-off edits
+    # (patrolling, typo fixes), so each article counts 1 + log2(edits on it).
+    weights = {t: 1 + math.log2(page_counts.get(t, 1)) for t in signal_titles}
+    present = [sigs[t] for t in signal_titles if t in sigs]
+    topic_w, country_w = aggregate_profile(present, [weights[s['title']] if s['title'] in weights else 1 for s in present])
+    n = max(sum(weights.get(s['title'], 1) for s in present), 1)
+    topics = [
+        {'path': p, 'slug': topic_slug(p), 'label': topic_label(p), 'share': round(w / n, 3)}
+        for p, w in sorted(topic_w.items(), key=lambda kv: kv[1], reverse=True)
+        if not is_region_topic(p) and w / n >= 0.05
+    ][:6]
+    regions = [
+        {'path': p, 'slug': topic_slug(p), 'label': topic_label(p), 'share': round(w / n, 3)}
+        for p, w in sorted(topic_w.items(), key=lambda kv: kv[1], reverse=True)
+        if is_region_topic(p) and not p.endswith('*') and w / n >= 0.05
+    ][:4]
+    countries = []
+    for name, w in sorted(country_w.items(), key=lambda kv: kv[1], reverse=True):
+        info = country_info(name)
+        if info and w / n >= 0.05:
+            countries.append({**info, 'share': round(w / n, 3)})
+    countries = countries[:4]
+
+    cat_map = cats_f.result()
+    cat_counts, cat_weight = {}, {}
+    for title, cats in cat_map.items():
         for cat in cats:
-            cl = cat.lower()
-            for topic, keywords in TOPIC_KW.items():
-                if any(kw in cl for kw in keywords):
-                    scores[topic] = scores.get(topic, 0) + 1
-    return scores
+            cat_counts[cat] = cat_counts.get(cat, 0) + 1
+            cat_weight[cat] = cat_weight.get(cat, 0) + weights.get(title, 1)
+    top_categories = topical_categories(home, cat_counts, cat_weight)
 
-
-GEO_KW = {
-    "kerala": ["kerala", "kozhikode", "thrissur", "kochi", "thiruvananthapuram", "malappuram",
-               "kannur", "palakkad", "kollam"],
-    "india": ["india", "indian", "delhi", "mumbai", "kolkata", "chennai", "bangalore", "hyderabad",
-              "rajasthan", "gujarat", "maharashtra", "uttar pradesh", "tamil nadu", "karnataka"],
-    "usa": ["united states", "american", "california", "new york", "texas", "florida",
-            "washington", "chicago", "los angeles"],
-    "uk": ["united kingdom", "british", "england", "london", "scotland", "wales"],
-    "middleeast": ["arab", "saudi", "iran", "iraq", "syria", "egypt", "turkey", "jordan",
-                   "lebanon", "palestine", "israel"],
-    "africa": ["africa", "nigeria", "kenya", "south africa", "ethiopia", "ghana", "tanzania"],
-    "europe": ["german", "french", "spain", "italy", "netherlands", "sweden", "poland",
-               "russia", "european"],
-    "asia": ["china", "chinese", "japan", "japanese", "korea", "korean", "vietnam", "thailand",
-             "indonesia", "malaysia", "philippines", "singapore", "bangladesh", "pakistan", "sri lanka"],
-}
-
-
-def extract_geo(cat_map):
-    scores = {}
-    for cats in cat_map.values():
-        for cat in cats:
-            cl = cat.lower()
-            for geo, keywords in GEO_KW.items():
-                if any(kw in cl for kw in keywords):
-                    scores[geo] = scores.get(geo, 0) + 1
-    return scores
-
-
-def build_recent_edits(contribs, limit=15):
-    """List of recent edits with direct links to the diff and the article."""
-    recent = []
-    for c in contribs[:limit]:
-        title = c.get("title", "")
-        revid = c.get("revid")
-        recent.append({
-            "title": title,
-            "timestamp": c.get("timestamp"),
-            "comment": c.get("comment") or "",
-            "sizediff": c.get("sizediff", 0),
-            "diffUrl": f"https://en.wikipedia.org/w/index.php?diff={revid}" if revid else None,
-            "articleUrl": f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
-        })
-    return recent
-
-
-def build_profile(username, contribs, cat_map, global_editcount):
-    """Trimmed buildDeepProfile() — v1 scope only."""
-    articles = [c for c in contribs if (c.get("ns") or 0) == 0]
-    unique_articles = list({c["title"] for c in articles})
+    created = created_f.result()
+    created_live = [c['title'] for c in created]
 
     edit_types = {}
     for c in contribs:
-        t = classify_edit(c.get("comment"), c.get("tags"), c.get("sizediff"))
+        t = classify_edit(c)
         edit_types[t] = edit_types.get(t, 0) + 1
 
-    topics = extract_topics(cat_map)
-    top_topics = [t[0] for t in sorted(topics.items(), key=lambda kv: kv[1], reverse=True)[:3]]
-    if not top_topics:
-        top_topics = ["general"]
+    babel = babel_f.result()
+    pool.shutdown()
+    languages = {}
+    for code, level in babel.items():
+        languages[code] = {'lang': code, 'level': level, 'source': 'babel'}
+    # Babel is what the editor says they can read and write. Edit counts are only a
+    # fallback: medical translators, interwiki fixers and bots edit dozens of wikis.
+    if not any(level not in ('0', '1') for level in babel.values()):
+        for w in wikis[:4]:
+            if w['editcount'] >= LANGUAGE_MIN_EDITS and w['lang'] not in languages:
+                languages[w['lang']] = {'lang': w['lang'], 'level': None, 'source': 'edits'}
+    languages.setdefault(wiki.lang(home), {'lang': wiki.lang(home), 'level': None, 'source': 'home'})
+    for code, entry in languages.items():
+        db = code.replace('-', '_') + 'wiki'
+        w = gu['wikis'].get(db)
+        entry['dbname'] = db
+        entry['editcount'] = w['editcount'] if w else 0
+        entry['url'] = f'https://{wiki.host(db)}'
+    language_list = sorted(
+        (l for l in languages.values() if l['level'] not in ('0', '1')),
+        key=lambda l: (l['dbname'] != home, -l['editcount']))
 
-    total = len(contribs)
-    revert_rate = edit_types.get("revert", 0) / max(total, 1)
-    quality_tier = "high" if revert_rate < .02 else "medium" if revert_rate < .06 else "developing"
-
-    geo_scores = extract_geo(cat_map)
-    top_geo = [g[0] for g in sorted(geo_scores.items(), key=lambda kv: kv[1], reverse=True)[:3]]
-
-    page_counts = {}
-    for c in articles:
-        page_counts[c["title"]] = page_counts.get(c["title"], 0) + 1
-    heavily_edited = [
-        {"title": title, "count": count}
-        for title, count in sorted(page_counts.items(), key=lambda kv: kv[1], reverse=True)
-        if count >= 3
+    heavily = [
+        {'title': t, 'count': page_counts[t], 'lastEdit': last_edit[t]}
+        for t in by_count if page_counts[t] >= 3
     ][:15]
 
-    created_articles = [
-        c["title"] for c in contribs
-        if (c.get("ns") or 0) == 0
-        and classify_edit(c.get("comment"), c.get("tags"), c.get("sizediff")) == "creation"
-    ][:20]
+    sister = {db: gu['wikis'][db]['editcount'] for db in ('wikidatawiki', 'commonswiki') if db in gu['wikis']}
 
     return {
-        "username": username,
-        "total": global_editcount,
-        "uniqueArticles": len(unique_articles),
-        "editTypes": edit_types,
-        "topTopics": top_topics,
-        "recentEdits": build_recent_edits(contribs, limit=15),
-        "qualityTier": quality_tier,
-        "topGeo": top_geo,
-        "heavilyEdited": heavily_edited,
-        "createdArticles": created_articles,
+        'username': gu['name'],
+        'homeWiki': home,
+        'homeLang': wiki.lang(home),
+        'homeUrl': f'https://{wiki.host(home)}',
+        'wikis': [{k: w[k] for k in ('dbname', 'lang', 'url', 'editcount')} for w in wikis[:12]],
+        'languages': language_list,
+        'total': gu['editcount'],
+        'homeEdits': gu['wikis'].get(home, {}).get('editcount', len(contribs)),
+        'sisterProjects': sister,
+        'editsAnalysed': len(contribs),
+        'uniqueArticles': len(page_counts),
+        'topics': topics,
+        'regions': regions,
+        'countries': countries,
+        'topTopics': [t['label'] for t in topics[:3]] or ['general'],
+        'topCategories': top_categories,
+        'editTypes': edit_types,
+        'reverted': reverted_by_others(articles),
+        'heavilyEdited': heavily,
+        'createdArticles': created_live[:50],
+        'createdCount': len(created_live),
+        'createdCountCapped': len(created_live) >= CREATIONS_LIMIT,
+        'recentEdits': [
+            {
+                'title': c['title'],
+                'timestamp': c.get('timestamp'),
+                'comment': c.get('comment') or '',
+                'sizediff': c.get('sizediff', 0),
+                'diffUrl': f"https://{wiki.host(home)}/w/index.php?diff={c['revid']}" if c.get('revid') else None,
+                'articleUrl': wiki.page_url(home, c['title']),
+            }
+            for c in contribs[:15]
+        ],
+        '_editedTitles': signal_titles,
+        '_lastEdit': last_edit,
+        'secs': round(time.time() - t0, 1),
     }
+
+
+def public_profile(profile):
+    """Profile without the internal fields other services reuse."""
+    return {k: v for k, v in profile.items() if not k.startswith('_')}
