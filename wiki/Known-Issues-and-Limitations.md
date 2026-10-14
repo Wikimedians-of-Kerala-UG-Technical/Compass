@@ -40,7 +40,8 @@ What's approximate or missing in Compass. Read this before trusting an output or
 - "Biography" and "Media" are broad topics. For editors whose top topic is broad, the category and similar-article scopes matter most.
 
 ### Freshness and scale
-- Caches are in memory and per process (profile 6 h, signals 24 h, trends 3 h). Restarting clears them, and several workers don't share them.
+- Caches (profile 6 h, signals 24 h, Wikidata places 7 days, trends 3 h) live in memory and in one SQLite file. That suits one machine; several machines would need a shared store such as Redis.
+- A first visit is still slow for a very active editor: 2,000 contributions take four sequential API pages (~6 s), and a place hierarchy is walked one level at a time.
 - WDQS queries can take 1–60 s and are rate-limited. Region gaps use direct P131 children only, because transitive queries over a whole state time out.
 - Lift Wing and the CX recommendation API are used anonymously, which has rate limits. Register an API token for production volume.
 

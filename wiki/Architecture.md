@@ -5,7 +5,7 @@
 1. **Any wiki, not just English.** Every service takes a `dbname`. The editor's home wiki (most edits) is the default, so a Malayalam, Tamil or Swedish editor gets results from their own Wikipedia.
 2. **Use Wikipedia's own signals.** Topics, countries, quality, maintenance tags and recommendations come from what Wikimedia already computes: ML labels in the search index (`cirrusdoc`), tracking categories, PageAssessments, Growth suggestions and Lift Wing models. There are no keyword lists.
 3. **Routes are thin, services are thick.** `routes/` parses parameters and serialises JSON. All logic is in `services/`.
-4. **One client, one cache.** All HTTP goes through `services/wiki.py`, which handles User-Agent, retries, POST batching and per-wiki hosts. Results are cached in memory with a TTL.
+4. **One client, one cache.** All HTTP goes through `services/wiki.py`, which handles User-Agent, retries, POST batching and per-wiki hosts. Results are cached with a TTL, in memory and in a SQLite file (`COMPASS_CACHE_PATH`), so restarts and other workers start warm.
 5. **Say when something failed.** Sub-source failures are reported as `partial: true` (with `failed`) instead of silently becoming empty lists.
 
 ---
@@ -44,7 +44,7 @@ flowchart TB
 | Module | Responsibility |
 |---|---|
 | `app.py` | App factory. Auto-registers every blueprint in `routes/`. Config through env vars (`FLASK_DEBUG`, `COMPASS_HOST`, `COMPASS_PORT`, `COMPASS_CORS_ORIGINS`). |
-| `services/wiki.py` | The HTTP client: `api(dbname, params, post)`, `api_pages` (50-title batches over POST), `search`, `get_json`/`post_json`, host and URL helpers, and `TTLCache` (thread-safe, with per-key compute locks). |
+| `services/wiki.py` | The HTTP client: `api(dbname, params, post)`, `api_pages` (50-title batches over POST), `search`, `get_json`/`post_json`, host and URL helpers, and `TTLCache` (thread-safe, with per-key compute locks; named caches are also written to SQLite). |
 | `services/signals.py` | Per-article signals from `prop=cirrusdoc|pageassessments|info`: ML topics and country, Growth recommendations, popularity, incoming links, size, coordinates, categories, templates, quality class, protection. Cached 24 h. |
 | `services/maintenance.py` | Maintenance issues on any wiki. English tracking categories and templates are mapped to local names through interlanguage links. `issues_of(sig)` and `search_filter(key)`. |
 | `services/profile_service.py` | Home wiki, contributions, creations, Babel, topic/country aggregation, edit types from tags, reverted-by-others. Cached 6 h. |

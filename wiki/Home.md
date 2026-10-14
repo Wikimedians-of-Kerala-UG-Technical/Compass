@@ -70,6 +70,6 @@ wiki/             This documentation
 
 ## Tech stack
 
-- **Backend** — Python, Flask, `flask-cors`, `requests`, `beautifulsoup4`. No database or auth; in-memory TTL caches.
+- **Backend** — Python, Flask, `flask-cors`, `requests`, `beautifulsoup4`. No database or auth; TTL caches in memory, backed by a local SQLite file.
 - **Frontend** — Vue 3 (Composition API), Vite, Pinia, and [Wikimedia Codex](https://doc.wikimedia.org/codex/latest/) for UI components so it looks native to the Wikipedia ecosystem.
 - **Data** — MediaWiki Action and REST APIs on any wiki (incl. `cirrusdoc` ML labels and Parsoid HTML), Wikidata and its Query Service, Commons, Pageviews, Lift Wing, Content Translation, Citoid, PubMed, OpenAlex, CrossRef. See [[External-APIs]].
