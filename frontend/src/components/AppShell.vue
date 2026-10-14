@@ -10,6 +10,7 @@ import {
   cdxIconSearch,
   cdxIconReload,
   cdxIconLogOut,
+  cdxIconLogoWikimediaCommons,
 } from '@wikimedia/codex-icons'
 import { useAppStore } from '../stores/appStore.js'
 import OverviewView from './views/OverviewView.vue'
@@ -17,13 +18,14 @@ import TasksView from './views/TasksView.vue'
 import RevisitView from './views/RevisitView.vue'
 import DiscoverView from './views/DiscoverView.vue'
 import GuideView from './views/GuideView.vue'
+import ContributeView from './views/ContributeView.vue'
 
 const store = useAppStore()
 const searchValue = ref('')
 
 const navItems = computed(() => [
   { key: 'overview', label: 'Overview', icon: cdxIconHome },
-  { key: 'tasks', label: 'Tasks', icon: cdxIconCheckAll, badge: store.tasks.length || null },
+  { key: 'tasks', label: 'Tasks', icon: cdxIconCheckAll, badge: store.tasksLoading && !store.tasks.length ? '…' : store.tasks.length || null },
   {
     key: 'revisit',
     label: 'Revisit',
@@ -34,7 +36,13 @@ const navItems = computed(() => [
     key: 'discover',
     label: 'Discover',
     icon: cdxIconLightbulb,
-    badge: store.discoverLoading ? '…' : store.discover?.suggestedArticles?.length || null,
+    badge: store.discoverLoading ? '…' : store.discover?.articles?.length || null,
+  },
+  {
+    key: 'contribute',
+    label: 'Commons & Wikidata',
+    icon: cdxIconLogoWikimediaCommons,
+    badge: store.contributeLoading ? '…' : store.contribute?.commons?.unused?.length || null,
   },
   { key: 'guide', label: 'Guide', icon: cdxIconArticleSearch },
 ])
@@ -72,7 +80,7 @@ function runSearch() {
       <div class="shell__spacer"></div>
 
       <div class="shell__user">
-        <span class="shell__username">{{ store.username }}</span>
+        <span class="shell__username">{{ store.username }}<template v-if="store.profile"> · {{ store.profile.homeLang }}.wikipedia</template></span>
         <CdxButton
           weight="quiet"
           title="Refresh trends and tasks"
@@ -109,6 +117,7 @@ function runSearch() {
           <TasksView v-else-if="store.activeView === 'tasks'" />
           <RevisitView v-else-if="store.activeView === 'revisit'" />
           <DiscoverView v-else-if="store.activeView === 'discover'" />
+          <ContributeView v-else-if="store.activeView === 'contribute'" />
           <GuideView v-else-if="store.activeView === 'guide'" />
         </div>
       </main>

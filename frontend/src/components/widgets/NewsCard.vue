@@ -8,10 +8,6 @@ const store = useAppStore()
 
 const SRC_LABEL = {
   current_events: 'Current Events',
-  recent_deaths: 'Recent Deaths',
-  ongoing: 'Ongoing',
-  dyk: 'Did You Know',
-  wiki_trending: 'Trending',
 }
 
 function wikiHref(title) {

@@ -1,80 +1,86 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { CdxToggleButtonGroup, CdxInfoChip } from '@wikimedia/codex'
+import { CdxToggleButtonGroup, CdxInfoChip, CdxMessage } from '@wikimedia/codex'
 import { useAppStore } from '../../stores/appStore.js'
 import LoadingState from '../widgets/LoadingState.vue'
 
 const store = useAppStore()
-
-const filterButtons = [
-  { value: 'all', label: 'All' },
-  { value: 'add_refs', label: 'References' },
-  { value: 'fix_orphan', label: 'Orphans' },
-  { value: 'add_citations', label: 'Citations' },
-]
 const activeFilter = ref('all')
+
+// Built from the task types actually present, so every filter has results.
+const filterButtons = computed(() => {
+  const seen = new Map()
+  for (const t of store.tasks) seen.set(t.type, t.meta?.label || t.type)
+  return [{ value: 'all', label: 'All' }, ...[...seen.entries()].map(([value, label]) => ({ value, label }))]
+})
 
 const filteredTasks = computed(() =>
   activeFilter.value === 'all' ? store.tasks : store.tasks.filter((t) => t.type === activeFilter.value)
 )
 
-// Tasks now load straight from the profile's topics; geo resolves later and triggers a
-// second, region-weighted pass. Surface that refinement rather than blocking on it.
 const refiningWithGeo = computed(() => store.geoLoading && !store.tasksLoading)
 
-function wikiHref(title) {
-  return 'https://en.wikipedia.org/wiki/' + encodeURIComponent((title || '').replace(/ /g, '_'))
-}
-function editHref(title) {
-  return (
-    'https://en.wikipedia.org/w/index.php?title=' +
-    encodeURIComponent((title || '').replace(/ /g, '_')) +
-    '&action=edit'
-  )
+function effortStatus(effort) {
+  return effort === 'low' ? 'success' : effort === 'high' ? 'warning' : 'notice'
 }
 </script>
 
 <template>
   <div>
     <h1 class="section-heading">Recommended tasks</h1>
-    <p class="section-sub">Maintenance work ranked by relevance, impact, and feasibility for your profile.</p>
-
-    <CdxToggleButtonGroup v-model="activeFilter" :buttons="filterButtons" style="margin-bottom: 16px" />
+    <p class="section-sub">
+      Articles on {{ store.profile?.homeLang }}.wikipedia that need work, found through your topics, the categories you
+      edit in, articles like yours, and places you write about. Each card says why it's here.
+    </p>
 
     <div v-if="refiningWithGeo" class="geo-refining">
-      Ranked by your topics — still resolving where you edit, then these will be re-ranked for your region.
+      Still working out where you edit — "near you" tasks will be added when that's done.
     </div>
 
     <LoadingState
-      v-if="store.tasksLoading"
+      v-if="store.tasksLoading && !store.tasks.length"
       title="Finding tasks for you…"
-      sub="Searching Wikipedia for articles that match your topics. Usually just a few seconds."
+      sub="Searching tracking categories and Growth suggestions in your topics. Usually 10–30 seconds."
     />
 
-    <div v-else-if="!filteredTasks.length" class="empty-state">
-      {{ store.tasks.length ? 'No tasks match this filter.' : 'No tasks found.' }}
-    </div>
+    <CdxMessage v-else-if="store.tasksError && !store.tasks.length" type="error">{{ store.tasksError }}</CdxMessage>
 
-    <div v-else>
-      <div v-for="(t, i) in filteredTasks" :key="i" class="item-card fade-in" :style="{ animationDelay: i * 0.02 + 's' }">
+    <template v-else>
+      <CdxMessage v-if="store.tasksMeta?.partial" type="warning" style="margin-bottom: 12px">
+        Some sources failed (often rate limiting), so this list may be incomplete.
+      </CdxMessage>
+
+      <CdxToggleButtonGroup v-model="activeFilter" :buttons="filterButtons" style="margin-bottom: 16px" />
+
+      <div v-if="!filteredTasks.length" class="empty-state">
+        {{ store.tasks.length ? 'No tasks match this filter.' : 'No tasks found for your topics on this wiki.' }}
+      </div>
+
+      <div v-for="(t, i) in filteredTasks" :key="t.title" class="item-card fade-in" :style="{ animationDelay: i * 0.02 + 's' }">
         <div class="item-card__head">
           <span class="item-card__title">
-            <a :href="wikiHref(t.title)" target="_blank" rel="noopener">{{ t.title }}</a>
+            <a :href="t.url" target="_blank" rel="noopener">{{ t.title }}</a>
           </span>
-          <CdxInfoChip status="notice">{{ t.type }}</CdxInfoChip>
+          <CdxInfoChip :status="effortStatus(t.meta?.effort)">{{ t.meta?.label }} · ~{{ t.meta?.min }} min</CdxInfoChip>
         </div>
-        <div v-if="t.topic" class="item-card__row" style="margin-bottom: 6px">
-          <CdxInfoChip status="subtle">{{ t.topic }}</CdxInfoChip>
+        <div class="item-card__row" style="margin-bottom: 6px">
+          <CdxInfoChip v-for="iss in t.issues" :key="iss.key" status="warning">
+            {{ iss.label }}<template v-if="iss.since"> · since {{ iss.since }}</template>
+          </CdxInfoChip>
+          <CdxInfoChip v-if="t.topic" status="subtle">{{ t.topic }}</CdxInfoChip>
         </div>
-        <div class="item-card__reason">{{ t.reason }}</div>
+        <div class="item-card__reason">
+          <strong>Why you:</strong> {{ t.reason }}
+          <div v-if="t.details?.length" style="margin-top: 2px">{{ t.details.join(' · ') }}</div>
+        </div>
         <div class="item-card__actions">
-          <a :href="editHref(t.title)" target="_blank" rel="noopener" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary">
+          <a :href="t.editUrl" target="_blank" rel="noopener" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary">
             Edit on Wikipedia
           </a>
-          <a :href="wikiHref(t.title)" target="_blank" rel="noopener" class="cdx-button">View</a>
+          <button class="cdx-button" @click="store.searchGuide(t.title, t.wiki)">What exactly needs fixing?</button>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 

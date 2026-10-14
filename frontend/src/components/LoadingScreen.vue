@@ -11,8 +11,8 @@ const store = useAppStore()
       <CdxProgressBar aria-label="Loading" />
       <h2 class="loading-screen__title">Loading {{ store.username }}'s profile…</h2>
       <p class="loading-screen__sub">
-        Fetching edit history — this can take a minute or two for accounts with a lot of edits. Trends,
-        tasks, and article suggestions will load in the background once you're in.
+        Finding your home wiki and reading your recent edits and the topics of the articles you work on.
+        Usually 10–30 seconds. Tasks and suggestions load in the background once you're in.
       </p>
     </div>
   </div>

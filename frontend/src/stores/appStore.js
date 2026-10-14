@@ -1,5 +1,13 @@
 import { defineStore } from 'pinia'
-import { getProfile, getTrends, getTasks, getDiscover, getRevisit, getGeo } from '../api.js'
+import {
+  getProfile,
+  getTrends,
+  getTasks,
+  getDiscover,
+  getRevisit,
+  getGeo,
+  getContribute,
+} from '../api.js'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
@@ -7,66 +15,61 @@ export const useAppStore = defineStore('app', {
     screen: 'onboard', // 'onboard' | 'loading' | 'dash'
     username: '',
     onboardError: '',
-    activeView: 'overview', // 'overview' | 'tasks' | 'revisit' | 'discover' | 'guide'
+    activeView: 'overview', // 'overview' | 'tasks' | 'revisit' | 'discover' | 'contribute' | 'guide'
+    // Which Wikipedia to work on. null = the editor's home wiki (most edits), chosen by the backend.
+    wiki: null,
 
     // profile (gates the transition out of onboarding)
     profile: null,
 
-    // trends + tasks (loaded independently, in parallel, after profile resolves)
     trends: { news: [], trending: [] },
     trendsLoading: false,
+
     tasks: [],
+    tasksMeta: null, // {scopes, candidates, partial}
     tasksLoading: false,
+    tasksError: '',
 
-    // discover (prefetched in background right after profile resolves)
-    discover: null,
-    discoverLoading: false,
-    discoverError: '',
-
-    // revisit — the user's own heavily-edited/created articles that have picked up
-    // maintenance issues (prefetched in background right after profile resolves)
+    // revisit — the editor's own articles that need attention
     revisit: [],
     revisitLoading: false,
     revisitError: '',
 
-    // geo focus — dynamic place hierarchy (city/district/state/country) resolved via
-    // Wikidata from the user's edited articles (prefetched in background, like discover)
+    // geo focus — place hierarchy resolved via Wikidata from the edited articles
     geo: null,
     geoLoading: false,
     geoError: '',
 
+    // discover — translation suggestions into the editor's languages
+    discover: null,
+    discoverLoading: false,
+    discoverError: '',
+
+    // contribute — Commons and Wikidata tasks
+    contribute: null,
+    contributeLoading: false,
+    contributeError: '',
+
     // universal top-bar search -> Guide view
     guideQuery: '',
+    guideWiki: '',
     guideQuerySeq: 0, // bumped on every dispatch so GuideView can react even to a repeated query
 
     tasksRequestSeq: 0, // guards against an older loadTasks() call resolving after a newer one
+    sessionSeq: 0, // guards against responses for a previous user/wiki landing after a switch
   }),
 
   getters: {
-    // The most useful search term for region-specific tasks: the most-specific resolved
-    // place that isn't just the top-level country itself (e.g. "Kerala" over "India") --
-    // country-level alone is too broad to be an interesting regional signal. Falls back
-    // to the country if nothing more specific resolved.
-    geoFocusName(state) {
-      const places = state.geo?.topPlaces || []
-      const countryNames = new Set((state.geo?.topCountries || []).map((c) => c.name))
-      const specific = places.find((p) => !countryNames.has(p.name))
-      return specific?.name || state.geo?.topCountries?.[0]?.name || null
-    },
-
-    // The profile's edit-type histogram ({general: 788, references: 363, ...}) reduced to
-    // the labels the backend's AFFINITY map is keyed on, strongest first.
-    topEditTypes(state) {
-      const counts = state.profile?.editTypes || {}
-      return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
-        .map(([name]) => name)
-    },
+    homeWiki: (state) => state.profile?.homeWiki || 'enwiki',
+    // The district/city the editor works around most (inside their main region), used for
+    // "near where you edit" tasks. Chosen by the backend from counts, not list order.
+    geoLocal: (state) => state.geo?.focus?.local || null,
+    geoRegion: (state) => state.geo?.focus?.region || null,
+    countryA2: (state) => state.profile?.countries?.[0]?.a2 || null,
   },
 
   actions: {
-    start(rawUsername) {
+    start(rawUsername, wiki) {
       const uname = (rawUsername || '').trim()
       if (!uname) {
         this.onboardError = 'Please enter a Wikipedia username.'
@@ -74,33 +77,58 @@ export const useAppStore = defineStore('app', {
       }
       this.onboardError = ''
       this.username = uname
+      this.wiki = wiki || null
       this.screen = 'loading'
+      const seq = ++this.sessionSeq
+      this.resetData()
 
-      getProfile(uname)
+      getProfile(uname, this.wiki)
         .then((p) => {
+          if (seq !== this.sessionSeq) return
           this.profile = p
+          this.wiki = p.homeWiki
           this.screen = 'dash'
-          this.activeView = 'overview'
           this.loadTrends()
-          this.fetchDiscover()
           this.fetchRevisit()
-          // Load tasks immediately using the profile's own topics + edit types — those
-          // alone already personalize the feed. Geo resolution is slow (many batched
-          // Wikidata round-trips), so waiting on it meant a failed/empty geo left the
-          // user permanently on the hardcoded generic feed. fetchGeo() re-runs this
-          // once a place resolves; tasksRequestSeq keeps the later result authoritative.
+          // Tasks load straight away from the profile; geo is slower and, once it
+          // resolves, adds a "near where you edit" source and the place-scoped extras.
           this.loadTasks()
           this.fetchGeo()
         })
         .catch((err) => {
+          if (seq !== this.sessionSeq) return
           this.screen = 'onboard'
           this.onboardError = err.message || 'Failed to load profile. Please try again.'
         })
     },
 
+    switchWiki(dbname) {
+      if (!dbname || dbname === this.wiki) return
+      const view = this.activeView
+      this.start(this.username, dbname)
+      this.activeView = view
+    },
+
+    resetData() {
+      this.profile = null
+      this.trends = { news: [], trending: [] }
+      this.tasks = []
+      this.tasksMeta = null
+      this.tasksError = ''
+      this.revisit = []
+      this.revisitError = ''
+      this.geo = null
+      this.geoError = ''
+      this.discover = null
+      this.discoverError = ''
+      this.contribute = null
+      this.contributeError = ''
+    },
+
     loadTrends() {
       this.trendsLoading = true
-      getTrends()
+      const langs = (this.profile?.languages || []).map((l) => l.lang).filter((l) => l !== this.profile?.homeLang)
+      getTrends({ country: this.countryA2, wiki: this.homeWiki, langs })
         .then((t) => { this.trends = t })
         .catch(() => { /* keep last-known trends, if any */ })
         .finally(() => { this.trendsLoading = false })
@@ -108,78 +136,83 @@ export const useAppStore = defineStore('app', {
 
     loadTasks() {
       this.tasksLoading = true
-      // loadTasks() can be called again (manual refresh) before an earlier call's request
-      // has finished — whichever request completes last would otherwise silently win, even
-      // if it was the older one. Guard against that by only applying a response if no newer
-      // call has started since it went out.
+      this.tasksError = ''
       const seq = ++this.tasksRequestSeq
-      getTasks({
-        topics: this.profile?.topTopics,
-        editTypes: this.topEditTypes,
-        geo: this.geoFocusName,
-      })
-        .then((ts) => { if (this.tasksRequestSeq === seq) this.tasks = ts })
-        .catch(() => { /* keep last-known tasks, if any */ })
-        .finally(() => { this.tasksLoading = false })
-    },
-
-    fetchDiscover() {
-      this.discoverLoading = true
-      this.discoverError = ''
-      getDiscover(this.username)
-        .then((d) => { this.discover = d })
-        .catch((err) => { this.discoverError = err.message || 'Failed to load suggestions.' })
-        .finally(() => { this.discoverLoading = false })
+      getTasks(this.username, { wiki: this.wiki, place: this.geoLocal })
+        .then((res) => {
+          if (this.tasksRequestSeq !== seq) return
+          this.tasks = res.tasks || []
+          this.tasksMeta = res
+        })
+        .catch((err) => { if (this.tasksRequestSeq === seq) this.tasksError = err.message })
+        .finally(() => { if (this.tasksRequestSeq === seq) this.tasksLoading = false })
     },
 
     fetchRevisit() {
       this.revisitLoading = true
       this.revisitError = ''
-      getRevisit(this.username, this.profile?.heavilyEdited, this.profile?.createdArticles)
-        .then((d) => { this.revisit = d.tasks || [] })
-        .catch((err) => { this.revisitError = err.message || 'Failed to load your articles.' })
+      const seq = this.sessionSeq
+      getRevisit(this.username, this.wiki)
+        .then((d) => { if (seq === this.sessionSeq) this.revisit = d.tasks || [] })
+        .catch((err) => { if (seq === this.sessionSeq) this.revisitError = err.message || 'Failed to load your articles.' })
         .finally(() => { this.revisitLoading = false })
     },
 
     fetchGeo() {
       this.geoLoading = true
       this.geoError = ''
-      getGeo(this.username)
-        .then((d) => { this.geo = d })
-        .catch((err) => { this.geoError = err.message || 'Failed to load geographic focus.' })
+      const seq = this.sessionSeq
+      getGeo(this.username, this.wiki)
+        .then((d) => { if (seq === this.sessionSeq) this.geo = d })
+        .catch((err) => { if (seq === this.sessionSeq) this.geoError = err.message || 'Failed to load geographic focus.' })
         .finally(() => {
+          if (seq !== this.sessionSeq) return
           this.geoLoading = false
-          // Only re-fetch when a place actually resolved — the profile-based feed from
-          // start() already stands, so a geo failure costs the regional bonus but never
-          // triggers a redundant second request.
-          if (this.geoFocusName) this.loadTasks()
+          if (this.geoLocal) this.loadTasks()
+          this.fetchDiscover()
+          this.fetchContribute()
         })
+    },
+
+    fetchDiscover() {
+      this.discoverLoading = true
+      this.discoverError = ''
+      const seq = this.sessionSeq
+      getDiscover(this.username, { wiki: this.wiki, region: this.geoRegion, local: this.geoLocal })
+        .then((d) => { if (seq === this.sessionSeq) this.discover = d })
+        .catch((err) => { if (seq === this.sessionSeq) this.discoverError = err.message || 'Failed to load suggestions.' })
+        .finally(() => { this.discoverLoading = false })
+    },
+
+    fetchContribute() {
+      this.contributeLoading = true
+      this.contributeError = ''
+      const seq = this.sessionSeq
+      getContribute(this.username, { wiki: this.wiki, place: this.geoLocal || this.geoRegion })
+        .then((d) => { if (seq === this.sessionSeq) this.contribute = d })
+        .catch((err) => { if (seq === this.sessionSeq) this.contributeError = err.message || 'Failed to load Commons and Wikidata tasks.' })
+        .finally(() => { this.contributeLoading = false })
     },
 
     goTo(view) {
       this.activeView = view
     },
 
-    searchGuide(title) {
+    searchGuide(title, wiki) {
       this.guideQuery = (title || '').trim()
+      this.guideWiki = wiki || this.wiki || 'enwiki'
       this.guideQuerySeq += 1
       this.activeView = 'guide'
     },
 
     logout() {
+      this.sessionSeq += 1
       this.screen = 'onboard'
       this.username = ''
       this.onboardError = ''
       this.activeView = 'overview'
-      this.profile = null
-      this.trends = { news: [], trending: [] }
-      this.tasks = []
-      this.discover = null
-      this.discoverError = ''
-      this.revisit = []
-      this.revisitError = ''
-      this.geo = null
-      this.geoError = ''
+      this.wiki = null
+      this.resetData()
       this.guideQuery = ''
     },
   },

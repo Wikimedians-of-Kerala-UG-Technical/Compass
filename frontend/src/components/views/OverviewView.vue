@@ -7,6 +7,7 @@ import {
   cdxIconLightbulb,
   cdxIconArticleSearch,
   cdxIconMapPin,
+  cdxIconLogoWikimediaCommons,
 } from '@wikimedia/codex-icons'
 import { useAppStore } from '../../stores/appStore.js'
 import TrendingCard from '../widgets/TrendingCard.vue'
@@ -15,93 +16,118 @@ import NewsCard from '../widgets/NewsCard.vue'
 const store = useAppStore()
 
 const profile = computed(() => store.profile)
-const topTopics = computed(() => profile.value?.topTopics || [])
-const userWikis = computed(() => store.discover?.userWikis || [])
+const topics = computed(() => profile.value?.topics || [])
+const countries = computed(() => profile.value?.countries || [])
+const languages = computed(() => profile.value?.languages || [])
+const wikis = computed(() => (profile.value?.wikis || []).filter((w) => w.editcount >= 50).slice(0, 6))
 const geoPlaces = computed(() => store.geo?.topPlaces || [])
+const focus = computed(() => store.geo?.focus || {})
 
-const qualityLabel = computed(() => {
-  const t = profile.value?.qualityTier
-  if (t === 'high') return 'High quality'
-  if (t === 'medium') return 'Solid'
-  if (t === 'developing') return 'Developing'
-  return '—'
+const createdLabel = computed(() => {
+  const p = profile.value
+  if (!p) return '—'
+  return p.createdCount.toLocaleString() + (p.createdCountCapped ? '+' : '')
+})
+const revertedLabel = computed(() => {
+  const r = profile.value?.reverted
+  if (!r || !r.of) return '—'
+  return (r.share * 100).toFixed(1) + '%'
 })
 
 const dispatchCards = computed(() => [
   {
     key: 'tasks',
     icon: cdxIconCheckAll,
-    title: store.tasksLoading
-      ? 'Finding tasks for you…'
-      : store.geoLoading
-        ? `${store.tasks.length || 0} tasks ready — refining for your region…`
-        : `${store.tasks.length || 0} tasks ready`,
-    desc: 'Maintenance work matched to your topics — references, orphans, citations.',
+    title: store.tasksLoading && !store.tasks.length ? 'Finding tasks for you…' : `${store.tasks.length || 0} tasks ready`,
+    desc: 'Articles that need work in your topics, your categories and near the places you write about.',
   },
   {
     key: 'revisit',
     icon: cdxIconWatchlist,
-    title: store.revisitLoading
-      ? 'Checking your articles…'
-      : `${store.revisit.length || 0} of your articles need attention`,
-    desc: 'Articles you heavily edited or created that have since picked up issues.',
+    title: store.revisitLoading ? 'Checking your articles…' : `${store.revisit.length || 0} of your articles need attention`,
+    desc: 'Articles you created or edited a lot that picked up tags, suspicious edits or suggestions.',
   },
   {
     key: 'discover',
     icon: cdxIconLightbulb,
     title: store.discoverLoading
-      ? 'Scanning for new articles…'
-      : `${store.discover?.suggestedArticles?.length || 0} articles you could start`,
-    desc: 'Topics you work in that don\'t exist yet in one of your other languages.',
+      ? 'Finding articles to translate…'
+      : store.discover?.monolingual
+        ? 'Translation suggestions'
+        : `${store.discover?.articles?.length || 0} articles to translate`,
+    desc: 'Articles and sections missing in your languages, picked from what you already write.',
+  },
+  {
+    key: 'contribute',
+    icon: cdxIconLogoWikimediaCommons,
+    title: store.contributeLoading
+      ? 'Checking Commons and Wikidata…'
+      : `${store.contribute?.commons?.unused?.length || 0} photos to place · ${store.contribute?.wikidata?.items?.length || 0} Wikidata gaps`,
+    desc: 'Your unused Commons photos, and Wikidata items near you missing your language.',
   },
   {
     key: 'guide',
     icon: cdxIconArticleSearch,
     title: 'Look up an article',
-    desc: 'Analyse any Wikipedia article for structural gaps and suggested sources.',
+    desc: 'Find uncited paragraphs, tags, missing sections and ready-to-paste sources.',
   },
 ])
 </script>
 
 <template>
   <div>
-    <h1 class="section-heading">Welcome back, {{ store.username }}</h1>
-    <p class="section-sub">Here's what we found from your editing history.</p>
+    <h1 class="section-heading">Welcome back, {{ profile.username }}</h1>
+    <p class="section-sub">
+      Built from your last {{ profile.editsAnalysed.toLocaleString() }} edits on
+      <strong>{{ profile.homeLang }}.wikipedia</strong>.
+      <template v-if="wikis.length > 1">
+        Switch wiki:
+        <a
+          v-for="w in wikis.filter((w) => w.dbname !== profile.homeWiki)"
+          :key="w.dbname"
+          href="#"
+          style="margin-left: 6px"
+          @click.prevent="store.switchWiki(w.dbname)"
+        >{{ w.lang }} ({{ w.editcount.toLocaleString() }})</a>
+      </template>
+    </p>
 
     <div class="stat-row">
       <div class="stat-tile">
-        <span class="stat-tile__num">{{ (profile.total || 0).toLocaleString() }}</span>
-        <span class="stat-tile__label">Edits</span>
+        <span class="stat-tile__num">{{ (profile.homeEdits || 0).toLocaleString() }}</span>
+        <span class="stat-tile__label">Edits on {{ profile.homeLang }}.wikipedia · {{ (profile.total || 0).toLocaleString() }} across Wikimedia</span>
       </div>
       <div class="stat-tile">
-        <span class="stat-tile__num">{{ (profile.uniqueArticles || 0).toLocaleString() }}</span>
-        <span class="stat-tile__label">Articles</span>
+        <span class="stat-tile__num">{{ createdLabel }}</span>
+        <span class="stat-tile__label">Articles created</span>
       </div>
       <div class="stat-tile">
-        <span class="stat-tile__num" style="font-size: 1.25rem">{{ qualityLabel }}</span>
-        <span class="stat-tile__label">Quality tier</span>
+        <span class="stat-tile__num">{{ revertedLabel }}</span>
+        <span class="stat-tile__label">Recent edits reverted by others</span>
       </div>
     </div>
 
     <div class="chip-row">
-      <CdxInfoChip v-for="t in topTopics" :key="t" status="notice">{{ t }}</CdxInfoChip>
-      <CdxInfoChip v-for="w in userWikis" :key="w.dbname" status="progressive">
-        {{ w.lang }} · {{ w.editcount.toLocaleString() }} edits
+      <CdxInfoChip v-for="t in topics" :key="t.path" status="notice">
+        {{ t.label }} · {{ Math.round(t.share * 100) }}%
       </CdxInfoChip>
-      <span v-if="!topTopics.length && !userWikis.length" style="font-size: 0.8125rem; color: var(--color-subtle)">
-        Building your topic profile…
-      </span>
+      <CdxInfoChip v-for="c in countries" :key="c.a3" status="subtle">{{ c.name }}</CdxInfoChip>
+      <CdxInfoChip v-for="l in languages" :key="l.lang" status="progressive">
+        {{ l.lang }}<template v-if="l.level"> · {{ l.level }}</template>
+      </CdxInfoChip>
+      <CdxInfoChip v-if="profile.sisterProjects?.wikidatawiki" status="subtle">
+        Wikidata · {{ profile.sisterProjects.wikidatawiki.toLocaleString() }}
+      </CdxInfoChip>
+      <CdxInfoChip v-if="profile.sisterProjects?.commonswiki" status="subtle">
+        Commons · {{ profile.sisterProjects.commonswiki.toLocaleString() }}
+      </CdxInfoChip>
     </div>
 
     <div class="panel" style="margin-bottom: 20px">
       <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px">
         <CdxIcon :icon="cdxIconMapPin" size="small" />
-        Geographic focus
+        Where you edit
       </div>
-      <p style="font-size: 0.75rem; color: var(--color-subtle); margin-bottom: 10px">
-        Recalculated every visit — persistent caching is planned once accounts are supported, so this
-        won't need to re-run each time.
-      </p>
 
       <div v-if="store.geoLoading && !store.geo" class="fade-in">
         <div class="skeleton-line skeleton-line--wide"></div>
@@ -110,14 +136,20 @@ const dispatchCards = computed(() => [
 
       <p v-else-if="store.geoError" style="font-size: 0.8125rem; color: var(--color-error)">{{ store.geoError }}</p>
 
-      <div v-else-if="geoPlaces.length" class="chip-row" style="margin-bottom: 0">
-        <CdxInfoChip v-for="p in geoPlaces" :key="p.name" status="subtle">
-          {{ p.name }} <strong>({{ p.count }})</strong>
-        </CdxInfoChip>
-      </div>
+      <template v-else-if="geoPlaces.length">
+        <p v-if="focus.region || focus.local" style="font-size: 0.8125rem; margin-bottom: 8px">
+          Focus: <strong>{{ [focus.local?.name, focus.region?.name, focus.country?.name].filter(Boolean).join(', ') }}</strong>
+          — used for "near you" tasks and local gaps.
+        </p>
+        <div class="chip-row" style="margin-bottom: 0">
+          <CdxInfoChip v-for="p in geoPlaces" :key="p.qid" status="subtle">
+            {{ p.name }} <strong>({{ p.count }})</strong>
+          </CdxInfoChip>
+        </div>
+      </template>
 
       <p v-else style="font-size: 0.8125rem; color: var(--color-subtle)">
-        No resolvable geographic signal found in your edits yet.
+        None of your recent articles are about a place, so tasks aren't limited to a region.
       </p>
     </div>
 
