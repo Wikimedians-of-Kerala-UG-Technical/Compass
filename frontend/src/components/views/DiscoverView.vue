@@ -7,137 +7,119 @@ import LoadingState from '../widgets/LoadingState.vue'
 
 const store = useAppStore()
 
-const sortButtons = [
-  { value: 'weight', label: 'By relevance' },
-  { value: 'category', label: 'By category' },
-  { value: 'missing', label: 'By languages missing' },
-]
-const sortMode = ref('weight')
+const tabs = computed(() => [
+  { value: 'articles', label: `New articles (${store.discover?.articles?.length || 0})` },
+  { value: 'sections', label: `Missing sections (${store.discover?.sections?.length || 0})` },
+  { value: 'gaps', label: `Missing near you (${store.discover?.regionGaps?.length || 0})` },
+])
+const tab = ref('articles')
 
-const suggestions = computed(() => store.discover?.suggestedArticles || [])
-const userWikis = computed(() => store.discover?.userWikis || [])
-
-const flatSorted = computed(() => {
-  const list = [...suggestions.value]
-  if (sortMode.value === 'missing') {
-    return list.sort((a, b) => b.missingIn.length - a.missingIn.length || b.categoryWeight - a.categoryWeight)
-  }
-  return list.sort((a, b) => b.categoryWeight - a.categoryWeight)
-})
-
-const grouped = computed(() => {
-  const groups = new Map()
-  for (const article of suggestions.value) {
-    if (!groups.has(article.fromCategory)) {
-      groups.set(article.fromCategory, { name: article.fromCategory, weight: article.categoryWeight, items: [] })
-    }
-    groups.get(article.fromCategory).items.push(article)
-  }
-  return [...groups.values()].sort((a, b) => b.weight - a.weight)
-})
-
-function wikiUrl(title) {
-  return 'https://en.wikipedia.org/wiki/' + encodeURIComponent((title || '').replace(/ /g, '_'))
-}
-function createUrl(wiki, title) {
-  return wiki.url + '/wiki/' + encodeURIComponent((title || '').replace(/ /g, '_'))
-}
+const pairs = computed(() => store.discover?.pairs || [])
+const articles = computed(() => store.discover?.articles || [])
+const sections = computed(() => store.discover?.sections || [])
+const gaps = computed(() => store.discover?.regionGaps || [])
 </script>
 
 <template>
   <div>
     <div class="item-card__head" style="align-items: flex-start; margin-bottom: 4px">
       <div>
-        <h1 class="section-heading">Discover new articles</h1>
+        <h1 class="section-heading">Discover</h1>
         <p class="section-sub" style="margin-bottom: 0">
-          Articles from your top topics that don't exist yet in one of your other languages.
+          Articles and sections to translate into your languages, chosen by Content Translation's recommender from the
+          articles you already write. Each link opens Content Translation with the article loaded.
         </p>
       </div>
       <CdxButton weight="quiet" :disabled="store.discoverLoading" @click="store.fetchDiscover()">
         <CdxIcon :icon="cdxIconReload" />
-        {{ store.discoverLoading ? 'Scanning…' : 'Rescan' }}
+        {{ store.discoverLoading ? 'Loading…' : 'Refresh' }}
       </CdxButton>
     </div>
 
-    <p v-if="store.discoverLoading && store.discover" class="section-sub" style="margin-bottom: 16px">
-      Rescanning — this can take a minute or two. Showing your last results below until it's done.
-    </p>
-
     <LoadingState
       v-if="store.discoverLoading && !store.discover"
-      title="Scanning your edits, categories, and languages…"
-      sub="Expanding your top categories into candidate articles and checking each one against your languages. This can take a minute or two."
+      title="Finding articles to translate…"
+      sub="Asking Content Translation for articles related to yours that are missing in your languages."
     />
 
-    <CdxMessage v-else-if="store.discoverError" type="error" style="margin: 16px 0">
-      {{ store.discoverError }}
-    </CdxMessage>
+    <CdxMessage v-else-if="store.discoverError" type="error" style="margin: 16px 0">{{ store.discoverError }}</CdxMessage>
+
+    <div v-else-if="!store.discover && !store.discoverLoading" class="empty-state">
+      Waiting for your profile and places to load…
+    </div>
+
+    <div v-else-if="store.discover?.monolingual" class="empty-state" style="text-align: left">
+      You only edit in one language, so there's nothing to translate yet. If you read another language, add a
+      <a href="https://meta.wikimedia.org/wiki/User_language" target="_blank" rel="noopener">Babel box</a> to your user
+      page and Compass will suggest articles missing in it.
+    </div>
 
     <template v-else>
-      <div v-if="userWikis.length" class="chip-row">
-        <CdxInfoChip v-for="w in userWikis" :key="w.dbname" status="progressive">
-          {{ w.lang }} · {{ w.editcount.toLocaleString() }} edits
-        </CdxInfoChip>
+      <div class="chip-row" style="margin: 16px 0 12px">
+        <CdxInfoChip v-for="p in pairs" :key="p.source + p.target" status="progressive">{{ p.source }} → {{ p.target }}</CdxInfoChip>
       </div>
 
-      <div v-if="!suggestions.length" class="empty-state">
-        No language gaps found in your top topics right now.
-      </div>
+      <CdxToggleButtonGroup v-model="tab" :buttons="tabs" style="margin-bottom: 16px" />
+
+      <template v-if="tab === 'articles'">
+        <div v-if="!articles.length" class="empty-state">No translation suggestions right now.</div>
+        <div v-for="a in articles" :key="a.title + a.target" class="item-card">
+          <div class="item-card__head">
+            <span class="item-card__title">
+              <a :href="a.sourceUrl" target="_blank" rel="noopener">{{ a.title }}</a>
+            </span>
+            <CdxInfoChip status="subtle">in {{ a.languages }} languages</CdxInfoChip>
+          </div>
+          <div class="item-card__reason">{{ a.why }} · {{ Math.round(a.size / 1000) }} kB in {{ a.source }}</div>
+          <div class="item-card__actions">
+            <a :href="a.translateUrl" target="_blank" rel="noopener" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary">
+              Translate into {{ a.target }}
+            </a>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="tab === 'sections'">
+        <div v-if="!sections.length" class="empty-state">No missing sections found in articles related to yours.</div>
+        <div v-for="s in sections" :key="s.sourceTitle + s.target" class="item-card">
+          <div class="item-card__head">
+            <span class="item-card__title">
+              <a :href="s.targetUrl" target="_blank" rel="noopener">{{ s.targetTitle }}</a>
+            </span>
+            <CdxInfoChip status="subtle">{{ s.source }}: {{ s.sourceTitle }}</CdxInfoChip>
+          </div>
+          <div class="item-card__row">
+            <a
+              v-for="m in s.missing"
+              :key="m.section"
+              :href="m.translateUrl"
+              target="_blank"
+              rel="noopener"
+              class="cdx-info-chip cdx-info-chip--warning"
+              style="text-decoration: none"
+            >+ {{ m.targetHeading }} ({{ m.section }})</a>
+          </div>
+        </div>
+      </template>
 
       <template v-else>
-        <CdxToggleButtonGroup v-model="sortMode" :buttons="sortButtons" style="margin-bottom: 16px" />
-
-        <template v-if="sortMode === 'category'">
-          <div v-for="group in grouped" :key="group.name">
-            <div class="group-heading">{{ group.name }} (weight {{ group.weight }})</div>
-            <div v-for="article in group.items" :key="article.qid" class="item-card">
-              <div class="item-card__head">
-                <span class="item-card__title">
-                  <a :href="wikiUrl(article.title)" target="_blank" rel="noopener">{{ article.title }}</a>
-                </span>
-              </div>
-              <div class="item-card__row">
-                <CdxInfoChip v-for="w in article.existsIn" :key="w" status="success">{{ w }}</CdxInfoChip>
-                <a
-                  v-for="w in article.missingIn"
-                  :key="w.dbname"
-                  :href="createUrl(w, article.title)"
-                  target="_blank"
-                  rel="noopener"
-                  class="cdx-info-chip cdx-info-chip--error"
-                  style="text-decoration: none"
-                >
-                  Write in {{ w.dbname }}
-                </a>
-              </div>
-            </div>
+        <div v-if="!gaps.length" class="empty-state">
+          No gaps found for your places, or your places haven't been resolved yet.
+        </div>
+        <div v-for="g in gaps" :key="g.qid" class="item-card">
+          <div class="item-card__head">
+            <span class="item-card__title">
+              <a :href="g.sourceUrl" target="_blank" rel="noopener">{{ g.title }}</a>
+            </span>
+            <CdxInfoChip status="subtle">{{ g.sitelinks }} Wikimedia sites</CdxInfoChip>
           </div>
-        </template>
-
-        <template v-else>
-          <div v-for="article in flatSorted" :key="article.qid" class="item-card">
-            <div class="item-card__head">
-              <span class="item-card__title">
-                <a :href="wikiUrl(article.title)" target="_blank" rel="noopener">{{ article.title }}</a>
-              </span>
-              <CdxInfoChip status="notice">{{ article.fromCategory }}</CdxInfoChip>
-            </div>
-            <div class="item-card__row">
-              <CdxInfoChip v-for="w in article.existsIn" :key="w" status="success">{{ w }}</CdxInfoChip>
-              <a
-                v-for="w in article.missingIn"
-                :key="w.dbname"
-                :href="createUrl(w, article.title)"
-                target="_blank"
-                rel="noopener"
-                class="cdx-info-chip cdx-info-chip--error"
-                style="text-decoration: none"
-              >
-                Write in {{ w.dbname }}
-              </a>
-            </div>
+          <div class="item-card__reason">Located in {{ g.region || 'your area' }}; has an English article but none in {{ g.target }}.</div>
+          <div class="item-card__actions">
+            <a :href="g.translateUrl" target="_blank" rel="noopener" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary">
+              Translate into {{ g.target }}
+            </a>
           </div>
-        </template>
+        </div>
       </template>
     </template>
   </div>
