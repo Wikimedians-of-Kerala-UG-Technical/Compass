@@ -1,141 +1,42 @@
 # Feature: Geographic Focus
 
-**Endpoint:** `GET /api/geo/<username>`
+**Endpoint:** `GET /api/geo/<username>[?wiki=]`
 **Service:** `services/geo_service.py`
-**UI:** Overview (place chips) + feeds the Tasks ranking
+**UI:** Overview ("Where you edit"); feeds Tasks (near you), Discover (missing near you) and Commons & Wikidata (gaps)
 
-Figures out **where in the world** an editor works — not by keyword-matching category names, but by walking Wikidata's actual place hierarchy.
-
-If someone edits *Kochi*, *Aluva*, and *Thrissur*, Compass should learn they work on **Kerala** — even though no article says "Kerala."
+Answers: *which places does this editor write about?*
 
 ---
 
-## Why not just use keywords?
+## How it works
 
-`profile_service.extract_geo` does keyword matching against 8 hardcoded regions. It can only ever recognize places someone thought to type into a Python dict — useless for an editor working on Peruvian towns or Polish villages.
+1. Map the editor's ~200 profile articles to Wikidata items (`prop=pageprops&ppprop=wikibase_item`, on the home wiki).
+2. Read each item's claims (`wbgetentities`, 50 per call over POST, labels in the home language with English fallback).
+3. Pick where to start walking up the hierarchy:
+   - **People** start at their birthplace (P19), else their citizenship (P27).
+   - **Countries and first-level divisions** start at themselves.
+   - **Anything else in a hierarchy (P131)** starts at itself. It counts its *own* label only when it's a populated place (has P1082 population), so "Kerala Soil Museum" contributes Ernakulam and Kerala but not itself.
+4. Walk P131 ("located in"), falling back to P17 (country), up to 6 levels. Each level is fetched for all articles in one batch.
+5. Count every level. Skip **dissolved** entities (P576), so "Kingdom of Great Britain" and "Russian Empire" no longer become someone's focus.
 
-This feature replaces that with a **dynamic hierarchy walk**. No hardcoded place list.
+Statements are read **by rank**: preferred first, deprecated ignored. v1 took `claims[0]`, which often landed on historical values.
 
----
+## Focus
 
-## Pipeline
-
-```mermaid
-flowchart TB
-    A["usercontribs<br/>limit 1000"] --> B["unique ns=0 titles"]
-    B --> C["pageprops.wikibase_item<br/>title to QID"]
-    C --> D["wbgetentities<br/>claims + labels"]
-    D --> E{"pick anchor"}
-    E -->|"human"| F["P19 birthplace<br/>else P27 citizenship"]
-    E -->|"has P131,<br/>or is country/admin1"| G["the article itself"]
-    E -->|"otherwise"| H["no geo signal —<br/>skip"]
-    F --> W["Walk P131 upward"]
-    G --> W
-    W --> X{"reached a country<br/>(has P297)?"}
-    X -->|no| W
-    X -->|yes| Y["chain complete"]
-    Y --> Z["Aggregate counts<br/>across all chains"]
-```
-
----
-
-## Step 1 — Anchor selection
-
-Not every article is a place, and not every article that *mentions* a place should count. `_pick_anchor` decides what — if anything — an article contributes:
-
-| Article subject | Anchor chosen | Rationale |
-|---|---|---|
-| A **person** (`P31` = `Q5`) | `P19` place of birth, else `P27` country of citizenship | A person's geography is where they're from |
-| Something **nested in a place** (has `P131`) | The article itself | It's already a place, or located in one |
-| A **country** (`P297`) or **first-level division** (`P300`) | The article itself | Top-level places have no `P131` but are obviously geographic |
-| Anything else | **Nothing** | Deliberate — see below |
-
-**The deliberate exclusion:** companies, films, organizations, and abstract concepts contribute **no geo signal at all**, even though they often have a country property. A user editing *Microsoft* and *The Godfather* isn't demonstrating geographic focus on Redmond and Hollywood. Requiring genuine place-hierarchy membership (`P131`) keeps the signal clean.
-
----
-
-## Step 2 — Walking the hierarchy
-
-From each anchor, follow `P131` ("located in the administrative territorial entity") upward, collecting the English label at every level:
-
-```
-Aluva  →  Ernakulam district  →  Kerala  →  India
-```
-
-| Rule | Value |
+| Field | Rule |
 |---|---|
-| Max hops | `MAX_HOPS = 6` |
-| Primary edge | `P131` |
-| Fallback edge | `P17` (country) when `P131` is absent |
-| Stop condition | Entity has `P297` (an ISO country code) ⇒ it's a country |
-| Also stops | No parents found, or entity data missing |
+| `focus.region` | The most-counted first-level division (state/province) with ≥ max(2, 5% of geo-tagged articles); else the top sub-national place |
+| `focus.local` | The most-counted district/city *inside that region* that has coordinates (P625) and ≥ 2 articles |
+| `focus.country` | The most-counted country |
 
-**Every level is kept, not just the country.** A "Kochi" edit and a "Kerala" edit are both real signal — collapsing everything to "India" would throw away exactly the specificity that makes recommendations useful.
+v1 picked "the first place that isn't a top-3 country", ignoring counts. That gave Titodutta (India: 86 articles) a focus of *Kamikawa Subprefecture, Hokkaido* (10), and Doc James *Kentucky* (2 of 2,633).
 
-Chains are walked **breadth-first across all anchors simultaneously** — each hop batches the next level's QIDs into a single `wbgetentities` call rather than walking each chain independently. That's what keeps this feasible over hundreds of articles.
+Example: Ranjithsiji (mlwiki) → region കേരളം (Kerala, 58), local എറണാകുളം ജില്ല (Ernakulam district, 12), country ഇന്ത്യ.
 
----
+## Where it's used
 
-## Step 3 — Aggregation
+- **Tasks:** `nearcoord:25km,<local coord>` + maintenance filter.
+- **Discover:** items located directly in `local` or `region` that have an English article but none in the editor's language.
+- **Commons & Wikidata:** items in `local` (any depth) missing a description in the editor's language.
 
-Every place name in every chain is counted:
-
-- `topPlaces` — top 12 by frequency, all hierarchy levels mixed together
-- `topCountries` — top 3, counting only each chain's final (country) element
-- `articlesWithGeo` — how many articles resolved to any place at all
-
----
-
-## Response shape
-
-Real output for `ranjithsiji`:
-
-```json
-{
-  "username": "ranjithsiji",
-  "articlesWithGeo": 134,
-  "topPlaces": [
-    { "name": "India", "count": 130 },
-    { "name": "Kerala", "count": 112 },
-    { "name": "Ernakulam district", "count": 45 },
-    { "name": "Thrissur district", "count": 12 },
-    { "name": "Kochi", "count": 6 }
-  ],
-  "topCountries": [
-    { "name": "India", "count": 130 },
-    { "name": "Kingdom of Great Britain", "count": 1 }
-  ]
-}
-```
-
----
-
-## How the frontend picks one place
-
-The Tasks endpoint accepts a **single** `geo` string, so `appStore.geoFocusName` reduces the list:
-
-> Take the most-frequent place that is **not** itself a top-level country. Fall back to the country if nothing more specific resolved.
-
-For the data above that yields **"Kerala"**, not "India" — country-level is too broad to be an interesting regional signal, while `Kerala` is specific enough to surface genuinely local work.
-
-```mermaid
-flowchart LR
-    A["topPlaces:<br/>India 130, Kerala 112,<br/>Ernakulam 45"] --> B{"drop entries that are<br/>top-level countries"}
-    B --> C["Kerala 112,<br/>Ernakulam 45"]
-    C --> D["take first → 'Kerala'"]
-```
-
-## How this tailors results
-
-`geo` is passed to `/api/tasks` where it does **two** things:
-
-1. **Becomes an extra search topic** — `hastemplate:"Unreferenced" Kerala` runs alongside the profile topics. This is what actually surfaces region-specific articles into the candidate pool.
-2. **Earns a +0.40 ranking bonus** for candidates whose topic equals the geo name.
-
-> Only one place from the whole resolved hierarchy is used, and matching is exact-string. Articles found under "Ernakulam district" get no bonus when geo is "Kerala". See [[Known-Issues-and-Limitations]].
-
-## Performance
-
-This is **the slowest endpoint in the app** — typically a minute or more. It makes many sequential `wbgetentities` batches, each followed by `time.sleep(0.25)` to respect Wikimedia rate limits, and the hierarchy walk is inherently serial (you can't know hop N+1 until hop N returns).
-
-That is precisely why the frontend does *not* block the task feed on it — see [[Frontend-State]].
+Results are cached 6 h per (wiki, article set); claims are cached 7 days.

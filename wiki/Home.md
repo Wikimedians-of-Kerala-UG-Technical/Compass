@@ -2,7 +2,7 @@
 
 **Your Wikipedia, Curated.** A personalized task recommender for Wikipedia editors.
 
-Compass takes a public Wikipedia username, studies that editor's actual contribution history, and returns a ranked list of maintenance work suited to them — instead of the generic "articles needing references" dump every other tool produces.
+Compass takes a public Wikimedia username, finds the Wikipedia the editor actually works on (Malayalam, Tamil, English…), studies their contributions there, and returns work suited to them: articles needing fixes in their topics, categories and places; their own articles that need attention; articles and sections to translate; and Commons and Wikidata gaps. It doesn't hand everyone the same generic "articles needing references" list.
 
 There are no accounts, no database, and no signup. Everything is derived live from public Wikimedia APIs.
 
@@ -13,7 +13,7 @@ There are no accounts, no database, and no signup. Everything is derived live fr
 ```mermaid
 flowchart LR
     U["Username<br/>(public)"] --> P["Read the editor's<br/>public contributions"]
-    P --> S["Derive signals:<br/>topics, edit types,<br/>quality, geography"]
+    P --> S["Derive signals:<br/>ML topics & country,<br/>categories, places"]
     S --> C["Search Wikipedia for<br/>candidate tasks"]
     C --> R["Score & rank<br/>against those signals"]
     R --> F["Ranked, personalized<br/>task feed"]
@@ -37,17 +37,18 @@ Every feature in Compass is a variation on this loop: *derive a signal from the 
 
 ## Features
 
-Compass has seven user-facing features. Each has its own page covering data sources, parameters, processing, and how results are tailored.
+Compass has eight user-facing features. Each has its own page covering data sources, parameters, processing, and how results are tailored.
 
 | Feature | What it answers | Page |
 |---|---|---|
 | **Editor Profile** | Who is this editor, and what are they good at? | [[Feature-Editor-Profile]] |
 | **Tasks** | What maintenance work should they do next? | [[Feature-Task-Recommendations]] |
 | **Geographic Focus** | Where in the world do they edit? | [[Feature-Geographic-Focus]] |
-| **Revisit** | Which of *their own* articles have decayed? | [[Feature-Revisit]] |
-| **Discover** | What could they write that's missing in their languages? | [[Feature-Discover]] |
+| **Revisit** | Which of *their own* articles need them again? | [[Feature-Revisit]] |
+| **Discover** | What could they translate into their languages? | [[Feature-Discover]] |
 | **Article Guide** | How exactly do I improve *this* article? | [[Feature-Article-Guide]] |
-| **Trends** | What's happening on Wikipedia right now? | [[Feature-Trends]] |
+| **Commons & Wikidata** | Which of my photos could go into articles; which nearby items lack my language? | [[Feature-Contribute]] |
+| **Trends** | What are readers near me reading that needs work? | [[Feature-Trends]] |
 
 ---
 
@@ -57,7 +58,8 @@ Compass has seven user-facing features. Each has its own page covering data sour
 backend/          Flask API
   app.py          App factory — auto-registers every blueprint in routes/
   routes/         HTTP layer: one blueprint per feature
-  services/       Logic layer: API clients, parsing, scoring
+  services/       Logic layer: one Wikimedia client (wiki.py), signals, scoring
+  data/           countries.json (ISO codes for the article-country model)
 frontend/         Vue 3 + Vite SPA
   src/api.js      Every backend call, one function each
   src/stores/     Pinia store — all app state and load choreography
@@ -68,6 +70,6 @@ wiki/             This documentation
 
 ## Tech stack
 
-- **Backend** — Python, Flask, `flask-cors`, `requests`. No database, no auth, no persistence.
+- **Backend** — Python, Flask, `flask-cors`, `requests`, `beautifulsoup4`. No database or auth; in-memory TTL caches.
 - **Frontend** — Vue 3 (Composition API), Vite, Pinia, and [Wikimedia Codex](https://doc.wikimedia.org/codex/latest/) for UI components so it looks native to the Wikipedia ecosystem.
-- **Data** — MediaWiki Action API, Wikidata, Wikimedia Pageviews, Semantic Scholar, CrossRef, PubMed.
+- **Data** — MediaWiki Action and REST APIs on any wiki (incl. `cirrusdoc` ML labels and Parsoid HTML), Wikidata and its Query Service, Commons, Pageviews, Lift Wing, Content Translation, Citoid, PubMed, OpenAlex, CrossRef. See [[External-APIs]].
