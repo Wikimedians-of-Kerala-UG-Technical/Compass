@@ -30,7 +30,7 @@ def _latest_revisions(dbname, titles):
 
 
 def _revert_risk(dbname, revid):
-    data = wiki.post_json(REVERT_RISK_URL, {'rev_id': revid, 'lang': wiki.lang(dbname)}, retries=2, timeout=20)
+    data = wiki.post_json(REVERT_RISK_URL, {'rev_id': revid, 'lang': wiki.lang(dbname)}, retries=2, timeout=10)
     try:
         return data['output']['probabilities']['true']
     except (KeyError, TypeError):
@@ -84,7 +84,7 @@ def find_revisit(profile):
 
     # Possible vandalism: the latest revision is by someone else and the model is confident.
     to_check = [i for i in items if i['lastEdit']['revid'] and i['lastEdit']['user'] != username][:40]
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=10) as pool:
         for item, risk in zip(to_check, pool.map(lambda i: _revert_risk(dbname, i['lastEdit']['revid']), to_check)):
             item['lastEdit']['revertRisk'] = round(risk, 3) if risk is not None else None
             if risk is not None and risk >= REVERT_RISK_THRESHOLD:

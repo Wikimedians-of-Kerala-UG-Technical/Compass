@@ -13,8 +13,8 @@ from services import wiki
 
 CX_API = 'https://api.wikimedia.org/service/lw/recommendation/api/v1/translation'
 WDQS = 'https://query.wikidata.org/sparql'
-_cache = wiki.TTLCache(ttl=6 * 3600)
-_wdqs_cache = wiki.TTLCache(ttl=24 * 3600)
+_cache = wiki.TTLCache(ttl=6 * 3600, name='discover')
+_wdqs_cache = wiki.TTLCache(ttl=24 * 3600, name='region-gaps')
 
 
 def cx_url(target_db, title, source, target, section=None):

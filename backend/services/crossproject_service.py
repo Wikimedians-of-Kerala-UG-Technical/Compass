@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from services import wiki
 
 WDQS = 'https://query.wikidata.org/sparql'
-_cache = wiki.TTLCache(ttl=6 * 3600, maxsize=300)
+_cache = wiki.TTLCache(ttl=6 * 3600, maxsize=300, name='contribute')
 FILE_NOISE = re.compile(r'(\.[a-z0-9]{2,4}$)|(\bIMG[-_ ]?\w*)|(\b\d{6,}\b)|(\(\d+\))|[_\-]+', re.I)
 
 

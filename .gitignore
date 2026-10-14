@@ -25,3 +25,6 @@ frontend/public/temperature.html
 
 # evaluation raw outputs (large; see eval/README.md)
 eval/runs/
+
+# disk cache (see COMPASS_CACHE_PATH)
+backend/.cache/

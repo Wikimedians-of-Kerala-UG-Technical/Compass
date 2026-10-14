@@ -18,8 +18,8 @@ SIGNAL_ARTICLES = 200
 CREATIONS_LIMIT = 1000
 LANGUAGE_MIN_EDITS = 100
 
-_profiles = wiki.TTLCache(ttl=6 * 3600, maxsize=500)
-_globals = wiki.TTLCache(ttl=6 * 3600, maxsize=500)
+_profiles = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='profile')
+_globals = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='global-user')
 
 REVERT_TAGS = ('mw-rollback', 'mw-undo', 'mw-manual-revert')
 
@@ -89,12 +89,14 @@ def fetch_babel(dbname, username):
 
 
 def fetch_categories(dbname, titles):
-    """Visible (non-hidden) categories of each title."""
+    """Visible (non-hidden) categories of each title. Batches run in parallel."""
+    params = {'action': 'query', 'prop': 'categories', 'cllimit': 'max', 'clshow': '!hidden'}
+    batches = [titles[i:i + 50] for i in range(0, len(titles), 50)]
     cat_map = {}
-    for page in wiki.api_pages(dbname, titles, {
-        'action': 'query', 'prop': 'categories', 'cllimit': 'max', 'clshow': '!hidden',
-    }):
-        cat_map[page['title']] = [c['title'].split(':', 1)[1] for c in page.get('categories') or []]
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for pages in pool.map(lambda b: list(wiki.api_pages(dbname, b, params)), batches):
+            for page in pages:
+                cat_map[page['title']] = [c['title'].split(':', 1)[1] for c in page.get('categories') or []]
     return cat_map
 
 
@@ -108,7 +110,7 @@ ADMIN_CATEGORY = 'Q15647814'  # Wikidata: Wikimedia administration category
 
 
 GENERIC_CATEGORIES = ['Living people', 'Possibly living people', 'Year of birth missing (living people)']
-_generic_cache = wiki.TTLCache(ttl=7 * 24 * 3600)
+_generic_cache = wiki.TTLCache(ttl=7 * 24 * 3600, name='generic-categories')
 
 
 def generic_categories(dbname):
@@ -236,6 +238,15 @@ def reverted_by_others(contribs):
     return {'count': reverted, 'of': total, 'share': round(reverted / total, 4) if total else 0}
 
 
+def _top_categories(dbname, titles, weights):
+    cat_counts, cat_weight = {}, {}
+    for title, cats in fetch_categories(dbname, titles).items():
+        for cat in cats:
+            cat_counts[cat] = cat_counts.get(cat, 0) + 1
+            cat_weight[cat] = cat_weight.get(cat, 0) + weights.get(title, 1)
+    return topical_categories(dbname, cat_counts, cat_weight)
+
+
 def build_profile(username, dbname=None):
     key = (username, dbname)
     return _profiles.get_or_compute(key, lambda: _build_profile(username, dbname))
@@ -262,11 +273,12 @@ def _build_profile(username, dbname):
     by_count = sorted(page_counts, key=page_counts.get, reverse=True)
     signal_titles = list(dict.fromkeys(by_count[:50] + recent_titles))[:SIGNAL_ARTICLES]
 
-    cats_f = pool.submit(fetch_categories, home, signal_titles[:150])
-    sigs = article_signals(home, signal_titles)
     # Articles the editor keeps coming back to say more about them than one-off edits
     # (patrolling, typo fixes), so each article counts 1 + log2(edits on it).
     weights = {t: 1 + math.log2(page_counts.get(t, 1)) for t in signal_titles}
+    # Categories (and their Wikidata kinds) are worked out while the signals load.
+    cats_f = pool.submit(_top_categories, home, signal_titles[:150], weights)
+    sigs = article_signals(home, signal_titles)
     present = [sigs[t] for t in signal_titles if t in sigs]
     topic_w, country_w = aggregate_profile(present, [weights[s['title']] if s['title'] in weights else 1 for s in present])
     n = max(sum(weights.get(s['title'], 1) for s in present), 1)
@@ -287,13 +299,7 @@ def _build_profile(username, dbname):
             countries.append({**info, 'share': round(w / n, 3)})
     countries = countries[:4]
 
-    cat_map = cats_f.result()
-    cat_counts, cat_weight = {}, {}
-    for title, cats in cat_map.items():
-        for cat in cats:
-            cat_counts[cat] = cat_counts.get(cat, 0) + 1
-            cat_weight[cat] = cat_weight.get(cat, 0) + weights.get(title, 1)
-    top_categories = topical_categories(home, cat_counts, cat_weight)
+    top_categories = cats_f.result()
 
     created = created_f.result()
     created_live = [c['title'] for c in created]

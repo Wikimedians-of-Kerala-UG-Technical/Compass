@@ -18,7 +18,7 @@ from services import wiki
 from services.signals import article_signals, dated_tags
 from services.discover_service import cx_url
 
-_cache = wiki.TTLCache(ttl=3600, maxsize=500)
+_cache = wiki.TTLCache(ttl=3600, maxsize=500, name='guide')
 CXSERVER = 'https://cxserver.wikimedia.org/v2/suggest/sections'
 
 # English names of inline problem templates (lowercase, first letter-insensitive).

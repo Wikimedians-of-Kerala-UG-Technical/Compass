@@ -4,7 +4,9 @@ Every request goes through here so the User-Agent, retry/backoff, `maxlag` and
 POST batching are handled in one place, for any wiki (`dbname`), not just enwiki.
 """
 import os
+import pickle
 import re
+import sqlite3
 import threading
 import time
 
@@ -68,12 +70,23 @@ def quote_title(title):
     return quote((title or '').replace(' ', '_'), safe='/:()\',')
 
 
+# At most this many requests in flight per host, across all users. Without it, a few
+# dashboards loading at once sent ~20 parallel requests to Wikidata and got 429s.
+HOST_CONCURRENCY = {'www.wikidata.org': 4}
+_host_slots = {h: threading.BoundedSemaphore(n) for h, n in HOST_CONCURRENCY.items()}
+
+
 def _request(method, url, retries=4, **kwargs):
     kwargs.setdefault('timeout', TIMEOUT)
+    slot = _host_slots.get(url.split('/')[2])
     last = None
     for attempt in range(retries):
         try:
-            r = session.request(method, url, **kwargs)
+            if slot:
+                with slot:
+                    r = session.request(method, url, **kwargs)
+            else:
+                r = session.request(method, url, **kwargs)
         except requests.RequestException as e:
             last = e
             time.sleep(1 + attempt)
@@ -163,28 +176,84 @@ def get_text(url, timeout=TIMEOUT):
     return r.text
 
 
-class TTLCache:
-    """Tiny thread-safe in-memory cache. Keys expire after `ttl` seconds."""
+# Caches are also written to SQLite, so a restart (or another worker) doesn't start
+# cold. The slow parts of a cold dashboard are the same for everyone (a state's
+# Wikidata item, a wiki's local template names), so a warm disk cache helps new
+# editors too. Set COMPASS_CACHE_PATH to an empty string to keep caches in memory only.
+CACHE_PATH = os.environ.get('COMPASS_CACHE_PATH', os.path.join(os.path.dirname(__file__), '..', '.cache', 'compass.sqlite3'))
+_db_local = threading.local()
 
-    def __init__(self, ttl, maxsize=2000):
+
+def _db():
+    conn = getattr(_db_local, 'conn', None)
+    if conn is None:
+        os.makedirs(os.path.dirname(os.path.abspath(CACHE_PATH)), exist_ok=True)
+        conn = sqlite3.connect(CACHE_PATH, timeout=10)
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute('PRAGMA synchronous=NORMAL')
+        conn.execute('CREATE TABLE IF NOT EXISTS cache (ns TEXT, key TEXT, expires REAL, value BLOB, PRIMARY KEY (ns, key))')
+        _db_local.conn = conn
+    return conn
+
+
+class TTLCache:
+    """Thread-safe cache. Keys expire after `ttl` seconds. With a `name`, entries are
+    also kept on disk (see CACHE_PATH); the in-memory copy is checked first."""
+
+    def __init__(self, ttl, maxsize=2000, name=None):
         self.ttl, self.maxsize = ttl, maxsize
+        self.name = name if CACHE_PATH else None
         self._data = {}
         self._lock = threading.Lock()
         self._key_locks = {}
+
+    def _disk_get(self, key):
+        try:
+            row = _db().execute('SELECT expires, value FROM cache WHERE ns = ? AND key = ?',
+                                (self.name, repr(key))).fetchone()
+        except sqlite3.Error:
+            return None
+        if not row or row[0] <= time.time():
+            return None
+        try:
+            return row[0], pickle.loads(row[1])
+        except Exception:
+            return None
+
+    def _disk_set(self, key, expires, value):
+        try:
+            conn = _db()
+            conn.execute('INSERT OR REPLACE INTO cache VALUES (?, ?, ?, ?)',
+                         (self.name, repr(key), expires, pickle.dumps(value, pickle.HIGHEST_PROTOCOL)))
+            conn.commit()
+        except (sqlite3.Error, pickle.PicklingError, TypeError):
+            pass
 
     def get(self, key):
         with self._lock:
             hit = self._data.get(key)
             if hit and hit[0] > time.time():
                 return hit[1]
+        if not self.name:
             return None
+        hit = self._disk_get(key)
+        if hit is None:
+            return None
+        self._remember(key, *hit)
+        return hit[1]
 
-    def set(self, key, value):
+    def _remember(self, key, expires, value):
         with self._lock:
             if len(self._data) >= self.maxsize:
                 oldest = min(self._data, key=lambda k: self._data[k][0])
                 self._data.pop(oldest, None)
-            self._data[key] = (time.time() + self.ttl, value)
+            self._data[key] = (expires, value)
+
+    def set(self, key, value):
+        expires = time.time() + self.ttl
+        self._remember(key, expires, value)
+        if self.name:
+            self._disk_set(key, expires, value)
         return value
 
     def get_or_compute(self, key, fn):
@@ -200,3 +269,15 @@ class TTLCache:
             if value is None:
                 value = self.set(key, fn())
         return value
+
+
+def purge_expired_cache():
+    """Drops expired rows from the disk cache. Called once at startup."""
+    if not CACHE_PATH:
+        return
+    try:
+        conn = _db()
+        conn.execute('DELETE FROM cache WHERE expires <= ?', (time.time(),))
+        conn.commit()
+    except sqlite3.Error:
+        pass

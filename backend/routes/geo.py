@@ -10,7 +10,12 @@ bp = Blueprint('geo', __name__)
 def get_geo(username):
     try:
         profile = build_profile(username, request.args.get('wiki') or None)
-        geo = resolve_geo(profile['homeWiki'], profile['_editedTitles'])
+        try:
+            geo = resolve_geo(profile['homeWiki'], profile['_editedTitles'])
+        except RuntimeError as e:  # Wikidata rate-limited or down: no focus, not a 500
+            geo = {'articlesWithGeo': 0, 'topPlaces': [], 'topCountries': [],
+                   'focus': {'region': None, 'local': None, 'country': None},
+                   'partial': True, 'failed': [{'query': 'wikidata', 'error': str(e)}]}
         return jsonify({'username': username, 'wiki': profile['homeWiki'], **geo})
     except ValueError as e:
         return jsonify({'error': str(e)}), 404
