@@ -1,165 +1,39 @@
-# Feature: Article Guide
+# Feature: Article Guide and Sources
 
-**Endpoints:** `GET /api/article/<title>/guide`, `/references`, `/external-references`
-**Service:** `services/article_service.py`
-**UI:** Guide view (also reachable from the top-bar search on any screen)
+**Endpoints:** `GET /api/article/<title>/guide[?wiki=]`, `GET /api/article/<title>/external-references[?wiki=]`
+**Services:** `services/article_service.py`, `services/references_service.py`
+**UI:** Guide (top-bar search, or "What exactly needs fixing?" on any task)
 
-Once a user picks a task, this answers **"what exactly do I do to this article?"** — a structural breakdown, concrete suggestions, and candidate citations.
-
-This is the only feature that works on an arbitrary article rather than a user profile.
+Answers: *where exactly is the problem in this article, and what can I cite?*
 
 ---
 
-## 1. Structural analysis — `/guide`
+## Guide: reading the article like Wikipedia does
 
-Fetches `action=parse` with `prop=sections|wikitext|categories` and `redirects=true`.
+The guide fetches **Parsoid HTML** (`/w/rest.php/v1/page/<title>/html`). Every section is a `<section data-mw-section-id>`, every citation is a `sup.mw-ref`, and every template carries its name and parameters in `data-mw`. v1 split wikitext on `==` with regexes. Its "very short" warnings were false alarms on long articles: *Tuberculosis* got "Expand 'Causes' — 2 chars".
 
-Downloading raw wikitext (rather than rendered HTML) is what makes section-level analysis possible — it can be split on heading syntax and scanned for `<ref` tags.
-
-### Article type detection
-
-The article's categories are pattern-matched to pick an expected section skeleton. **First match wins**, in this order:
-
-| Type | Category contains | Expected sections |
-|---|---|---|
-| `biography` | `living people`, `deaths`, `births` | Early life, Career, Personal life, Awards, Legacy, References |
-| `medical` | `disease`, `medic`, `drug`, `syndrome` | Signs and symptoms, Causes, Diagnosis, Treatment, Epidemiology, References |
-| `place` | `city`, `village`, `district` | History, Geography, Demographics, Economy, References |
-| `event` | `event`, `war`, `election` | Background, Timeline, Aftermath, Reactions, References |
-| `general` | *fallback* | History, Description, References |
-
-This encodes Wikipedia's own genre conventions — a biography missing "Early life" is a real, actionable gap, whereas a river article missing it is not.
-
-Matching is substring-based and lenient: an existing section named "Early life and education" satisfies the expected "Early life".
-
-### Per-section metrics
-
-Wikitext is split on `^=+[^=]+=+$` (heading lines). Each section gets:
-
-| Metric | Meaning |
+| Finding | How |
 |---|---|
-| `charCount` | Length of that section's body |
-| `status` | `short` if under 200 chars, else `ok` |
-| `refCount` | Count of `<ref` occurrences |
+| **Uncited paragraphs** | Paragraphs of ≥ 150 characters with no citation, outside reference, list and filmography sections. The suggestion quotes the paragraph's first words. |
+| **Inline tags with dates** | Templates such as `{{Citation needed|date=July 2026}}`, `{{Dead link}}`, `{{Failed verification}}` and `{{Clarify}}`, found by name in `data-mw`. On other wikis the names are mapped from English (ml: `തെളിവ്`). Each tag comes with the sentence it sits in. |
+| Banner tags with dates | Dated hidden tracking categories ("Articles needing additional references (tagged 2022-04)") |
+| Dead links | `{{Dead link}}`, plus citations with `url-status=dead` and no archive |
+| Bare URLs | Free-text external links in the reference list |
+| Short lead | Lead < 250 characters in an article over 3,000 characters |
+| Image to add | No images in the article, but Wikidata has P18 (thumbnail shown) or a Commons category (P373) |
+| Missing sections | Non-English articles: sections the English article has that this one lacks, with the heading translated, from cxserver `/v2/suggest/sections/<en title>/en/<lang>`. Each links to Content Translation. |
+| Facts | Wikidata birth date whose year doesn't appear in the article |
+| Quality | PageAssessments class and importance, plus what the next class needs |
 
-### Suggestion generation
+## Sources (external references)
 
-```mermaid
-flowchart TB
-    A["Parsed article"] --> B{"no infobox?"} --> B1["Add an infobox"]
-    A --> C{"no images?"} --> C1["Add images from Commons"]
-    A --> D{"fewer than 3 refs?"} --> D1["Needs sourcing"]
-    A --> E{"expected section<br/>missing?"} --> E1["Add that section"]
-    A --> F{"section under<br/>200 chars?"} --> F1["Expand it"]
-    A --> G{"section over 200 chars<br/>with zero refs?"} --> G1["Add refs to it"]
-```
-
-Two exclusion rules prevent nonsense advice:
-
-- "Expand" skips **References** and **External links** — those are supposed to be terse.
-- "Add refs" skips **See also** and **External links** — link lists don't need citations.
-
-### Response
-
-```json
-{
-  "title": "Onam",
-  "articleType": "event",
-  "sections": [
-    { "name": "History", "level": 2, "index": "1",
-      "charCount": 1840, "status": "ok", "refCount": 4 }
-  ],
-  "missingExpected": ["Aftermath", "Reactions"],
-  "suggestions": [
-    { "type": "structure", "text": "Add an infobox" },
-    { "type": "section", "text": "Add \"Aftermath\" section" },
-    { "type": "expand", "text": "Expand \"Legacy\" — very short (88 chars)" }
-  ],
-  "currentSize": 24193,
-  "totalRefs": 17,
-  "hasInfobox": false,
-  "hasImages": true,
-  "cats": ["hindu festivals", "kerala culture"]
-}
-```
-
-Suggestion `type` values (`structure`, `media`, `refs`, `section`, `expand`) let the UI group and icon them.
-
----
-
-## 2. Wikipedia-sourced references — `/references`
-
-Finds **related Wikipedia articles** that could serve as models or link targets.
-
-| Parameter | Value |
+| Step | Detail |
 |---|---|
-| `srsearch` | the article title |
-| `srlimit` | `5` per page |
-| `sroffset` | from the `?offset=` query param |
+| Topic routing | The article's ML topics decide the sources. Medicine & Health or Biology add **PubMed review articles from the last 10 years** (WP:MEDRS). Everything gets OpenAlex and CrossRef. v1 triggered PubMed on title words, so *Tuberculosis* never got PubMed. |
+| Query | The English title (via langlinks for other wikis), without its disambiguator ("Dosa (food)" → "Dosa") |
+| Noise filter | CrossRef results below relevance score 20 are dropped (v1 returned "NEUTRINOS AT LAKE LOUISE" for *Lake Louise criteria*) |
+| Already cited | DOIs found in the article's citations are excluded |
+| Ready to paste | Each result with a DOI or PMID goes through **Citoid**, the service behind VisualEditor's Cite button. It becomes `{{cite journal |last1=… |first1=… |title=… |journal=… |date=… |volume=… |pages=… |doi=… |pmid=…}}`, with a Copy button. |
+| Semantic Scholar | Used only when `SEMANTIC_SCHOLAR_API_KEY` is set. Without a key, every call returns HTTP 429. |
 
-Each of the 5 results is then run through `analyze_article_light` **in parallel** (`ThreadPoolExecutor(max_workers=5)`) so every suggestion arrives annotated with *what's wrong with that article too*.
-
-`analyze_article_light` skips the heavy wikitext download, requesting only `sections|categories|templates`. Infobox detection falls back to scanning template names.
-
-The article itself is filtered out of its own results (case-insensitive).
-
-Paginated via `nextOffset` — the UI has a "load more" affordance.
-
-```json
-{
-  "results": [
-    {
-      "title": "Vishu",
-      "authors": "Wikipedia Contributors",
-      "year": "2026",
-      "venue": "English Wikipedia",
-      "url": "https://en.wikipedia.org/wiki/Vishu",
-      "citations": 1420,
-      "source": "Wikipedia API",
-      "doi": "",
-      "whatToEdit": [{ "type": "section", "text": "Add \"Legacy\" section" }],
-      "missingSections": ["Legacy"]
-    }
-  ],
-  "nextOffset": 5,
-  "total": 8213
-}
-```
-
-> The `authors`/`year`/`venue`/`citations` fields are shaped like academic citations for UI consistency, but for Wikipedia results they're placeholders — `citations` is actually the article's **word count**.
-
----
-
-## 3. Academic references — `/external-references`
-
-Queries three scholarly databases in parallel (`max_workers=3`, 5s timeout each). See [[External-APIs]] for the exact parameters.
-
-| Source | Always queried? |
-|---|---|
-| Semantic Scholar | Yes |
-| CrossRef | Yes |
-| PubMed | **Only for medical topics** |
-
-### Two deliberate relevance decisions
-
-**PubMed is conditional.** It only indexes biomedical literature, so querying it about a temple or a film returns loosely-matched noise. It runs only when the title matches `MEDICAL_HINTS` (`medic`, `disease`, `cancer`, `virus`, `vaccine`, …).
-
-**Results are interleaved, not globally sorted.** Each source already returns its own relevance ranking. Sorting everything by citation count buried genuinely relevant papers under famous-but-unrelated ones. So results are merged **round-robin** — 1st from each source, then 2nd from each, and so on — preserving per-source relevance. Then deduplicated case-insensitively by title.
-
-```mermaid
-flowchart LR
-    S["Semantic Scholar:<br/>A1, A2, A3"] --> M
-    C["CrossRef:<br/>B1, B2"] --> M
-    P["PubMed:<br/>C1"] --> M
-    M["Round-robin merge"] --> O["A1, B1, C1,<br/>A2, B2, A3"]
-    O --> D["Dedupe by title"]
-```
-
----
-
-## Caching and load protection
-
-- `analyze_article`, `analyze_article_light`, `find_references`, and `find_external_references` are all wrapped in `functools.lru_cache(maxsize=128)`. Repeat views of the same article are free — but note the cache is **per-process and never invalidated**, so a long-running server serves stale analyses.
-- This service uses its own `requests.Session` with a `urllib3` `Retry` adapter: 4 retries, 1.5× exponential backoff, retrying on `429, 500, 502, 503, 504`, respecting `Retry-After`.
-- Setting `STRESS_TEST=1` makes `analyze_article` and `find_references` return canned fixtures with simulated latency, so load testing (`locustfile.py`) never hammers Wikipedia.
-- Every endpoint returns a shaped fallback object on failure rather than a bare error, so the UI always has something renderable.
+The v1 "Wikipedia references" list was removed. It suggested other Wikipedia articles as sources, which Wikipedia doesn't allow (WP:CIRCULAR).

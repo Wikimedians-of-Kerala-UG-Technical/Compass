@@ -1,176 +1,70 @@
 # Feature: Editor Profile
 
-**Endpoint:** `GET /api/profile/<username>`
+**Endpoint:** `GET /api/profile/<username>[?wiki=dbname]`
 **Service:** `services/profile_service.py`
-**UI:** Overview view
+**UI:** Overview
 
-The profile is the root of the entire app. Every other feature consumes its output — if this is wrong, everything downstream is wrong.
+Answers: *where does this editor work, and on what?* Every other feature uses this profile.
 
 ---
 
-## Pipeline
+## Steps
 
 ```mermaid
-flowchart TB
-    A["usercontribs<br/>up to 20,000 edits"] --> B["Filter to ns=0<br/>unique titles, cap 50"]
-    B --> C["prop=categories<br/>clshow=!hidden"]
-    A --> D["classify_edit<br/>per edit"]
-    C --> E["extract_topics<br/>keyword match"]
-    C --> F["extract_geo<br/>keyword match"]
-    G["globaluserinfo<br/>on Meta"] --> H
-    D --> H["build_profile"]
-    E --> H
-    F --> H
-    H --> I["Profile JSON"]
+flowchart TD
+    G["globaluserinfo (Meta)<br/>edit counts per wiki"] --> H["Home wiki =<br/>Wikipedia with most edits"]
+    H --> C["usercontribs: newest 2,000<br/>(all namespaces)"]
+    H --> N["usercontribs ucshow=new, ns 0<br/>(creations, up to 1,000)"]
+    H --> B["meta=babel on home wiki"]
+    C --> T["~200 edited articles<br/>(50 most-edited + most recent)"]
+    T --> D["cirrusdoc: ML topics + country<br/>(50 per call, in parallel)"]
+    T --> K["prop=categories (visible)"]
+    D --> P["Profile"]
+    K --> P
+    N --> P
+    B --> P
 ```
 
-### Why only 50 titles get categories
-
-The user may have edited thousands of unique articles, but `prop=categories` costs one API round-trip per 50 titles. The topic distribution converges fast, so the profile samples the **50 most recent unique articles** — recency is also a feature here, since it weights toward what the editor cares about *now*, not five years ago.
-
-This is a deliberate accuracy-vs-latency tradeoff. It means topic detection reflects recent focus, not lifetime focus.
-
----
-
-## Edit classification
-
-`classify_edit(comment, tags, sizediff)` assigns every edit exactly one of 17 labels. It is a **first-match-wins cascade** — order matters.
-
-```mermaid
-flowchart TB
-    T{"revert tag?"} -->|yes| R["revert"]
-    T -->|no| C{"comment matches<br/>a keyword pattern?"}
-    C -->|yes| K["stub_work, copyedit,<br/>categorization, references,<br/>media, template, creation,<br/>wikilinks, linking, shortdesc,<br/>merge, disambig"]
-    C -->|no| S{"size delta"}
-    S -->|"> +500"| MA["major_add"]
-    S -->|"< −500"| MR["major_remove"]
-    S -->|"abs < 50"| MI["minor"]
-    S -->|otherwise| G["general"]
-```
-
-**Tags beat comments; comments beat size.** A rollback is a revert even if the comment says "fixing refs." Size is only consulted when the comment is uninformative.
-
-| Label | Trigger |
-|---|---|
-| `revert` | tag `mw-rollback`, `mw-undo`, or `mw-manual-revert` |
-| `stub_work` | comment matches `\bstub` |
-| `copyedit` | `copyedit`, `copy edit`, `grammar`, `spelling`, `typo` |
-| `categorization` | `categor`, `recat` |
-| `references` | `\bref`, `citation`, `source`, `\bcite\b` |
-| `media` | `image`, `file:`, `photo` |
-| `template` | `infobox`, `template`, `navbox` |
-| `creation` | `creat`, `new article` |
-| `wikilinks` | `wikidata`, `wikilink`, `interwiki` |
-| `linking` | `\blink`, `orphan`, `dead.?end` |
-| `shortdesc` | `short desc` |
-| `merge` | `merge`, `redirect` |
-| `disambig` | `disambig`, `dab` |
-| `major_add` / `major_remove` / `minor` / `general` | size-delta fallbacks |
-
-**Known weakness:** this depends entirely on editors writing meaningful edit summaries. Editors who leave blank summaries collapse into `minor`/`general`, weakening their affinity signal. See [[Known-Issues-and-Limitations]].
-
----
-
-## Topic extraction
-
-`TOPIC_KW` maps 12 topics to keyword lists. Every category name on every sampled article is lowercased and substring-matched against every keyword; each hit increments that topic's score. The **top 3** become `topTopics`.
-
-| Topic | Sample keywords |
-|---|---|
-| `medicine` | medic, disease, health, hospital, drug, pharma, anatomy, surg, cancer, virus |
-| `science` | science, physic, chemi, biolog, math, astrono, geolog, ecolog, genetic |
-| `technology` | technol, comput, software, internet, digital, program, engineer, robot |
-| `geography` | geograph, countr, city, cities, district, village, town, region, province |
-| `history` | histor, ancient, mediev, century, `war `, empire, dynasty, colonial |
-| `culture` | cultur, music, film, `art `, literat, novel, poet, theater, cinema |
-| `biography` | birth, death, people, person, biograph, living people, alumni |
-| `education` | educat, universit, school, college, academ |
-| `india` | india, kerala, tamil, hindi, bengal, mumbai, delhi, malay, karnatak |
-| `politics` | politic, govern, election, parliament, president, minister |
-| `sports` | sport, football, cricket, basketball, olympic, athlet, soccer |
-| `environment` | environ, climate, conserv, species, wildlife, ocean, forest |
-
-If nothing matches, `topTopics` falls back to `["general"]`.
-
-Note the trailing spaces in `"war "` and `"art "` — they prevent matching *software*, *warrant*, *Bharat*, etc.
-
-**This list is Anglophone- and India-skewed by design** (the project's original audience), and it is the main reason topic detection is coarse. `india` is a topic, but Brazil and Nigeria aren't.
-
-## Geographic keyword extraction (`topGeo`)
-
-`extract_geo` runs the same keyword-matching trick against `GEO_KW` — 8 hardcoded buckets: `kerala`, `india`, `usa`, `uk`, `middleeast`, `africa`, `europe`, `asia`.
-
-> **This is the legacy geography signal.** It is coarse and hardcoded. The real geographic feature is the Wikidata hierarchy walk documented in [[Feature-Geographic-Focus]], which resolves actual place names dynamically. `topGeo` is still returned in the profile payload but is **not** what drives task recommendations.
-
----
-
-## Derived statistics
-
-### Quality tier
-
-Based on how often the editor's work involves reverting:
-
-```
-revert_rate = count(revert) / total_edits
-```
-
-| Tier | Condition |
-|---|---|
-| `high` | revert rate < 2% |
-| `medium` | revert rate < 6% |
-| `developing` | otherwise |
-
-This measures edits *classified as reverts from their comments and tags* — an approximation of edit quality, not a true measure of it. Treat it as a rough signal.
-
-### Heavily edited articles
-
-ns=0 pages the user edited **3 or more times**, ranked by count, top 15. Feeds [[Feature-Revisit]] — repeated edits imply ownership and ongoing interest.
-
-### Created articles
-
-Edits classified as `creation`, top 20. Also feeds Revisit.
-
-### Recent edits
-
-The 15 newest edits with prebuilt `diffUrl` (`index.php?diff={revid}`) and `articleUrl` links for the Overview timeline.
-
----
-
-## Response shape
-
-```json
-{
-  "username": "ranjithsiji",
-  "total": 285431,
-  "uniqueArticles": 3120,
-  "editTypes": { "general": 788, "minor": 811, "references": 363, "linking": 162 },
-  "topTopics": ["india", "culture", "history"],
-  "topGeo": ["kerala", "india"],
-  "qualityTier": "high",
-  "heavilyEdited": [{ "title": "Onam", "count": 23 }],
-  "createdArticles": ["Pallichattambi", "Sinoj Varghese"],
-  "recentEdits": [
-    {
-      "title": "Onam",
-      "timestamp": "2026-07-19T08:12:00Z",
-      "comment": "added refs",
-      "sizediff": 412,
-      "diffUrl": "https://en.wikipedia.org/w/index.php?diff=123456789",
-      "articleUrl": "https://en.wikipedia.org/wiki/Onam"
-    }
-  ]
-}
-```
-
-`total` is the **global** cross-wiki edit count from Meta, not the length of the fetched contribution list — a prolific editor's true total can far exceed the 20,000 we page through.
-
-## How this tailors results
-
-| Profile field | Consumed by | Effect |
+| Step | API | Why |
 |---|---|---|
-| `topTopics` | Tasks | Becomes the **search query** for candidate articles, and the topic-weight ranking term |
-| `editTypes` | Tasks | Top 6 keys become the affinity signal — matching task types get a bonus |
-| `heavilyEdited` | Revisit | Articles checked for newly-appeared maintenance issues |
-| `createdArticles` | Revisit | Articles checked for still-stub / still-unreferenced status |
-| `qualityTier` | Overview | Displayed only; does not currently affect ranking |
-| `topGeo` | — | Legacy; superseded by `/api/geo` |
+| Home wiki | `meta=globaluserinfo&guiprop=merged` | Most target editors work mainly outside enwiki. Wikidata, Commons, test wikis, `abstractwiki` and non-Wikipedia projects are excluded. |
+| Contributions | `list=usercontribs`, 4 × 500 | 2,000 is enough for topics; v1 fetched 20,000 in 40 calls |
+| Creations | `list=usercontribs&ucshow=new&ucnamespace=0` | Exact. v1 guessed from edit summaries (it found 20 of Netha Hussain's 648). |
+| Topics and countries | `prop=cirrusdoc&cdincludes=weighted_tags` | Wikipedia's own ML labels (`articletopic`, `articlecountry`), available on every Wikipedia |
+| Categories | `prop=categories&clshow=!hidden` | For "in a category you edit" tasks. Tracking categories (by pattern), "Living people" (mapped per wiki) and categories over 5,000 pages are dropped. |
+| Languages | `meta=babel` plus wikis with ≥ 100 edits | Babel level 0/1 is ignored |
+
+## Topics
+
+Each edited article has topic weights, e.g. `Culture.Media.Films|996`. Compass sums them over the edited articles and divides by the article count, giving a share. Topics with ≥ 5% share are kept, and regional topics (`Geography.Regions.*`) are reported separately as `regions`. A topic's `slug` (e.g. `films`, `medicine-and-health`) works directly as CirrusSearch's `articletopic:` keyword.
+
+Examples (October 2026):
+
+| Editor | Topics |
+|---|---|
+| Hog Farm (enwiki) | Military and warfare 60%, Transportation 24% · United States |
+| Ranjithsiji (mlwiki) | Media 22%, Biography 21%, Films 19% · India |
+| Netha Hussain (enwiki) | Biography 25%, Food and drink 22%, STEM 15%, Medicine & Health 9% · India |
+
+## Countries
+
+Country names come from the article-country model ("India") and are mapped to ISO codes through `data/countries.json`. `a3` is used for `articlecountry:` search and `a2` for regional pageviews.
+
+## Edit types
+
+`classify_edit()` reads MediaWiki **change tags** first, because they don't depend on language:
+- `mw-undo`/`mw-rollback`/`mw-manual-revert` → `revert`
+- `contenttranslation*` → `translation`
+- `newcomer task*` → `newcomer_task`
+- `mw-new-redirect` → `redirect`
+- `editcheck-newreference` → `references`
+
+Then it checks the namespace (talk, category, file, template). After that it falls back to English edit-summary patterns and the size of the change.
+
+## Reverted by others
+
+Replaces v1's `qualityTier`, which counted the editor's *own* reverts and therefore rated vandal fighters as "developing". An article edit counts as reverted if it carries `mw-reverted` and the editor's own next edit on that page is not a revert (that would be a self-revert).
+
+## Caching
+
+The profile is cached for 6 h per `(username, wiki)`, with a per-key lock so the dashboard's parallel requests compute it only once.

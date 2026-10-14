@@ -16,6 +16,7 @@
 - [[Feature-Geographic-Focus]]
 - [[Feature-Revisit]]
 - [[Feature-Discover]]
+- [[Feature-Contribute]]
 - [[Feature-Article-Guide]]
 - [[Feature-Trends]]
 

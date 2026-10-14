@@ -9,50 +9,56 @@
 
 ## What is Compass?
 
-Wikipedia has millions of articles that need work, but no good way to match editors with tasks suited to their skills. Existing tools just dump generic maintenance lists on everyone.
+Wikipedia has millions of articles that need work, but no good way to match editors with tasks suited to them. Existing tools hand everyone the same generic maintenance lists.
 
-Compass does the opposite: type in a Wikipedia username, and it studies that editor's own history first — what topics they write about, how they edit, what quality bar they hold themselves to — and only then hands back a ranked list of articles worth their time.
+Compass does the opposite. You type in a Wikimedia username. It finds the Wikipedia that editor actually works on (Malayalam, Tamil, English…), studies their edits there, and returns work they'd recognise as theirs.
 
-There are no accounts and nothing to sign up for. You give it a public Wikipedia username, it reads that user's public contributions, and it returns recommendations.
+There are no accounts and nothing to sign up for. It reads public contributions only.
 
 ---
 
 ## What it does
 
-1. **Builds a profile from edit history** — pulls an editor's recent contributions and figures out their topic focus, edit types, activity patterns, and skill/quality tier.
-2. **Finds candidate tasks** — searches Wikipedia for articles matching the editor's topics that need references, are orphaned, or are tagged "citation needed."
-3. **Watches articles the editor already touched** — flags pages they previously edited or created that have since picked up new issues, so there's a natural follow-up trail.
-4. **Scores and ranks everything** — each task is weighted by relevance to the editor's interests, the article's impact (pageviews/importance), how feasible it is given their skill level, and urgency (staleness, trending status).
-5. **Surfaces context to help them act** — trending topics, relevant news, and per-article guides with suggested references pulled from Semantic Scholar, CrossRef, and PubMed.
+1. **Profile.** Detects the editor's home wiki and languages, and reads Wikipedia's own ML topic and country labels for the articles they edit (e.g. *Films · India* on mlwiki, *Military and warfare · United States* on enwiki).
+2. **Tasks.** Finds articles that need references, citations, links or images. It searches the editor's topics, the categories they edit in, places they write about, and articles similar to theirs. Results are ranked by topic match, place, impact, feasibility, tag age and the kind of edits they make, and each card says why it was picked.
+3. **Revisit.** Their own articles that picked up tags (with dates, and "new since your last edit"), or whose latest edit by someone else looks like vandalism.
+4. **Discover.** Articles and sections to translate into their languages, from Content Translation's recommender, plus articles about their district that are missing in their language.
+5. **Commons & Wikidata.** Their photos that no article uses yet, with candidate articles, and Wikidata items near them missing a description in their language.
+6. **Article Guide.** Points to the exact uncited paragraph, the dated `{{citation needed}}`, dead links, a Wikidata image to add, sections missing compared with English, and sources (PubMed reviews for medicine, OpenAlex, CrossRef) as ready-to-paste `{{cite journal}}`.
+7. **Trends.** What readers in their country and on their wiki read yesterday that carries a maintenance tag.
 
 ---
 
 ## How it's built
 
-The project is split into a frontend and a backend that talks to Wikipedia and a few academic APIs on the frontend's behalf.
-
 ```
-frontend/   Vue 3 + Vite single-page app — onboarding, dashboard, task list, article guide
-backend/    Flask API — builds profiles, discovers tasks, scores/ranks them
-legacy/     The original single-file vanilla JS prototype (kept for history, no longer active)
+frontend/   Vue 3 + Vite + Pinia + Wikimedia Codex
+backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, in-memory caches
+eval/       Reproducible evaluation harness (see eval/README.md and EVALUATION.md)
+legacy/     The original single-file prototype (inactive)
 ```
 
-**Backend routes** (`backend/routes/`):
-- `GET /api/profile/<username>` — builds an editor profile from their contribution history
-- `GET /api/tasks` — finds and ranks candidate tasks for the current profile
-- `GET /api/trends` — current trending Wikipedia topics and news
-- `GET /api/article/<title>/guide` — structural analysis and editing suggestions for one article
-- `GET /api/article/<title>/references` and `/external-references` — suggested citations
+**Backend routes** (`backend/routes/`). Every per-user route accepts `?wiki=<dbname>`; the default is the editor's home wiki.
 
-**Frontend flow** (`frontend/src/App.vue`): user enters a username → app calls the profile, trends, and tasks endpoints in parallel → renders a dashboard with the profile summary, trending/news sidebars, the ranked task list, and an article guide panel for digging into a specific task.
+| Route | What it returns |
+|---|---|
+| `GET /api/profile/<username>` | Home wiki, languages, topics, countries, categories, creations, reverted-by-others |
+| `GET /api/tasks/<username>` | Ranked tasks with reasons (`?lat&lon&place` adds "near you") |
+| `GET /api/geo/<username>` | Places written about, and the focus region and district |
+| `GET /api/revisit/<username>` | Own articles needing attention |
+| `GET /api/discover/<username>` | Articles and sections to translate; local gaps |
+| `GET /api/contribute/<username>` | Unused Commons photos; Wikidata gaps; campaigns |
+| `GET /api/trends` | Most-read articles that need work (`?country&wiki&langs`) |
+| `GET /api/article/<title>/guide` | Paragraph-level analysis |
+| `GET /api/article/<title>/external-references` | Sources with citation templates |
 
-Data sources: the MediaWiki Action API and Wikimedia Pageviews for everything Wikipedia-side, plus Semantic Scholar, CrossRef, and PubMed for reference discovery.
+Data sources: MediaWiki Action and REST APIs on any wiki, Wikidata and its Query Service, Commons, Pageviews, Lift Wing, Content Translation, Citoid, PubMed, OpenAlex and CrossRef. `WIKIMEDIA-RESEARCH.md` explains each one, and `python eval/probe_apis.py` checks that they all still answer.
 
 ---
 
 ## Running it locally
 
-**Backend** (Flask, serves on `:5000`):
+**Backend** (Flask, serves on `:5000`; see the wiki's Getting Started page for env vars):
 
 ```bash
 cd backend
@@ -80,5 +86,5 @@ Full developer documentation is available in our [GitHub Wiki](https://github.co
 - [API Reference](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/API-Reference) — request/response shapes for every endpoint
 - [Known Issues and Limitations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Known-Issues-and-Limitations) — what's approximate or fragile
 
-Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends).
+Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Commons & Wikidata](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Contribute), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends).
 

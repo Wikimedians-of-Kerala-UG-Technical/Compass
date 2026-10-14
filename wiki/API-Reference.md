@@ -1,32 +1,32 @@
 # API Reference
 
-Base URL in development: `http://127.0.0.1:5000`
+Base URL in development: `http://127.0.0.1:5000`. The frontend reads it from `VITE_API_BASE`.
 
-All endpoints are `GET`, unauthenticated, and return JSON. CORS is open (`flask-cors` with default settings).
+All endpoints are `GET`, unauthenticated, and return JSON (UTF-8; non-Latin titles are not escaped). Every per-user endpoint accepts an optional `wiki` parameter (a dbname such as `mlwiki`). Without it, the backend uses the editor's **home wiki**, meaning the Wikipedia where they have the most edits.
 
 ## Endpoint index
 
 | Endpoint | Purpose | Typical latency |
 |---|---|---|
-| [`/api/profile/<username>`](#apiprofileusername) | Build an editor profile | Slow (seconds to a minute) |
-| [`/api/tasks`](#apitasks) | Ranked maintenance recommendations | Moderate |
-| [`/api/geo/<username>`](#apigeousername) | Resolve geographic focus | **Slowest** (a minute or more) |
-| [`/api/revisit/<username>`](#apirevisitusername) | The user's own decayed articles | Fast |
-| [`/api/discover/<username>`](#apidiscoverusername) | Cross-language article gaps | Slow |
-| [`/api/trends`](#apitrends) | Current events and trending pages | Fast |
-| [`/api/article/<title>/guide`](#apiarticletitleguide) | Structural analysis | Fast |
-| [`/api/article/<title>/references`](#apiarticletitlereferences) | Related Wikipedia articles | Moderate |
-| [`/api/article/<title>/external-references`](#apiarticletitleexternal-references) | Academic citations | Moderate |
+| [`/api/profile/<username>`](#apiprofileusername) | Editor profile on the home wiki | 10–30 s (then cached 6 h) |
+| [`/api/tasks/<username>`](#apitasksusername) | Ranked tasks on the home wiki | 10–40 s |
+| [`/api/geo/<username>`](#apigeousername) | Places the editor writes about, and their focus | 10–30 s |
+| [`/api/revisit/<username>`](#apirevisitusername) | The editor's own articles that need attention | 5–15 s |
+| [`/api/discover/<username>`](#apidiscoverusername) | Articles and sections to translate | 10–40 s |
+| [`/api/contribute/<username>`](#apicontributeusername) | Commons and Wikidata tasks | 5–20 s |
+| [`/api/trends`](#apitrends) | Most-read articles that need work, plus headlines | 5–15 s |
+| [`/api/article/<title>/guide`](#apiarticletitleguide) | Paragraph-level analysis of one article | 2–8 s |
+| [`/api/article/<title>/external-references`](#apiarticletitleexternal-references) | Citable sources with ready-to-paste templates | 5–15 s |
+
+The per-user endpoints share one cached profile. The first call pays for it and the others reuse it, so the dashboard's parallel requests don't fetch contributions several times.
 
 ## Error conventions
 
 | Status | Meaning | Body |
 |---|---|---|
-| `200` | Success | The documented payload |
-| `404` | User has no edits | `{"error": "No edits found for \"x\"."}` |
+| `200` | Success | The documented payload. `partial: true` means a sub-source failed and the result may be incomplete. |
+| `404` | No such account, or no edits on that wiki | `{"error": "…"}` |
 | `500` | Upstream or internal failure | `{"error": "Something went wrong: …"}` |
-
-The `/api/article/*` endpoints are the exception: on failure they return **500 with a shaped fallback object** (empty `suggestions`, `results`, etc.) so the UI always has a renderable structure.
 
 ---
 
@@ -34,162 +34,126 @@ The `/api/article/*` endpoints are the exception: on failure they return **500 w
 
 Full detail: [[Feature-Editor-Profile]]
 
-Builds an editor profile from up to 20,000 contributions.
-
-**Response**
-
 | Field | Type | Notes |
 |---|---|---|
-| `username` | string | |
-| `total` | int | **Global** cross-wiki edit count from Meta |
-| `uniqueArticles` | int | Distinct ns=0 titles in the fetched window |
-| `editTypes` | object | Label → count, 17 possible labels |
-| `topTopics` | string[] | Top 3; `["general"]` if nothing matched |
-| `topGeo` | string[] | Legacy keyword geography; superseded by `/api/geo` |
-| `qualityTier` | string | `high` \| `medium` \| `developing` |
-| `heavilyEdited` | object[] | `{title, count}`, 3+ edits, max 15 |
-| `createdArticles` | string[] | Max 20 |
-| `recentEdits` | object[] | 15 newest with `diffUrl` and `articleUrl` |
+| `username` | string | Canonical spelling from Meta |
+| `homeWiki`, `homeLang`, `homeUrl` | string | e.g. `mlwiki`, `ml`, `https://ml.wikipedia.org` |
+| `wikis` | object[] | The editor's Wikipedias: `{dbname, lang, url, editcount}`, most edits first |
+| `languages` | object[] | Babel (level ≥ 2 or N) plus wikis with ≥ 100 edits: `{lang, level, source, dbname, editcount, url}` |
+| `total` | int | Global edit count across all Wikimedia wikis |
+| `homeEdits` | int | Edit count on the home wiki |
+| `sisterProjects` | object | `{wikidatawiki: n, commonswiki: n}` |
+| `editsAnalysed` | int | Contributions read (max 2,000, newest first) |
+| `uniqueArticles` | int | Distinct articles in those contributions |
+| `topics` | object[] | ML topics over edited articles: `{path, slug, label, share}`, where `slug` is usable as `articletopic:` |
+| `regions` | object[] | Region topics (e.g. South Asia), same shape |
+| `countries` | object[] | `{name, a2, a3, qid, share}`; `a3` is usable as `articlecountry:` |
+| `topTopics` | string[] | Labels of the top 3 topics (compatibility) |
+| `topCategories` | object[] | `{name, count, size}`: visible categories the editor works in, minus tracking and huge ones |
+| `editTypes` | object | Label → count, from change tags first and then edit summaries |
+| `reverted` | object | `{count, of, share}`: article edits reverted by **someone else** (self-reverts excluded) |
+| `heavilyEdited` | object[] | `{title, count, lastEdit}`, 3+ edits, max 15 |
+| `createdArticles` | string[] | 50 most recent creations (`ucshow=new`) |
+| `createdCount`, `createdCountCapped` | int, bool | Creations counted up to 1,000 |
+| `recentEdits` | object[] | 15 newest, with home-wiki `diffUrl` and `articleUrl` |
+| `secs` | number | Build time |
 
----
-
-## `/api/tasks`
+## `/api/tasks/<username>`
 
 Full detail: [[Feature-Task-Recommendations]]
 
 **Query parameters**
 
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `topics` | comma-separated | No | **Max 5.** Omitting falls back to a hardcoded generic list |
-| `editTypes` | comma-separated | No | Drives the affinity bonus |
-| `geo` | string | No | One place name; adds a search topic and a +0.40 bonus |
+| Param | Meaning |
+|---|---|
+| `wiki` | Wiki to search (default: home wiki) |
+| `lat`, `lon`, `place` | Optional. Adds a "near where you edit" source (`nearcoord:25km`). The frontend passes `geo.focus.local`. |
 
-**Response** — a JSON **array** (not an object), pre-sorted:
+**Response**: `{wiki, tasks[], scopes[], candidates, partial, failed[], secs}`. Each task:
 
-| Field | Type | Notes |
-|---|---|---|
-| `title` | string | Article title |
-| `type` | string | `add_refs` \| `fix_orphan` \| `add_citations` \| `expand_stub` |
-| `topic` | string | Which topic surfaced it |
-| `reason` | string | Human-readable explanation |
-| `meta` | object | `{label, effort, min}` |
-| `score` | float | Composite score, 3 decimals |
-| `pageviews` | int | 30-day daily average; `0` if not enriched |
-| `trend` | int | Percent change, 7d vs prior 7d |
-| `staleDays` | int | Days since last touched; `0` if not enriched |
-
-> `pageviews`/`staleDays` are `0` for candidates outside the top-16 enrichment window — this means "not measured," not "zero views."
-
----
+| Field | Notes |
+|---|---|
+| `title`, `wiki`, `url`, `editUrl` | |
+| `type` | Primary issue: `add_refs`, `more_refs`, `add_citations`, `inline_cites`, `fix_orphan`, `dead_links`, `expand`, `update`, `add_link`, `add_image` |
+| `issues` | Every issue found: `{key, label, since}`, where `since` = `YYYY-MM` from the dated tracking category |
+| `meta` | `{label, effort, min}` |
+| `reason`, `reasons` | Why it was picked for this editor, e.g. "In “Kerala cuisine”, where you edited 23 articles" |
+| `details` | e.g. `["Start-class", "6 kB", "tagged since 2026-02", "53 views/day"]` |
+| `scope` | Which source found it: `topic:…`, `cat:…`, `near`, `like:…` |
+| `signals` | The six ranking components, each 0–1 |
+| `score`, `pageviews`, `quality`, `size`, `topic`, `country`, `staleDays` | |
 
 ## `/api/geo/<username>`
 
 Full detail: [[Feature-Geographic-Focus]]
 
-| Field | Type | Notes |
-|---|---|---|
-| `articlesWithGeo` | int | Articles that resolved to a place |
-| `topPlaces` | object[] | `{name, count}`, max 12, all hierarchy levels |
-| `topCountries` | object[] | `{name, count}`, max 3 |
-
----
+`{wiki, articlesWithGeo, topPlaces[], topCountries[], focus: {region, local, country}}`. Each place is `{qid, name, nameEn, count, level, coord}`, where `level` is `country`, `admin1` or `local`. Labels are in the home wiki's language.
 
 ## `/api/revisit/<username>`
 
 Full detail: [[Feature-Revisit]]
 
-**Query parameters** — both JSON-encoded, supplied by the frontend from the profile response.
+`{wiki, checked, tasks[]}`. Each item:
 
-| Param | Format | Cap |
-|---|---|---|
-| `watch` | `[{title, count}]` | 15 |
-| `mine` | `[title]` | 20 |
-
-Malformed JSON degrades to an empty list rather than erroring.
-
-**Response**
-
-```json
-{ "username": "...", "tasks": [
-  { "title": "...", "source": "watchlist|followup",
-    "tags": [{"key": "...", "label": "..."}], "reason": "..." }
-]}
-```
-
-Sorted by number of tags, descending.
-
----
+| Field | Notes |
+|---|---|
+| `title`, `url`, `editUrl`, `source` (`created`/`edited`), `editCount` | |
+| `tags` | `{key, label, since, newSinceYourEdit}`. `check_edit` = latest edit by someone else has revert risk ≥ 0.9 |
+| `yourLastEdit`, `lastEdit` | `lastEdit = {user, timestamp, revid, revertRisk}` |
+| `hasNew`, `weak` | Sorted new-first, weak (stub or suggestion only) last |
+| `quality`, `size`, `reason` | |
 
 ## `/api/discover/<username>`
 
 Full detail: [[Feature-Discover]]
 
-| Field | Type | Notes |
-|---|---|---|
-| `editsFetched` / `uniquePages` / `uniqueCategories` / `categoriesWithQid` | int | Diagnostics |
-| `categories` | object[] | `{name, qid, wikidataUrl, pageCount}` |
-| `userWikis` | object[] | `{dbname, lang, url, editcount}`, ≥10 edits |
-| `suggestedArticles` | object[] | `{title, qid, wikidataUrl, fromCategory, categoryWeight, existsIn, missingIn}` |
-| `skippedMegaCategories` | string[] | Categories over 3,000 pages |
+| Param | Meaning |
+|---|---|
+| `region`, `local` | Wikidata QIDs from `geo.focus`, for "missing near you" gaps |
+| `regionName` | Display name |
 
-Empty `suggestedArticles` is normal for monolingual editors.
+`{monolingual, pairs[], languages[], articles[], sections[], regionGaps[], partial, secs}`.
+- `articles`: `{title, qid, source, target, languages, size, why, sourceUrl, translateUrl}`.
+- `sections`: `{sourceTitle, targetTitle, missing: [{section, targetHeading, size, translateUrl}], targetUrl}`.
+- `regionGaps`: `{qid, title, label, sitelinks, target, region, translateUrl, sourceUrl}`.
+- `translateUrl` opens `Special:ContentTranslation` (with `sourcesection` for sections).
 
----
+## `/api/contribute/<username>`
+
+Full detail: [[Feature-Contribute]]
+
+| Param | Meaning |
+|---|---|
+| `place`, `placeName` | Wikidata QID for the Wikidata gaps (the frontend sends `focus.local`, else `focus.region`) |
+
+`{wiki, language, commons: {uploads, unused[]}, wikidata: {place, items[]}, events[], partial, failed[]}`.
+- `unused`: `{file, thumb, url, coord, articles[], matchedBy}`.
+- `items`: `{qid, label, sitelinks, missing: ['description', 'label'?], url}`.
 
 ## `/api/trends`
 
 Full detail: [[Feature-Trends]]
 
-```json
-{
-  "news":     [{ "text": "...", "articles": ["..."], "source": "current_events" }],
-  "trending": [{ "title": "...", "views": 1200431, "source": "wiki_trending" }]
-}
-```
+| Param | Meaning |
+|---|---|
+| `country` | ISO alpha-2 (`IN`) for `top-per-country` |
+| `wiki` | Home wiki for `top/<lang>.wikipedia` |
+| `langs` | Extra language codes, comma-separated |
 
-`news.source` ∈ `current_events` | `recent_deaths` | `ongoing` | `dyk`.
-
----
+`{country, wiki, trending[], checked, news[]}`. `trending` holds only articles with a maintenance tag or Growth suggestion: `{title, wiki, views, day, url, editUrl, issues[], quality, source}`.
 
 ## `/api/article/<title>/guide`
 
-Full detail: [[Feature-Article-Guide]]
+Full detail: [[Feature-Article-Guide]]. `?wiki=` defaults to `enwiki`. Titles can contain `/`.
 
-| Field | Type | Notes |
-|---|---|---|
-| `articleType` | string | `biography` \| `medical` \| `place` \| `event` \| `general` |
-| `sections` | object[] | `{name, level, index, charCount, status, refCount}` |
-| `missingExpected` | string[] | Expected-but-absent sections for this type |
-| `suggestions` | object[] | `{type, text}` |
-| `currentSize` | int | Wikitext length in characters |
-| `totalRefs` | int | Count of `<ref` tags |
-| `hasInfobox` / `hasImages` | bool | |
-| `cats` | string[] | Lowercased categories |
-
-## `/api/article/<title>/references`
-
-| Param | Default | Notes |
-|---|---|---|
-| `offset` | `0` | Page through results, 5 per page |
-
-Returns `{results[], nextOffset, total}`. Each result includes `whatToEdit` and `missingSections` — analysis of *that* article, not the original.
+`{title, wiki, url, editUrl, quality, qualityNext, importance, wikiprojects, topics, currentSize, totalRefs, hasInfobox, hasImages, sections[], inlineTags[], missingSections[], wikidata, citedUrls[], suggestions[], secs}`.
+- Each section: `{id, name, level, chars, refCount, uncitedParagraphs[], inlineTags[]}`.
+- Each suggestion: `{type, text, section?, url?, image?}`, where `type` is `refs`, `inline`, `banner`, `links`, `structure`, `media`, `section` or `facts`.
 
 ## `/api/article/<title>/external-references`
 
-No parameters. Returns `{results: [{title, url, citations, source}]}` where `source` ∈ `Semantic Scholar` | `CrossRef` | `PubMed`. Round-robin interleaved and deduplicated.
+Full detail: [[Feature-Article-Guide]]
 
----
+`{title, wiki, query, sourcesUsed[], medical, alreadyCitedSkipped, results[], partial, failed[], secs}`. Each result: `{title, year, venue, authors, doi, pmid, url, source, citations, cite}`, where `cite` is a ready-to-paste `{{cite journal|…}}`.
 
-## Adding a new endpoint
-
-`app.py` auto-discovers blueprints:
-
-```python
-for _, name, _ in pkgutil.iter_modules(routes.__path__):
-    mod = importlib.import_module(f"routes.{name}")
-    if hasattr(mod, "bp"):
-        app.register_blueprint(mod.bp)
-```
-
-Drop a file in `backend/routes/` that exposes a `bp` — no registration step needed.
+The old `/api/article/<title>/references` endpoint was removed: it suggested other Wikipedia articles as sources, which Wikipedia doesn't allow (WP:CIRCULAR).
