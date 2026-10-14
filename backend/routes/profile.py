@@ -1,20 +1,16 @@
-from flask import Blueprint, jsonify
-from services.profile_service import fetch_contribs, fetch_categories, build_profile, fetch_global_editcount
+from flask import Blueprint, jsonify, request
 
-bp = Blueprint("profile", __name__)
+from services.profile_service import build_profile, public_profile
+
+bp = Blueprint('profile', __name__)
 
 
-@bp.route("/api/profile/<username>", methods=["GET"])
+@bp.route('/api/profile/<username>', methods=['GET'])
 def get_profile(username):
     try:
-        contribs = fetch_contribs(username, limit=20000)
-        articles = [c for c in contribs if (c.get("ns") or 0) == 0]
-        unique_titles = list({c["title"] for c in articles})[:50]
-        cat_map = fetch_categories(unique_titles)
-        global_editcount = fetch_global_editcount(username)
-        profile = build_profile(username, contribs, cat_map, global_editcount)
-        return jsonify(profile)
+        profile = build_profile(username, request.args.get('wiki') or None)
+        return jsonify(public_profile(profile))
     except ValueError as e:
-        return jsonify({"error": str(e)}), 404
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({"error": "Something went wrong: " + str(e)}), 500
+        return jsonify({'error': 'Something went wrong: ' + str(e)}), 500
