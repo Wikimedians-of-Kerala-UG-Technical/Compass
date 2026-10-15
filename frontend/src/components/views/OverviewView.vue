@@ -9,6 +9,7 @@ import {
   cdxIconArticleSearch,
   cdxIconMapPin,
   cdxIconLogoWikimediaCommons,
+  cdxIconChart,
 } from '@wikimedia/codex-icons'
 import { useAppStore } from '../../stores/appStore.js'
 import TrendingCard from '../widgets/TrendingCard.vue'
@@ -73,6 +74,7 @@ const dispatchCards = computed(() => {
       desc: t('overview.card.contributeDesc'),
     },
     { key: 'guide', icon: cdxIconArticleSearch, title: t('overview.card.guide'), desc: t('overview.card.guideDesc') },
+    { key: 'stats', icon: cdxIconChart, title: t('overview.card.stats'), desc: t('overview.card.statsDesc') },
   ]
 })
 </script>

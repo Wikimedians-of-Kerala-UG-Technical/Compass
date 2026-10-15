@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 //   /u/Ranjithsiji/tasks?wiki=mlwiki       a dashboard view (wiki optional: home wiki)
 //   /u/Ranjithsiji/guide?article=കൊച്ചി     the Guide, with an article loaded
 // The dashboard itself is driven by the store; App.vue keeps the two in sync.
-export const VIEWS = ['overview', 'tasks', 'revisit', 'discover', 'contribute', 'guide']
+export const VIEWS = ['overview', 'tasks', 'revisit', 'discover', 'contribute', 'guide', 'stats']
 
 export const routes = [
   { path: '/', name: 'onboard', component: () => import('./components/OnboardView.vue') },

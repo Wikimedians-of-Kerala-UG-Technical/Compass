@@ -7,6 +7,7 @@ import {
   getRevisit,
   getGeo,
   getContribute,
+  getStats,
 } from '../api.js'
 import { router } from '../router.js'
 import { i18n } from '../i18n.js'
@@ -80,6 +81,11 @@ export const useAppStore = defineStore('app', {
     contributeLoading: false,
     contributeError: '',
 
+    // stats — loaded when the Stats view is first opened
+    stats: null,
+    statsLoading: false,
+    statsError: '',
+
     // universal top-bar search -> Guide view
     guideQuery: '',
     guideWiki: '',
@@ -145,6 +151,7 @@ export const useAppStore = defineStore('app', {
       if (!sameUser || wiki !== this.requestedWiki || (!this.profile && this.screen !== 'loading')) {
         this.start(uname, wiki)
       }
+      if (this.activeView === 'stats' && !this.stats && !this.statsLoading && this.profile) this.fetchStats()
     },
 
     start(uname, wiki) {
@@ -169,6 +176,7 @@ export const useAppStore = defineStore('app', {
           // resolves, adds a "near where you edit" source and the place-scoped extras.
           this.loadTasks()
           this.fetchGeo()
+          if (this.activeView === 'stats') this.fetchStats()
         })
         .catch((err) => {
           if (seq !== this.sessionSeq) return
@@ -202,6 +210,8 @@ export const useAppStore = defineStore('app', {
       this.discoverError = ''
       this.contribute = null
       this.contributeError = ''
+      this.stats = null
+      this.statsError = ''
     },
 
     // -- data --------------------------------------------------------------
@@ -275,6 +285,16 @@ export const useAppStore = defineStore('app', {
         .then((d) => { if (seq === this.sessionSeq) this.contribute = d })
         .catch((err) => { if (seq === this.sessionSeq) this.contributeError = err.message || t('contribute.failed') })
         .finally(() => { this.contributeLoading = false })
+    },
+
+    fetchStats() {
+      this.statsLoading = true
+      this.statsError = ''
+      const seq = this.sessionSeq
+      getStats(this.username, this.wiki)
+        .then((d) => { if (seq === this.sessionSeq) this.stats = d })
+        .catch((err) => { if (seq === this.sessionSeq) this.statsError = err.message || t('stats.failed') })
+        .finally(() => { this.statsLoading = false })
     },
 
     logout() {

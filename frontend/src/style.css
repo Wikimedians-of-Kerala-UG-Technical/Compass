@@ -435,6 +435,7 @@ a:hover { text-decoration: underline; }
 .recent-chip__name:hover { color: var(--color-progressive); }
 .recent-chip__x { padding: 4px 8px 4px 2px; color: var(--color-subtle) !important; display: inline-flex; }
 
+.alert-row { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; padding: 4px 0; flex-wrap: wrap; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

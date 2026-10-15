@@ -39,6 +39,7 @@
     "discover": "Discover",
     "contribute": "Commons & Wikidata",
     "guide": "Guide",
+    "stats": "Your stats",
     "sections": "Sections",
     "search": "Look up any article…",
     "searchLabel": "Look up an article",
@@ -72,7 +73,9 @@
       "contribute": "{photos} photos to place · {gaps} Wikidata gaps",
       "contributeDesc": "Your unused Commons photos, and Wikidata items near you missing your language.",
       "guide": "Look up an article",
-      "guideDesc": "Find uncited paragraphs, tags, missing sections and ready-to-paste sources."
+      "guideDesc": "Find uncited paragraphs, tags, missing sections and ready-to-paste sources.",
+      "stats": "Your stats",
+      "statsDesc": "Your edit streak and how many readers saw the articles you worked on this month."
     }
   },
   "tasks": {
@@ -188,6 +191,22 @@
     "copy": "Copy",
     "copied": "Copied",
     "start": "Search for an article above to get started."
+  },
+  "stats": {
+    "title": "Your stats",
+    "sub": "From your live contributions on {wiki}, not the cached profile.",
+    "loading": "Adding up your last 90 days…",
+    "failed": "Couldn't load your stats.",
+    "streak": "Day streak",
+    "longest": "Longest in 90 days: {n}",
+    "edits30": "Edits in the last 30 days",
+    "articles30": "{n} articles · {kb} kB added",
+    "readers": "Readers of the articles you edited this month",
+    "readersNote": "30 days of views for {checked} of {total} articles",
+    "topArticles": "Most-read articles you worked on",
+    "perDay": "{n}/day",
+    "calendar": "Last 90 days",
+    "calendarDay": "{date}: {n} edits"
   },
   "trends": {
     "title": "Read today, needs work",

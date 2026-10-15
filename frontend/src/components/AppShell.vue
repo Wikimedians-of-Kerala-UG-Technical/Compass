@@ -11,6 +11,7 @@ import {
   cdxIconSearch,
   cdxIconReload,
   cdxIconLogoWikimediaCommons,
+  cdxIconChart,
   cdxIconMoon,
   cdxIconBright,
   cdxIconUserAvatar,
@@ -23,6 +24,7 @@ import RevisitView from './views/RevisitView.vue'
 import DiscoverView from './views/DiscoverView.vue'
 import GuideView from './views/GuideView.vue'
 import ContributeView from './views/ContributeView.vue'
+import StatsView from './views/StatsView.vue'
 
 const store = useAppStore()
 const { t } = useI18n()
@@ -36,6 +38,7 @@ const VIEWS = {
   discover: DiscoverView,
   contribute: ContributeView,
   guide: GuideView,
+  stats: StatsView,
 }
 
 const navItems = computed(() => [
@@ -50,6 +53,7 @@ const navItems = computed(() => [
   },
   { key: 'contribute', label: t('nav.contribute'), icon: cdxIconLogoWikimediaCommons, badge: store.contributeLoading ? '…' : store.contribute?.commons?.unused?.length || null },
   { key: 'guide', label: t('nav.guide'), icon: cdxIconArticleSearch },
+  { key: 'stats', label: t('nav.stats'), icon: cdxIconChart },
 ])
 
 // Cycles match-system -> dark -> light.

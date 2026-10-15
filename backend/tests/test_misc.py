@@ -1,4 +1,7 @@
+from datetime import date
+
 from services import ratelimit, references_service as refs
+from services.stats_service import streaks
 
 
 def test_rate_limiter_window():
@@ -14,6 +17,14 @@ def test_rate_limit_parse():
     assert ratelimit.parse('120/minute') == (120, 60)
     assert ratelimit.parse('5/second') == (5, 1)
     assert ratelimit.parse('0') is None and ratelimit.parse('') is None
+
+
+def test_streaks():
+    today = date(2026, 10, 14)
+    days = [date(2026, 10, d) for d in (1, 2, 3, 10, 12, 13)]
+    assert streaks(days, today) == (2, 3)  # 12–13 is still current today
+    assert streaks([date(2026, 10, 1)], today) == (0, 1)
+    assert streaks([], today) == (0, 0)
 
 
 def test_cite_template_journal():

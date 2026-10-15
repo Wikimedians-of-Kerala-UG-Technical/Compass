@@ -78,3 +78,7 @@ export function getRevisit(username, wiki) {
 export function getContribute(username, { wiki, place } = {}) {
   return get('/api/contribute/' + u(username), { wiki, place: place?.qid, placeName: place?.name }, 'Contribute')
 }
+
+export function getStats(username, wiki) {
+  return get('/api/stats/' + u(username), { wiki }, 'Stats')
+}
