@@ -7,10 +7,5 @@ bp = Blueprint('profile', __name__)
 
 @bp.route('/api/profile/<username>', methods=['GET'])
 def get_profile(username):
-    try:
-        profile = build_profile(username, request.args.get('wiki') or None)
-        return jsonify(public_profile(profile))
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
-    except Exception as e:
-        return jsonify({'error': 'Something went wrong: ' + str(e)}), 500
+    profile = build_profile(username, request.args.get('wiki') or None)
+    return jsonify(public_profile(profile))

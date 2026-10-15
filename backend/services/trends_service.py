@@ -5,6 +5,8 @@
 - The editor's home wiki's most-read articles (`pageviews/top/<lang>.wikipedia`).
 - Only articles that carry a maintenance tag or a Growth suggestion are kept, so every
   item is something a volunteer can improve while readers are looking.
+- Traffic that looks automated (nearly all desktop, or nearly none) is dropped, the
+  check the weekly Top 25 Report uses for bot spikes like *.xxx* topping India's list.
 - Headlines from enwiki's Portal:Current events.
 """
 import re
@@ -20,6 +22,11 @@ TAG_RE = re.compile(r'<[^>]+>')
 LINK_RE = re.compile(r'<a[^>]+title="([^"]+)"[^>]*>')
 SKIP = re.compile(r'^(Main_Page|Special:|Wikipedia:|Portal:|File:|Help:|Talk:|User:|-$)')
 _cache = wiki.TTLCache(ttl=3 * 3600, maxsize=200, name='trends')
+# Human readers are 10–50% desktop depending on the country (India's top articles: 9–22%).
+# A day that is >92% desktop, or <3% (*.xxx* in India in October 2026: 1.7%), is almost
+# always a crawler or a script reloading one page.
+DESKTOP_MAX, DESKTOP_MIN = 0.92, 0.03
+ANOMALY_MIN_VIEWS = 1000
 
 
 def _days():
@@ -65,6 +72,38 @@ def top_on_wiki(dbname, limit=40):
                    for a in items if a['article'] != main and not SKIP.match(a['article']) and ':' not in a['article']]
             return out[:limit]
     return []
+
+
+def _access_split(dbname, title, day):
+    """(desktop views, all views) by human readers on one day, or None."""
+    project = f'{wiki.lang(dbname)}.wikipedia'
+    article = wiki.quote_title(title).replace('/', '%2F')
+    out = []
+    for access in ('desktop', 'all-access'):
+        data = wiki.get_json(f'{PAGEVIEWS}/per-article/{project}/{access}/user/{article}/daily/'
+                             f'{day.replace("/", "")}/{day.replace("/", "")}', retries=1, timeout=10)
+        items = (data or {}).get('items') or []
+        if not items:
+            return None
+        out.append(items[0].get('views') or 0)
+    return tuple(out)
+
+
+def looks_automated(desktop, total):
+    if total < ANOMALY_MIN_VIEWS:
+        return False
+    share = desktop / total
+    return share > DESKTOP_MAX or share < DESKTOP_MIN
+
+
+def drop_anomalies(items):
+    """Removes items whose traffic looks automated. Items that can't be checked stay."""
+    def check(it):
+        split = _access_split(it['wiki'], it['title'], it['day'])
+        return split is not None and looks_automated(*split)
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        flags = list(pool.map(check, items))
+    return [it for it, bad in zip(items, flags) if not bad], sum(flags)
 
 
 def _needing_work(items):
@@ -131,8 +170,8 @@ def _trends(country_a2, dbname, languages):
         regional = regional_f.result() if regional_f else []
         home = home_f.result()
         news = news_f.result()
-    regional_work = _needing_work(regional)
-    home_work = _needing_work(home)
+    regional_work, regional_bots = drop_anomalies(_needing_work(regional))
+    home_work, home_bots = drop_anomalies(_needing_work(home))
     # Alternate the two lists: the home wiki's numbers are much smaller than enwiki's,
     # so sorting by views alone would hide it.
     seen, trending = set(), []
@@ -149,5 +188,6 @@ def _trends(country_a2, dbname, languages):
         'wiki': dbname,
         'trending': trending[:20],
         'checked': {'country': len(regional), 'wiki': len(home)},
+        'droppedAsAutomated': regional_bots + home_bots,
         'news': news,
     }

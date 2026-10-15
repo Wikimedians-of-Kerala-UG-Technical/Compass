@@ -32,13 +32,14 @@ def fetch_global_user(username):
         })
         info = (data.get('query') or {}).get('globaluserinfo') or {}
         if info.get('missing') is not None or not info.get('merged'):
-            raise ValueError(f'No Wikimedia account named "{username}".')
+            raise wiki.UserError(f'No Wikimedia account named "{username}".')
         per_wiki = {}
         for w in info.get('merged') or []:
             db = w.get('wiki')
             if w.get('editcount', 0) > 0:
                 per_wiki[db] = {'dbname': db, 'url': w.get('url'), 'editcount': w.get('editcount', 0)}
         return {'name': info.get('name', username), 'editcount': info.get('editcount', 0), 'wikis': per_wiki}
+    username = wiki.normalize_username(username)
     return _globals.get_or_compute(username, compute)
 
 
@@ -238,6 +239,15 @@ def reverted_by_others(contribs):
     return {'count': reverted, 'of': total, 'share': round(reverted / total, 4) if total else 0}
 
 
+def article_weight(edits, added_bytes):
+    """How much one article says about the editor's interests. Articles they keep coming
+    back to say more than one-off edits (patrolling, typo fixes), so edits count as
+    1 + log2(edits). Writing counts too: each tenfold of bytes added (from 100 bytes)
+    adds 0.5, so an editor's own long additions outweigh a run of small fixes on
+    unrelated pop-culture pages."""
+    return 1 + math.log2(max(edits, 1)) + 0.5 * math.log10(1 + max(added_bytes, 0) / 100)
+
+
 def _top_categories(dbname, titles, weights):
     cat_counts, cat_weight = {}, {}
     for title, cats in fetch_categories(dbname, titles).items():
@@ -248,6 +258,9 @@ def _top_categories(dbname, titles, weights):
 
 
 def build_profile(username, dbname=None):
+    username = wiki.normalize_username(username)
+    if not username:
+        raise wiki.UserError('Please enter a username.')
     key = (username, dbname)
     return _profiles.get_or_compute(key, lambda: _build_profile(username, dbname))
 
@@ -257,60 +270,59 @@ def _build_profile(username, dbname):
     gu = fetch_global_user(username)
     wikis = content_wikis(gu)
     home = dbname or home_wiki(gu)
-    pool = ThreadPoolExecutor(max_workers=4)
-    created_f = pool.submit(fetch_contribs, home, username, CREATIONS_LIMIT, 0, 'new', 'title|timestamp')
-    babel_f = pool.submit(fetch_babel, home, username)
-    contribs = fetch_contribs(home, username)
-    if not contribs:
-        raise ValueError(f'"{username}" has no edits on {home}.')
+    # A `with` block, so an early UserError (no edits) still shuts the pool down.
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        created_f = pool.submit(fetch_contribs, home, username, CREATIONS_LIMIT, 0, 'new', 'title|timestamp')
+        babel_f = pool.submit(fetch_babel, home, username)
+        contribs = fetch_contribs(home, username)
+        if not contribs:
+            raise wiki.UserError(f'"{username}" has no edits on {home}.')
 
-    articles = [c for c in contribs if (c.get('ns') or 0) == 0]
-    page_counts, last_edit = {}, {}
-    for c in articles:
-        page_counts[c['title']] = page_counts.get(c['title'], 0) + 1
-        last_edit.setdefault(c['title'], c['timestamp'])  # contribs are newest first
-    recent_titles = list(dict.fromkeys(c['title'] for c in articles))
-    by_count = sorted(page_counts, key=page_counts.get, reverse=True)
-    signal_titles = list(dict.fromkeys(by_count[:50] + recent_titles))[:SIGNAL_ARTICLES]
+        articles = [c for c in contribs if (c.get('ns') or 0) == 0]
+        page_counts, last_edit, bytes_added = {}, {}, {}
+        for c in articles:
+            page_counts[c['title']] = page_counts.get(c['title'], 0) + 1
+            last_edit.setdefault(c['title'], c['timestamp'])  # contribs are newest first
+            bytes_added[c['title']] = bytes_added.get(c['title'], 0) + max(c.get('sizediff') or 0, 0)
+        recent_titles = list(dict.fromkeys(c['title'] for c in articles))
+        by_count = sorted(page_counts, key=page_counts.get, reverse=True)
+        signal_titles = list(dict.fromkeys(by_count[:50] + recent_titles))[:SIGNAL_ARTICLES]
 
-    # Articles the editor keeps coming back to say more about them than one-off edits
-    # (patrolling, typo fixes), so each article counts 1 + log2(edits on it).
-    weights = {t: 1 + math.log2(page_counts.get(t, 1)) for t in signal_titles}
-    # Categories (and their Wikidata kinds) are worked out while the signals load.
-    cats_f = pool.submit(_top_categories, home, signal_titles[:150], weights)
-    sigs = article_signals(home, signal_titles)
-    present = [sigs[t] for t in signal_titles if t in sigs]
-    topic_w, country_w = aggregate_profile(present, [weights[s['title']] if s['title'] in weights else 1 for s in present])
-    n = max(sum(weights.get(s['title'], 1) for s in present), 1)
-    topics = [
-        {'path': p, 'slug': topic_slug(p), 'label': topic_label(p), 'share': round(w / n, 3)}
-        for p, w in sorted(topic_w.items(), key=lambda kv: kv[1], reverse=True)
-        if not is_region_topic(p) and w / n >= 0.05
-    ][:6]
-    regions = [
-        {'path': p, 'slug': topic_slug(p), 'label': topic_label(p), 'share': round(w / n, 3)}
-        for p, w in sorted(topic_w.items(), key=lambda kv: kv[1], reverse=True)
-        if is_region_topic(p) and not p.endswith('*') and w / n >= 0.05
-    ][:4]
-    countries = []
-    for name, w in sorted(country_w.items(), key=lambda kv: kv[1], reverse=True):
-        info = country_info(name)
-        if info and w / n >= 0.05:
-            countries.append({**info, 'share': round(w / n, 3)})
-    countries = countries[:4]
+        weights = {t: article_weight(page_counts.get(t, 1), bytes_added.get(t, 0)) for t in signal_titles}
+        # Categories (and their Wikidata kinds) are worked out while the signals load.
+        cats_f = pool.submit(_top_categories, home, signal_titles[:150], weights)
+        sigs = article_signals(home, signal_titles)
+        present = [sigs[t] for t in signal_titles if t in sigs]
+        topic_w, country_w = aggregate_profile(present, [weights[s['title']] if s['title'] in weights else 1 for s in present])
+        n = max(sum(weights.get(s['title'], 1) for s in present), 1)
+        topics = [
+            {'path': p, 'slug': topic_slug(p), 'label': topic_label(p), 'share': round(w / n, 3)}
+            for p, w in sorted(topic_w.items(), key=lambda kv: kv[1], reverse=True)
+            if not is_region_topic(p) and w / n >= 0.05
+        ][:6]
+        regions = [
+            {'path': p, 'slug': topic_slug(p), 'label': topic_label(p), 'share': round(w / n, 3)}
+            for p, w in sorted(topic_w.items(), key=lambda kv: kv[1], reverse=True)
+            if is_region_topic(p) and not p.endswith('*') and w / n >= 0.05
+        ][:4]
+        countries = []
+        for name, w in sorted(country_w.items(), key=lambda kv: kv[1], reverse=True):
+            info = country_info(name)
+            if info and w / n >= 0.05:
+                countries.append({**info, 'share': round(w / n, 3)})
+        countries = countries[:4]
 
-    top_categories = cats_f.result()
+        top_categories = cats_f.result()
 
-    created = created_f.result()
-    created_live = [c['title'] for c in created]
+        created = created_f.result()
+        created_live = [c['title'] for c in created]
 
-    edit_types = {}
-    for c in contribs:
-        t = classify_edit(c)
-        edit_types[t] = edit_types.get(t, 0) + 1
+        edit_types = {}
+        for c in contribs:
+            t = classify_edit(c)
+            edit_types[t] = edit_types.get(t, 0) + 1
 
-    babel = babel_f.result()
-    pool.shutdown()
+        babel = babel_f.result()
     languages = {}
     for code, level in babel.items():
         languages[code] = {'lang': code, 'level': level, 'source': 'babel'}

@@ -2,7 +2,9 @@
 
 Which databases are searched depends on the article's *topic* (Wikipedia's ML topic
 labels), not on words in its title: medicine and biology articles get PubMed (review
-articles first, per WP:MEDRS), everything gets OpenAlex and CrossRef. Results the
+articles first, per WP:MEDRS), everything gets OpenAlex and CrossRef, and other
+articles also get books (Open Library; Google Books with a key) and digitised texts
+(Internet Archive), which cover literature, history and places far better than journals. Results the
 article already cites are dropped, and each result is turned into a `{{cite journal}}`
 through Citoid, the service behind VisualEditor's "Cite" button.
 
@@ -19,6 +21,7 @@ from services.article_service import analyze_article
 
 CITOID = 'https://en.wikipedia.org/api/rest_v1/data/citation/mediawiki/'
 SEMANTIC_SCHOLAR_KEY = os.environ.get('SEMANTIC_SCHOLAR_API_KEY')
+GOOGLE_BOOKS_KEY = os.environ.get('GOOGLE_BOOKS_API_KEY')  # the shared anonymous quota is always used up
 MEDICAL_TOPICS = ('Medicine & Health', 'Biology')
 _cache = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='sources')
 
@@ -124,6 +127,63 @@ def semantic_scholar(query, n=8):
     } for p in r.json().get('data', [])]
 
 
+def _isbn13(values):
+    return next((v for v in values or [] if len(v) == 13 and v.isdigit()), None)
+
+
+def openlibrary(query, n=8):
+    data = wiki.get_json('https://openlibrary.org/search.json', params={
+        'q': query, 'limit': n, 'fields': 'title,author_name,first_publish_year,isbn,key,publisher',
+    }, retries=2, timeout=20)
+    return [{
+        'title': d.get('title'), 'year': str(d.get('first_publish_year') or ''),
+        'venue': (d.get('publisher') or [None])[0], 'authors': ', '.join((d.get('author_name') or [])[:3]),
+        'doi': None, 'pmid': None, 'isbn': _isbn13(d.get('isbn')),
+        'url': f'https://openlibrary.org{d["key"]}' if d.get('key') else None,
+        'source': 'Open Library', 'citations': None, 'kind': 'book',
+    } for d in (data or {}).get('docs') or []]
+
+
+def google_books(query, n=8):
+    if not GOOGLE_BOOKS_KEY:
+        return []
+    data = wiki.get_json('https://www.googleapis.com/books/v1/volumes', params={
+        'q': query, 'maxResults': n, 'printType': 'books', 'key': GOOGLE_BOOKS_KEY,
+    }, retries=2, timeout=20)
+    out = []
+    for item in (data or {}).get('items') or []:
+        v = item.get('volumeInfo') or {}
+        out.append({
+            'title': v.get('title'), 'year': (v.get('publishedDate') or '')[:4], 'venue': v.get('publisher'),
+            'authors': ', '.join((v.get('authors') or [])[:3]), 'doi': None, 'pmid': None,
+            'isbn': _isbn13([i.get('identifier') for i in v.get('industryIdentifiers') or [] if i.get('type') == 'ISBN_13']),
+            'url': v.get('infoLink'), 'source': 'Google Books', 'citations': None, 'kind': 'book',
+        })
+    return out
+
+
+def internet_archive(query, n=8):
+    """Digitised books and reports (the Digital Library of India collection among them),
+    searched as a phrase: free-text matches are mostly unrelated. The phrase also matches
+    publishers, so results are kept only if the title matches too (see `_relevant`)."""
+    data = wiki.get_json('https://archive.org/advancedsearch.php', params={
+        'q': f'"{query}" AND mediatype:texts', 'fl[]': ['identifier', 'title', 'creator', 'year', 'publisher'],
+        'rows': n, 'output': 'json',
+    }, retries=2, timeout=20)
+    out = []
+    for d in ((data or {}).get('response') or {}).get('docs') or []:
+        creator = d.get('creator')
+        out.append({
+            'title': d.get('title'), 'year': str(d.get('year') or ''),
+            'venue': d.get('publisher') if isinstance(d.get('publisher'), str) else None,
+            'authors': ', '.join(creator[:3]) if isinstance(creator, list) else (creator or ''),
+            'doi': None, 'pmid': None, 'isbn': None,
+            'url': f'https://archive.org/details/{d["identifier"]}', 'source': 'Internet Archive',
+            'citations': None, 'kind': 'text',
+        })
+    return out
+
+
 def citoid(identifier):
     data = wiki.get_json(CITOID + quote(identifier, safe=''), retries=1, timeout=20)
     return data[0] if isinstance(data, list) and data else None
@@ -145,6 +205,15 @@ def _relevant(result, query):
     words = {w for w in re.findall(r'\w+', query.lower()) if len(w) >= 4}
     title = (result.get('title') or '').lower()
     return not words or any(w in title for w in words)
+
+
+def _relevant_strict(result, query):
+    """For book catalogues, which match loosely on any word ("Kerala Sahitya Akademi" ->
+    *Kerala Varma*): at least two significant words of the article title (or all of
+    them, if fewer) must be in the result's title."""
+    words = {w for w in re.findall(r'\w+', query.lower()) if len(w) >= 4}
+    title = (result.get('title') or '').lower()
+    return not words or sum(w in title for w in words) >= min(2, len(words))
 
 
 def cite_template(item):
@@ -186,8 +255,11 @@ def find_external_references(title, dbname='enwiki'):
             ('semanticscholar', lambda: semantic_scholar(query))]
     if medical:
         jobs.insert(0, ('pubmed', lambda: pubmed(query, reviews=True)))
+    else:
+        jobs += [('openlibrary', lambda: openlibrary(query)), ('googlebooks', lambda: google_books(query)),
+                 ('internetarchive', lambda: internet_archive(query))]
     results, failed = {}, []
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
         futures = {name: pool.submit(fn) for name, fn in jobs}
         for name, f in futures.items():
             try:
@@ -210,18 +282,20 @@ def find_external_references(title, dbname='enwiki'):
             k = r.get('doi') or t.lower()
             if not t or k in seen or t.lower() in seen or (r.get('doi') and r['doi'] in cited_dois):
                 continue
-            if n in ('openalex', 'crossref', 'semanticscholar') and not _relevant(r, query):
+            if n in ('openalex', 'crossref', 'semanticscholar', 'internetarchive') and not _relevant(r, query):
+                continue
+            if n in ('openlibrary', 'googlebooks') and not _relevant_strict(r, query):
                 continue
             seen.update({k, t.lower()})
             r['alreadyCited'] = False
             merged.append(r)
-    merged = merged[:15]
+    merged = merged[:18]
 
     def add_citation(r):
-        ident = r.get('doi') or (f"PMID:{r['pmid']}" if r.get('pmid') else None)
+        ident = r.get('doi') or r.get('pmid') or r.get('isbn') or (r.get('url') if r.get('kind') == 'text' else None)
         if not ident:
             return r
-        item = citoid(r['doi'] if r.get('doi') else r['pmid'])
+        item = citoid(ident)
         if item:
             r['cite'] = cite_template(item)
         return r
@@ -232,7 +306,7 @@ def find_external_references(title, dbname='enwiki'):
     res = {
         'title': title, 'wiki': dbname, 'query': query,
         'sourcesUsed': order, 'medical': medical, 'alreadyCitedSkipped': len(cited_dois),
-        'results': merged, 'partial': bool(failed), 'failed': failed,
+        'results': merged, 'keysMissing': [k for k, v in (('SEMANTIC_SCHOLAR_API_KEY', SEMANTIC_SCHOLAR_KEY), ('GOOGLE_BOOKS_API_KEY', GOOGLE_BOOKS_KEY)) if not v], 'partial': bool(failed), 'failed': failed,
         'secs': round(time.time() - t0, 1),
     }
     _cache.set(key, res)

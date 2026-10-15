@@ -8,10 +8,5 @@ bp = Blueprint('revisit', __name__)
 
 @bp.route('/api/revisit/<username>')
 def get_revisit(username):
-    try:
-        profile = build_profile(username, request.args.get('wiki') or None)
-        return jsonify({'username': username, **find_revisit(profile)})
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
-    except Exception as e:
-        return jsonify({'error': 'Something went wrong: ' + str(e)}), 500
+    profile = build_profile(username, request.args.get('wiki') or None)
+    return jsonify({'username': profile['username'], **find_revisit(profile)})

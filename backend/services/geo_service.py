@@ -188,7 +188,7 @@ def _resolve(dbname, titles):
         if not include_self and path and path[0] == qid_of[title]:
             path = path[1:]
         nodes = []
-        for depth, q in enumerate(path):
+        for q in path:
             info = _fetch_claims([q], language).get(q)
             if not info or info['dissolved'] or not info['label']:
                 continue
