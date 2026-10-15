@@ -6,9 +6,7 @@ import { useAppStore } from '../../stores/appStore.js'
 
 const store = useAppStore()
 
-const SRC_LABEL = {
-  current_events: 'Current Events',
-}
+const SRC_LABEL = { current_events: 'news.currentEvents' }
 
 function wikiHref(title) {
   return 'https://en.wikipedia.org/wiki/' + encodeURIComponent((title || '').replace(/ /g, '_'))
@@ -18,10 +16,10 @@ const items = computed(() => (store.trends.news || []).slice(0, 4))
 </script>
 
 <template>
-  <section class="panel" aria-label="Current events">
+  <section class="panel" :aria-label="$t('news.label')">
     <div class="section-title" style="display:flex; align-items:center; gap:6px">
       <CdxIcon :icon="cdxIconNewspaper" size="small" />
-      Today's news
+      {{ $t('news.title') }}
     </div>
 
     <div v-if="store.trendsLoading" class="fade-in">
@@ -33,7 +31,7 @@ const items = computed(() => (store.trends.news || []).slice(0, 4))
     <div v-else-if="items.length" style="display:flex; flex-direction:column; gap:12px">
       <div v-for="(ni, i) in items" :key="i" style="border-left: 3px solid var(--border-color-base); padding: 4px 10px">
         <div style="font-size: 0.8125rem; margin-bottom: 4px">{{ ni.text }}</div>
-        <CdxInfoChip status="subtle">{{ SRC_LABEL[ni.source] || 'News' }}</CdxInfoChip>
+        <CdxInfoChip status="subtle">{{ $t(SRC_LABEL[ni.source] || 'news.other') }}</CdxInfoChip>
         <a
           v-for="a in (ni.articles || []).slice(0, 3)"
           :key="a"
@@ -45,6 +43,6 @@ const items = computed(() => (store.trends.news || []).slice(0, 4))
       </div>
     </div>
 
-    <div v-else class="empty-state">No news data.</div>
+    <div v-else class="empty-state">{{ $t('news.none') }}</div>
   </section>
 </template>

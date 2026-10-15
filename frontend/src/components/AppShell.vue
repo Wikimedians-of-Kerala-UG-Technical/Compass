@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { CdxTextInput, CdxButton, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconArticleSearch,
@@ -9,10 +10,13 @@ import {
   cdxIconLightbulb,
   cdxIconSearch,
   cdxIconReload,
-  cdxIconLogOut,
   cdxIconLogoWikimediaCommons,
+  cdxIconMoon,
+  cdxIconBright,
+  cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
 import { useAppStore } from '../stores/appStore.js'
+import { getTheme, setTheme } from '../theme.js'
 import OverviewView from './views/OverviewView.vue'
 import TasksView from './views/TasksView.vue'
 import RevisitView from './views/RevisitView.vue'
@@ -21,31 +25,40 @@ import GuideView from './views/GuideView.vue'
 import ContributeView from './views/ContributeView.vue'
 
 const store = useAppStore()
+const { t } = useI18n()
 const searchValue = ref('')
+const theme = ref(getTheme())
+
+const VIEWS = {
+  overview: OverviewView,
+  tasks: TasksView,
+  revisit: RevisitView,
+  discover: DiscoverView,
+  contribute: ContributeView,
+  guide: GuideView,
+}
 
 const navItems = computed(() => [
-  { key: 'overview', label: 'Overview', icon: cdxIconHome },
-  { key: 'tasks', label: 'Tasks', icon: cdxIconCheckAll, badge: store.tasksLoading && !store.tasks.length ? '…' : store.tasks.length || null },
-  {
-    key: 'revisit',
-    label: 'Revisit',
-    icon: cdxIconWatchlist,
-    badge: store.revisitLoading ? '…' : store.revisit.length || null,
-  },
+  { key: 'overview', label: t('nav.overview'), icon: cdxIconHome },
+  { key: 'tasks', label: t('nav.tasks'), icon: cdxIconCheckAll, badge: store.tasksLoading && !store.tasks.length ? '…' : store.tasks.length || null },
+  { key: 'revisit', label: t('nav.revisit'), icon: cdxIconWatchlist, badge: store.revisitLoading ? '…' : store.revisit.length || null },
   {
     key: 'discover',
-    label: 'Discover',
+    label: t('nav.discover'),
     icon: cdxIconLightbulb,
-    badge: store.discoverLoading ? '…' : store.discover?.articles?.length || null,
+    badge: store.discoverLoading ? '…' : (store.discover?.articles?.length || store.discover?.missingHere?.length || null),
   },
-  {
-    key: 'contribute',
-    label: 'Commons & Wikidata',
-    icon: cdxIconLogoWikimediaCommons,
-    badge: store.contributeLoading ? '…' : store.contribute?.commons?.unused?.length || null,
-  },
-  { key: 'guide', label: 'Guide', icon: cdxIconArticleSearch },
+  { key: 'contribute', label: t('nav.contribute'), icon: cdxIconLogoWikimediaCommons, badge: store.contributeLoading ? '…' : store.contribute?.commons?.unused?.length || null },
+  { key: 'guide', label: t('nav.guide'), icon: cdxIconArticleSearch },
 ])
+
+// Cycles match-system -> dark -> light.
+const nextTheme = { auto: 'dark', dark: 'light', light: 'auto' }
+const themeLabel = computed(() => t('app.theme') + ': ' + t({ auto: 'app.themeAuto', dark: 'app.themeDark', light: 'app.themeLight' }[theme.value]))
+function cycleTheme() {
+  theme.value = nextTheme[theme.value]
+  setTheme(theme.value)
+}
 
 function runSearch() {
   const q = searchValue.value.trim()
@@ -60,19 +73,19 @@ function runSearch() {
     <header class="shell__topbar">
       <div class="shell__brand">
         <CdxIcon :icon="cdxIconArticleSearch" style="color: var(--color-progressive)" />
-        <span class="serif">Compass</span>
+        <span class="serif">{{ $t('app.name') }}</span>
       </div>
 
-      <div class="shell__search" style="display: flex; gap: 6px">
+      <div class="shell__search">
         <CdxTextInput
           v-model="searchValue"
           :start-icon="cdxIconSearch"
-          placeholder="Look up any article…"
-          aria-label="Look up an article"
+          :placeholder="$t('nav.search')"
+          :aria-label="$t('nav.searchLabel')"
           style="flex: 1"
           @keydown.enter="runSearch"
         />
-        <CdxButton weight="quiet" aria-label="Search" @click="runSearch">
+        <CdxButton weight="quiet" :aria-label="$t('nav.searchLabel')" @click="runSearch">
           <CdxIcon :icon="cdxIconSearch" />
         </CdxButton>
       </div>
@@ -81,28 +94,32 @@ function runSearch() {
 
       <div class="shell__user">
         <span class="shell__username">{{ store.username }}<template v-if="store.profile"> · {{ store.profile.homeLang }}.wikipedia</template></span>
+        <CdxButton weight="quiet" :title="themeLabel" :aria-label="themeLabel" @click="cycleTheme">
+          <CdxIcon :icon="theme === 'light' ? cdxIconBright : cdxIconMoon" />
+        </CdxButton>
         <CdxButton
           weight="quiet"
-          title="Refresh trends and tasks"
-          aria-label="Refresh trends and tasks"
+          :title="$t('nav.refresh')"
+          :aria-label="$t('nav.refresh')"
           @click="store.loadTrends(); store.loadTasks()"
         >
           <CdxIcon :icon="cdxIconReload" />
         </CdxButton>
-        <CdxButton weight="quiet" action="destructive" @click="store.logout()">
-          <CdxIcon :icon="cdxIconLogOut" />
-          New user
+        <CdxButton weight="quiet" action="destructive" :aria-label="$t('nav.newUser')" @click="store.logout()">
+          <CdxIcon :icon="cdxIconUserAvatar" class="shell__narrow-only" />
+          <span class="shell__btn-label">{{ $t('nav.newUser') }}</span>
         </CdxButton>
       </div>
     </header>
 
     <div class="shell__body">
-      <nav class="shell__rail" aria-label="Sections">
+      <nav class="shell__rail" :aria-label="$t('nav.sections')">
         <button
           v-for="item in navItems"
           :key="item.key"
           class="rail-item"
           :class="{ 'is-active': store.activeView === item.key }"
+          :aria-current="store.activeView === item.key ? 'page' : undefined"
           @click="store.goTo(item.key)"
         >
           <CdxIcon :icon="item.icon" />
@@ -113,17 +130,12 @@ function runSearch() {
 
       <main class="shell__content">
         <div class="view">
-          <OverviewView v-if="store.activeView === 'overview'" />
-          <TasksView v-else-if="store.activeView === 'tasks'" />
-          <RevisitView v-else-if="store.activeView === 'revisit'" />
-          <DiscoverView v-else-if="store.activeView === 'discover'" />
-          <ContributeView v-else-if="store.activeView === 'contribute'" />
-          <GuideView v-else-if="store.activeView === 'guide'" />
+          <component :is="VIEWS[store.activeView] || OverviewView" />
         </div>
       </main>
     </div>
 
-    <nav class="bottom-nav" aria-label="Sections">
+    <nav class="bottom-nav" :aria-label="$t('nav.sections')">
       <div class="bottom-nav__inner">
         <button
           v-for="item in navItems"

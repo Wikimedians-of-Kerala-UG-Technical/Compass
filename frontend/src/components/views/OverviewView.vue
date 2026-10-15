@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { CdxInfoChip, CdxIcon } from '@wikimedia/codex'
 import {
   cdxIconCheckAll,
@@ -14,6 +15,7 @@ import TrendingCard from '../widgets/TrendingCard.vue'
 import NewsCard from '../widgets/NewsCard.vue'
 
 const store = useAppStore()
+const { t } = useI18n()
 
 const profile = computed(() => store.profile)
 const topics = computed(() => profile.value?.topics || [])
@@ -34,54 +36,54 @@ const revertedLabel = computed(() => {
   return (r.share * 100).toFixed(1) + '%'
 })
 
-const dispatchCards = computed(() => [
-  {
-    key: 'tasks',
-    icon: cdxIconCheckAll,
-    title: store.tasksLoading && !store.tasks.length ? 'Finding tasks for you…' : `${store.tasks.length || 0} tasks ready`,
-    desc: 'Articles that need work in your topics, your categories and near the places you write about.',
-  },
-  {
-    key: 'revisit',
-    icon: cdxIconWatchlist,
-    title: store.revisitLoading ? 'Checking your articles…' : `${store.revisit.length || 0} of your articles need attention`,
-    desc: 'Articles you created or edited a lot that picked up tags, suspicious edits or suggestions.',
-  },
-  {
-    key: 'discover',
-    icon: cdxIconLightbulb,
-    title: store.discoverLoading
-      ? 'Finding articles to translate…'
-      : store.discover?.monolingual
-        ? 'Translation suggestions'
-        : `${store.discover?.articles?.length || 0} articles to translate`,
-    desc: 'Articles and sections missing in your languages, picked from what you already write.',
-  },
-  {
-    key: 'contribute',
-    icon: cdxIconLogoWikimediaCommons,
-    title: store.contributeLoading
-      ? 'Checking Commons and Wikidata…'
-      : `${store.contribute?.commons?.unused?.length || 0} photos to place · ${store.contribute?.wikidata?.items?.length || 0} Wikidata gaps`,
-    desc: 'Your unused Commons photos, and Wikidata items near you missing your language.',
-  },
-  {
-    key: 'guide',
-    icon: cdxIconArticleSearch,
-    title: 'Look up an article',
-    desc: 'Find uncited paragraphs, tags, missing sections and ready-to-paste sources.',
-  },
-])
+const dispatchCards = computed(() => {
+  const d = store.discover
+  return [
+    {
+      key: 'tasks',
+      icon: cdxIconCheckAll,
+      title: store.tasksLoading && !store.tasks.length ? t('overview.card.tasksLoading') : t('overview.card.tasks', store.tasks.length),
+      desc: t('overview.card.tasksDesc'),
+    },
+    {
+      key: 'revisit',
+      icon: cdxIconWatchlist,
+      title: store.revisitLoading ? t('overview.card.revisitLoading') : t('overview.card.revisit', store.revisit.length),
+      desc: t('overview.card.revisitDesc'),
+    },
+    {
+      key: 'discover',
+      icon: cdxIconLightbulb,
+      title: store.discoverLoading
+        ? t('overview.card.discoverLoading')
+        : d?.monolingual
+          ? t('overview.card.discoverMono')
+          : t('overview.card.discover', d?.articles?.length || 0),
+      desc: t('overview.card.discoverDesc'),
+    },
+    {
+      key: 'contribute',
+      icon: cdxIconLogoWikimediaCommons,
+      title: store.contributeLoading
+        ? t('overview.card.contributeLoading')
+        : t('overview.card.contribute', {
+            photos: store.contribute?.commons?.unused?.length || 0,
+            gaps: store.contribute?.wikidata?.items?.length || 0,
+          }),
+      desc: t('overview.card.contributeDesc'),
+    },
+    { key: 'guide', icon: cdxIconArticleSearch, title: t('overview.card.guide'), desc: t('overview.card.guideDesc') },
+  ]
+})
 </script>
 
 <template>
   <div>
-    <h1 class="section-heading">Welcome back, {{ profile.username }}</h1>
+    <h1 class="section-heading">{{ $t('overview.welcome', { name: profile.username }) }}</h1>
     <p class="section-sub">
-      Built from your last {{ profile.editsAnalysed.toLocaleString() }} edits on
-      <strong>{{ profile.homeLang }}.wikipedia</strong>.
+      {{ $t('overview.builtFrom', { count: profile.editsAnalysed.toLocaleString(), wiki: `${profile.homeLang}.wikipedia` }) }}
       <template v-if="wikis.length > 1">
-        Switch wiki:
+        {{ $t('overview.switchWiki') }}
         <a
           v-for="w in wikis.filter((w) => w.dbname !== profile.homeWiki)"
           :key="w.dbname"
@@ -95,21 +97,21 @@ const dispatchCards = computed(() => [
     <div class="stat-row">
       <div class="stat-tile">
         <span class="stat-tile__num">{{ (profile.homeEdits || 0).toLocaleString() }}</span>
-        <span class="stat-tile__label">Edits on {{ profile.homeLang }}.wikipedia · {{ (profile.total || 0).toLocaleString() }} across Wikimedia</span>
+        <span class="stat-tile__label">{{ $t('overview.editsOn', { wiki: `${profile.homeLang}.wikipedia`, total: (profile.total || 0).toLocaleString() }) }}</span>
       </div>
       <div class="stat-tile">
         <span class="stat-tile__num">{{ createdLabel }}</span>
-        <span class="stat-tile__label">Articles created</span>
+        <span class="stat-tile__label">{{ $t('overview.created') }}</span>
       </div>
       <div class="stat-tile">
         <span class="stat-tile__num">{{ revertedLabel }}</span>
-        <span class="stat-tile__label">Recent edits reverted by others</span>
+        <span class="stat-tile__label">{{ $t('overview.reverted') }}</span>
       </div>
     </div>
 
     <div class="chip-row">
-      <CdxInfoChip v-for="t in topics" :key="t.path" status="notice">
-        {{ t.label }} · {{ Math.round(t.share * 100) }}%
+      <CdxInfoChip v-for="tp in topics" :key="tp.path" status="notice">
+        {{ tp.label }} · {{ Math.round(tp.share * 100) }}%
       </CdxInfoChip>
       <CdxInfoChip v-for="c in countries" :key="c.a3" status="subtle">{{ c.name }}</CdxInfoChip>
       <CdxInfoChip v-for="l in languages" :key="l.lang" status="progressive">
@@ -126,7 +128,7 @@ const dispatchCards = computed(() => [
     <div class="panel" style="margin-bottom: 20px">
       <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px">
         <CdxIcon :icon="cdxIconMapPin" size="small" />
-        Where you edit
+        {{ $t('overview.whereYouEdit') }}
       </div>
 
       <div v-if="store.geoLoading && !store.geo" class="fade-in">
@@ -138,8 +140,8 @@ const dispatchCards = computed(() => [
 
       <template v-else-if="geoPlaces.length">
         <p v-if="focus.region || focus.local" style="font-size: 0.8125rem; margin-bottom: 8px">
-          Focus: <strong>{{ [focus.local?.name, focus.region?.name, focus.country?.name].filter(Boolean).join(', ') }}</strong>
-          — used for "near you" tasks and local gaps.
+          {{ $t('overview.focus') }} <strong>{{ [focus.local?.name, focus.region?.name, focus.country?.name].filter(Boolean).join(', ') }}</strong>
+          {{ $t('overview.focusUse') }}
         </p>
         <div class="chip-row" style="margin-bottom: 0">
           <CdxInfoChip v-for="p in geoPlaces" :key="p.qid" status="subtle">
@@ -148,9 +150,7 @@ const dispatchCards = computed(() => [
         </div>
       </template>
 
-      <p v-else style="font-size: 0.8125rem; color: var(--color-subtle)">
-        None of your recent articles are about a place, so tasks aren't limited to a region.
-      </p>
+      <p v-else style="font-size: 0.8125rem; color: var(--color-subtle)">{{ $t('overview.noPlaces') }}</p>
     </div>
 
     <div class="two-col">
@@ -158,7 +158,7 @@ const dispatchCards = computed(() => [
       <NewsCard />
     </div>
 
-    <div class="section-title">What next</div>
+    <div class="section-title">{{ $t('overview.whatNext') }}</div>
     <div class="dispatch-row">
       <button v-for="c in dispatchCards" :key="c.key" class="dispatch-card" @click="store.goTo(c.key)">
         <CdxIcon class="dispatch-card__icon" :icon="c.icon" />

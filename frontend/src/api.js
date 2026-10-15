@@ -1,25 +1,38 @@
-// Backend base URL: set VITE_API_BASE at build time for deployments.
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:5000'
+// Backend base URL: set VITE_API_BASE at build time for deployments. An empty value
+// means "same origin" (the Docker image serves the API and the app together).
+export const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:5000'
 
-function get(path, params, label) {
+function query(params) {
   const q = new URLSearchParams()
   for (const [k, v] of Object.entries(params || {})) {
     if (v !== undefined && v !== null && v !== '') q.set(k, v)
   }
-  const url = API_BASE + path + (q.toString() ? '?' + q.toString() : '')
-  return fetch(url).then((r) => {
+  const s = q.toString()
+  return s ? '?' + s : ''
+}
+
+function request(method, path, { params, body, label, headers } = {}) {
+  const init = { method, credentials: 'include', headers: { ...(headers || {}) } }
+  if (body !== undefined) {
+    init.headers['Content-Type'] = 'application/json'
+    init.body = JSON.stringify(body)
+  }
+  return fetch(API_BASE + path + query(params), init).then((r) => {
     if (!r.ok) {
       return r
         .json()
         .catch(() => ({}))
         .then((e) => {
-          throw new Error(e.error || `${label} error ${r.status}`)
+          const err = new Error(e.error || `${label || 'Request'} error ${r.status}`)
+          err.status = r.status
+          throw err
         })
     }
     return r.json()
   })
 }
 
+const get = (path, params, label) => request('GET', path, { params, label })
 const u = encodeURIComponent
 
 export function getProfile(username, wiki) {

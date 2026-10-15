@@ -8,27 +8,57 @@ import {
   getGeo,
   getContribute,
 } from '../api.js'
+import { router } from '../router.js'
+import { i18n } from '../i18n.js'
+
+const t = (...args) => i18n.global.t(...args)
+
+const RECENT_KEY = 'compass-recent'
+const RECENT_MAX = 6
+
+// Usernames go in URLs with underscores, the way Wikipedia writes them.
+export const urlName = (name) => (name || '').trim().replace(/ /g, '_')
+
+function readRecent() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+    return Array.isArray(list) ? list.filter((n) => typeof n === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function writeRecent(list) {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list))
+  } catch {
+    /* storage unavailable (private mode): the list just isn't remembered */
+  }
+}
 
 export const useAppStore = defineStore('app', {
   state: () => ({
     // session
-    screen: 'onboard', // 'onboard' | 'loading' | 'dash'
+    screen: 'loading', // 'loading' | 'dash' (the start screen is its own route)
     username: '',
     onboardError: '',
-    activeView: 'overview', // 'overview' | 'tasks' | 'revisit' | 'discover' | 'contribute' | 'guide'
+    activeView: 'overview', // see VIEWS in router.js
     // Which Wikipedia to work on. null = the editor's home wiki (most edits), chosen by the backend.
     wiki: null,
+    requestedWiki: null, // what the URL asked for, to tell a wiki switch from a reload
+    recent: readRecent(),
 
-    // profile (gates the transition out of onboarding)
+    // profile (gates the transition out of loading)
     profile: null,
 
     trends: { news: [], trending: [] },
     trendsLoading: false,
 
     tasks: [],
-    tasksMeta: null, // {scopes, candidates, partial}
+    tasksMeta: null, // {scopes, candidates, partial, mode}
     tasksLoading: false,
     tasksError: '',
+
 
     // revisit — the editor's own articles that need attention
     revisit: [],
@@ -69,15 +99,58 @@ export const useAppStore = defineStore('app', {
   },
 
   actions: {
-    start(rawUsername, wiki) {
+    // -- navigation (the URL is the source of truth; see DashboardRoute.vue) --
+    open(rawUsername, wiki) {
       const uname = (rawUsername || '').trim()
       if (!uname) {
-        this.onboardError = 'Please enter a Wikipedia username.'
+        this.onboardError = t('onboard.empty')
         return
       }
       this.onboardError = ''
+      router.push({ name: 'dash', params: { username: urlName(uname) }, query: wiki ? { wiki } : {} })
+    },
+
+    goTo(view, extraQuery = {}) {
+      const query = { ...(this.requestedWiki ? { wiki: this.requestedWiki } : {}), ...extraQuery }
+      router.push({ name: 'dash', params: { username: urlName(this.username), view: view === 'overview' ? '' : view }, query })
+    },
+
+    switchWiki(dbname) {
+      if (!dbname || dbname === this.wiki) return
+      router.push({ name: 'dash', params: { username: urlName(this.username), view: this.activeView === 'overview' ? '' : this.activeView }, query: { wiki: dbname } })
+    },
+
+    searchGuide(title, wiki) {
+      const q = (title || '').trim()
+      if (!q) return
+      const articleWiki = wiki || this.wiki || 'enwiki'
+      this.goTo('guide', { article: q, ...(articleWiki !== this.wiki ? { articleWiki } : {}) })
+    },
+
+    // Called from the route. Starts a new session only when the user or wiki changed.
+    syncFromRoute(route) {
+      const uname = String(route.params.username || '').replace(/_/g, ' ').trim()
+      const wiki = route.query.wiki ? String(route.query.wiki) : null
+      this.activeView = route.params.view || 'overview'
+      if (route.query.article) {
+        const article = String(route.query.article)
+        const articleWiki = route.query.articleWiki ? String(route.query.articleWiki) : null
+        if (article !== this.guideQuery || (articleWiki || this.wiki) !== this.guideWiki) {
+          this.guideQuery = article
+          this.guideWiki = articleWiki || wiki || this.wiki || 'enwiki'
+          this.guideQuerySeq += 1
+        }
+      }
+      const sameUser = this.username && uname.toLowerCase() === this.username.toLowerCase()
+      if (!sameUser || wiki !== this.requestedWiki || (!this.profile && this.screen !== 'loading')) {
+        this.start(uname, wiki)
+      }
+    },
+
+    start(uname, wiki) {
       this.username = uname
       this.wiki = wiki || null
+      this.requestedWiki = wiki || null
       this.screen = 'loading'
       const seq = ++this.sessionSeq
       this.resetData()
@@ -86,8 +159,10 @@ export const useAppStore = defineStore('app', {
         .then((p) => {
           if (seq !== this.sessionSeq) return
           this.profile = p
+          this.username = p.username
           this.wiki = p.homeWiki
           this.screen = 'dash'
+          this.remember(p.username)
           this.loadTrends()
           this.fetchRevisit()
           // Tasks load straight away from the profile; geo is slower and, once it
@@ -97,16 +172,20 @@ export const useAppStore = defineStore('app', {
         })
         .catch((err) => {
           if (seq !== this.sessionSeq) return
-          this.screen = 'onboard'
-          this.onboardError = err.message || 'Failed to load profile. Please try again.'
+          this.onboardError = err.message || t('onboard.failed')
+          this.username = ''
+          router.replace({ name: 'onboard' })
         })
     },
 
-    switchWiki(dbname) {
-      if (!dbname || dbname === this.wiki) return
-      const view = this.activeView
-      this.start(this.username, dbname)
-      this.activeView = view
+    remember(name) {
+      this.recent = [name, ...this.recent.filter((n) => n !== name)].slice(0, RECENT_MAX)
+      writeRecent(this.recent)
+    },
+
+    forget(name) {
+      this.recent = this.recent.filter((n) => n !== name)
+      writeRecent(this.recent)
     },
 
     resetData() {
@@ -125,11 +204,12 @@ export const useAppStore = defineStore('app', {
       this.contributeError = ''
     },
 
+    // -- data --------------------------------------------------------------
     loadTrends() {
       this.trendsLoading = true
       const langs = (this.profile?.languages || []).map((l) => l.lang).filter((l) => l !== this.profile?.homeLang)
       getTrends({ country: this.countryA2, wiki: this.homeWiki, langs })
-        .then((t) => { this.trends = t })
+        .then((tr) => { this.trends = tr })
         .catch(() => { /* keep last-known trends, if any */ })
         .finally(() => { this.trendsLoading = false })
     },
@@ -153,8 +233,11 @@ export const useAppStore = defineStore('app', {
       this.revisitError = ''
       const seq = this.sessionSeq
       getRevisit(this.username, this.wiki)
-        .then((d) => { if (seq === this.sessionSeq) this.revisit = d.tasks || [] })
-        .catch((err) => { if (seq === this.sessionSeq) this.revisitError = err.message || 'Failed to load your articles.' })
+        .then((d) => {
+          if (seq !== this.sessionSeq) return
+          this.revisit = d.tasks || []
+        })
+        .catch((err) => { if (seq === this.sessionSeq) this.revisitError = err.message || t('revisit.failed') })
         .finally(() => { this.revisitLoading = false })
     },
 
@@ -164,7 +247,7 @@ export const useAppStore = defineStore('app', {
       const seq = this.sessionSeq
       getGeo(this.username, this.wiki)
         .then((d) => { if (seq === this.sessionSeq) this.geo = d })
-        .catch((err) => { if (seq === this.sessionSeq) this.geoError = err.message || 'Failed to load geographic focus.' })
+        .catch((err) => { if (seq === this.sessionSeq) this.geoError = err.message })
         .finally(() => {
           if (seq !== this.sessionSeq) return
           this.geoLoading = false
@@ -180,7 +263,7 @@ export const useAppStore = defineStore('app', {
       const seq = this.sessionSeq
       getDiscover(this.username, { wiki: this.wiki, region: this.geoRegion, local: this.geoLocal })
         .then((d) => { if (seq === this.sessionSeq) this.discover = d })
-        .catch((err) => { if (seq === this.sessionSeq) this.discoverError = err.message || 'Failed to load suggestions.' })
+        .catch((err) => { if (seq === this.sessionSeq) this.discoverError = err.message || t('discover.failed') })
         .finally(() => { this.discoverLoading = false })
     },
 
@@ -190,30 +273,23 @@ export const useAppStore = defineStore('app', {
       const seq = this.sessionSeq
       getContribute(this.username, { wiki: this.wiki, place: this.geoLocal || this.geoRegion })
         .then((d) => { if (seq === this.sessionSeq) this.contribute = d })
-        .catch((err) => { if (seq === this.sessionSeq) this.contributeError = err.message || 'Failed to load Commons and Wikidata tasks.' })
+        .catch((err) => { if (seq === this.sessionSeq) this.contributeError = err.message || t('contribute.failed') })
         .finally(() => { this.contributeLoading = false })
-    },
-
-    goTo(view) {
-      this.activeView = view
-    },
-
-    searchGuide(title, wiki) {
-      this.guideQuery = (title || '').trim()
-      this.guideWiki = wiki || this.wiki || 'enwiki'
-      this.guideQuerySeq += 1
-      this.activeView = 'guide'
     },
 
     logout() {
       this.sessionSeq += 1
-      this.screen = 'onboard'
-      this.username = ''
-      this.onboardError = ''
-      this.activeView = 'overview'
-      this.wiki = null
-      this.resetData()
-      this.guideQuery = ''
+      // Leave the dashboard before clearing its data: the views assume a profile and
+      // would crash rendering a null one.
+      return router.push({ name: 'onboard' }).finally(() => {
+        this.username = ''
+        this.onboardError = ''
+        this.activeView = 'overview'
+        this.wiki = null
+        this.requestedWiki = null
+        this.resetData()
+        this.guideQuery = ''
+      })
     },
   },
 })
