@@ -21,7 +21,7 @@ describe('English messages', () => {
   const src = sources(join(__dirname, '..')).map((p) => readFileSync(p, 'utf8')).join('\n')
 
   it('has every key the code uses', () => {
-    // Literal keys in $t('…'), t('…'), keypath="…" and label: '…'.
+    // Literal keys in $t('…'), t('…'), keypath="…" and label: '…' (vote buttons).
     const used = [...src.matchAll(/(?:\$t|\bt)\(\s*'([a-zA-Z]+\.[\w.]+)'|keypath="([\w.]+)"|label: '([a-z]+\.[\w.]+)'/g)]
       .map((m) => m[1] || m[2] || m[3])
     const missing = [...new Set(used)].filter((k) => !all.has(k))

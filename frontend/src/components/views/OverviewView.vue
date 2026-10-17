@@ -43,7 +43,7 @@ const dispatchCards = computed(() => {
     {
       key: 'tasks',
       icon: cdxIconCheckAll,
-      title: store.tasksLoading && !store.tasks.length ? t('overview.card.tasksLoading') : t('overview.card.tasks', store.tasks.length),
+      title: store.tasksLoading && !store.tasks.length ? t('overview.card.tasksLoading') : t('overview.card.tasks', store.visibleTasks.length),
       desc: t('overview.card.tasksDesc'),
     },
     {

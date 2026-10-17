@@ -82,3 +82,24 @@ export function getContribute(username, { wiki, place } = {}) {
 export function getStats(username, wiki) {
   return get('/api/stats/' + u(username), { wiki }, 'Stats')
 }
+
+// Feedback on a task card: action is up | down | done | dismiss.
+export function sendFeedback(task, username, action) {
+  return request('POST', '/api/feedback', {
+    label: 'Feedback',
+    body: {
+      username,
+      wiki: task.wiki,
+      title: task.title,
+      action,
+      type: task.type,
+      scope: task.scope,
+      signals: task.signals,
+      score: task.score,
+    },
+  })
+}
+
+export function getFeedback(username, wiki) {
+  return get('/api/feedback/' + u(username), { wiki }, 'Feedback')
+}

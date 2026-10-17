@@ -1,10 +1,12 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { CdxMessage } from '@wikimedia/codex'
 import { useAppStore } from '../../stores/appStore.js'
 import LoadingState from '../widgets/LoadingState.vue'
 
 const store = useAppStore()
+const { t } = useI18n()
 const s = computed(() => store.stats)
 
 function compact(n) {
@@ -36,6 +38,11 @@ const calendar = computed(() => {
   }
   if (week.length) weeks.push(week)
   return weeks
+})
+
+const summary = computed(() => {
+  const c = s.value?.compass
+  return c ? t('stats.compassSummary', { up: c.up, done: c.done, edited: c.edited }) : ''
 })
 </script>
 
@@ -94,6 +101,11 @@ const calendar = computed(() => {
           <a :href="a.url" target="_blank" rel="noopener">{{ a.title }}</a>
           <span style="color: var(--color-subtle)">{{ $t('stats.perDay', { n: a.perDay.toLocaleString() }) }}</span>
         </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">{{ $t('stats.compass') }}</div>
+        <p style="font-size: 0.8125rem">{{ summary }}</p>
       </div>
     </template>
   </div>

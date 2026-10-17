@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from services import feedback_service
 from services.profile_service import build_profile
 from services.task_service import find_tasks
 
@@ -15,4 +16,10 @@ def tasks(username):
     lat, lon = request.args.get('lat', type=float), request.args.get('lon', type=float)
     if lat is not None and lon is not None:
         place = {'name': request.args.get('place') or 'your area', 'coord': {'lat': lat, 'lon': lon}}
-    return jsonify(find_tasks(profile, place))
+    result = find_tasks(profile, place)
+    # Tasks the editor voted down, dismissed or finished don't come back.
+    hidden = feedback_service.hidden_titles(profile['username'], profile['homeWiki'])
+    if hidden:
+        kept = [t for t in result['tasks'] if t['title'] not in hidden]
+        result = {**result, 'tasks': kept, 'hidden': len(result['tasks']) - len(kept)}
+    return jsonify(result)

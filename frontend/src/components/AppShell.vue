@@ -43,7 +43,7 @@ const VIEWS = {
 
 const navItems = computed(() => [
   { key: 'overview', label: t('nav.overview'), icon: cdxIconHome },
-  { key: 'tasks', label: t('nav.tasks'), icon: cdxIconCheckAll, badge: store.tasksLoading && !store.tasks.length ? '…' : store.tasks.length || null },
+  { key: 'tasks', label: t('nav.tasks'), icon: cdxIconCheckAll, badge: store.tasksLoading && !store.tasks.length ? '…' : store.visibleTasks.length || null },
   { key: 'revisit', label: t('nav.revisit'), icon: cdxIconWatchlist, badge: store.revisitLoading ? '…' : store.revisit.length || null },
   {
     key: 'discover',

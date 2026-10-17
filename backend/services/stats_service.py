@@ -1,13 +1,14 @@
 """Personal stats: a reason to come back.
 
 Edit streak, recent activity and how many readers saw the articles the editor worked on
-in the last 30 days, from their live contributions (not the 6-hour profile cache).
+in the last 30 days, from their live contributions (not the 6-hour profile cache), plus
+the Compass tasks they voted on and then edited.
 """
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 
-from services import wiki
+from services import wiki, feedback_service
 from services.task_service import _pageviews
 
 _cache = wiki.TTLCache(ttl=3600, maxsize=500, name='stats')
@@ -90,5 +91,6 @@ def _stats(username, dbname):
             'top': [{'title': t, 'perDay': v, 'url': wiki.page_url(dbname, t)} for t, v in top],
         },
         'calendar': by_day,  # 'YYYY-MM-DD' -> edits, last 90 days
+        'compass': feedback_service.summary(username, dbname),
         'secs': round(time.time() - t0, 1),
     }

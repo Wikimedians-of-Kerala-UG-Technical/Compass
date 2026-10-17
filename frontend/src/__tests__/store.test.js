@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('../router.js', () => ({ router: { push: vi.fn(), replace: vi.fn() } }))
 vi.mock('../api.js', () => ({
+  sendFeedback: vi.fn(() => Promise.resolve({})),
   getProfile: vi.fn(),
   getTrends: vi.fn(),
   getTasks: vi.fn(),
@@ -11,6 +12,7 @@ vi.mock('../api.js', () => ({
   getGeo: vi.fn(),
   getContribute: vi.fn(),
   getStats: vi.fn(),
+  getFeedback: vi.fn(),
 }))
 
 const { useAppStore, urlName } = await import('../stores/appStore.js')
@@ -43,6 +45,18 @@ describe('app store', () => {
     expect(JSON.parse(localStorage.getItem('compass-recent'))).toEqual(store.recent)
     store.forget('E')
     expect(store.recent).not.toContain('E')
+  })
+
+  it('hides voted-down tasks and rolls back a failed vote', async () => {
+    const store = useAppStore()
+    store.username = 'Tester'
+    store.tasks = [{ title: 'A', wiki: 'enwiki' }, { title: 'B', wiki: 'enwiki' }]
+    await store.vote(store.tasks[0], 'down')
+    expect(store.visibleTasks.map((t) => t.title)).toEqual(['B'])
+    api.sendFeedback.mockReturnValueOnce(Promise.reject(new Error('offline')))
+    await store.vote(store.tasks[1], 'dismiss')
+    expect(store.visibleTasks.map((t) => t.title)).toEqual(['B'])
+    expect(store.feedbackError).toBeTruthy()
   })
 
   it('starts a session only when the user or wiki in the URL changes', () => {

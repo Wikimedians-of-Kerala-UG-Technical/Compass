@@ -86,10 +86,17 @@
     "loading": "Finding tasks for you…",
     "loadingSub": "Searching tracking categories and Growth suggestions in your topics. Usually 10–30 seconds.",
     "none": "No tasks found for your topics on this wiki.",
+    "hidden": "{n} tasks you voted down, dismissed or finished are hidden.",
     "whyYou": "Why you:",
     "minutes": "{label} · ~{min} min",
     "since": "since {date}",
-    "whatToFix": "What exactly needs fixing?"
+    "whatToFix": "What exactly needs fixing?",
+    "good": "Good suggestion",
+    "bad": "Not for me",
+    "done": "I did this",
+    "dismiss": "Hide",
+    "thanks": "Thanks — this helps Compass learn what suits you.",
+    "voteFailed": "Couldn't save that. Try again in a moment."
   },
   "revisit": {
     "title": "Revisit",
@@ -206,7 +213,9 @@
     "topArticles": "Most-read articles you worked on",
     "perDay": "{n}/day",
     "calendar": "Last 90 days",
-    "calendarDay": "{date}: {n} edits"
+    "calendarDay": "{date}: {n} edits",
+    "compass": "Compass tasks",
+    "compassSummary": "{up} liked · {done} marked done · {edited} edited after you saw them"
   },
   "trends": {
     "title": "Read today, needs work",

@@ -1,14 +1,15 @@
-"""Tests run offline: caches are in memory and any real HTTP call fails."""
+"""Tests run offline: caches and the store are in memory and any real HTTP call fails."""
 import os
 import sys
 
 os.environ['COMPASS_CACHE_PATH'] = ''
+os.environ['COMPASS_DB_PATH'] = ':memory:'
 os.environ['COMPASS_RATE_LIMIT'] = '0'
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import pytest  # noqa: E402
 
-from services import wiki  # noqa: E402
+from services import store, wiki  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -18,6 +19,13 @@ def no_network(monkeypatch):
     monkeypatch.setattr(wiki.session, 'request', refuse)
     monkeypatch.setattr(wiki.session, 'get', refuse)
     monkeypatch.setattr(wiki.session, 'post', refuse)
+
+
+@pytest.fixture(autouse=True)
+def fresh_store():
+    store.reset_for_tests()
+    yield
+    store.reset_for_tests()
 
 
 @pytest.fixture

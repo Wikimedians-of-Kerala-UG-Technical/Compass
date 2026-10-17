@@ -1,6 +1,6 @@
 import routes.profile
 import routes.tasks
-from services import wiki
+from services import feedback_service, wiki
 
 
 def test_health(client):
@@ -27,6 +27,17 @@ def test_internal_errors_are_hidden(client, monkeypatch):
 def test_unknown_route_is_json(client):
     r = client.get('/api/nope')
     assert r.status_code == 404 and 'error' in r.get_json()
+
+
+def test_feedback_hides_tasks(client, monkeypatch):
+    monkeypatch.setattr(routes.tasks, 'build_profile', lambda u, d=None: {'username': 'Tester', 'homeWiki': 'enwiki'})
+    monkeypatch.setattr(routes.tasks, 'find_tasks', lambda p, place=None: {'tasks': [{'title': 'A'}, {'title': 'B'}]})
+    assert client.post('/api/feedback', json={'username': 'Tester', 'wiki': 'enwiki', 'title': 'A',
+                                              'action': 'dismiss'}).status_code == 201
+    assert client.post('/api/feedback', json={'username': 'Tester', 'title': 'A', 'action': '??'}).status_code == 400
+    body = client.get('/api/tasks/Tester').get_json()
+    assert [t['title'] for t in body['tasks']] == ['B'] and body['hidden'] == 1
+    assert feedback_service.hidden_titles('Tester', 'enwiki') == {'A'}
 
 
 def test_rate_limit(monkeypatch):

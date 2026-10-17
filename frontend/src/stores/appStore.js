@@ -8,6 +8,8 @@ import {
   getGeo,
   getContribute,
   getStats,
+  getFeedback,
+  sendFeedback,
 } from '../api.js'
 import { router } from '../router.js'
 import { i18n } from '../i18n.js'
@@ -16,6 +18,7 @@ const t = (...args) => i18n.global.t(...args)
 
 const RECENT_KEY = 'compass-recent'
 const RECENT_MAX = 6
+const HIDDEN_ACTIONS = ['down', 'done', 'dismiss']
 
 // Usernames go in URLs with underscores, the way Wikipedia writes them.
 export const urlName = (name) => (name || '').trim().replace(/ /g, '_')
@@ -56,10 +59,13 @@ export const useAppStore = defineStore('app', {
     trendsLoading: false,
 
     tasks: [],
-    tasksMeta: null, // {scopes, candidates, partial, mode}
+    tasksMeta: null, // {scopes, candidates, partial, mode, hidden}
     tasksLoading: false,
     tasksError: '',
 
+    // feedback on task cards: title -> latest action
+    feedback: {},
+    feedbackError: '',
 
     // revisit — the editor's own articles that need attention
     revisit: [],
@@ -102,6 +108,7 @@ export const useAppStore = defineStore('app', {
     geoLocal: (state) => state.geo?.focus?.local || null,
     geoRegion: (state) => state.geo?.focus?.region || null,
     countryA2: (state) => state.profile?.countries?.[0]?.a2 || null,
+    visibleTasks: (state) => state.tasks.filter((task) => !HIDDEN_ACTIONS.includes(state.feedback[task.title])),
   },
 
   actions: {
@@ -170,6 +177,7 @@ export const useAppStore = defineStore('app', {
           this.wiki = p.homeWiki
           this.screen = 'dash'
           this.remember(p.username)
+          this.loadFeedback()
           this.loadTrends()
           this.fetchRevisit()
           // Tasks load straight away from the profile; geo is slower and, once it
@@ -202,6 +210,7 @@ export const useAppStore = defineStore('app', {
       this.tasks = []
       this.tasksMeta = null
       this.tasksError = ''
+      this.feedback = {}
       this.revisit = []
       this.revisitError = ''
       this.geo = null
@@ -236,6 +245,26 @@ export const useAppStore = defineStore('app', {
         })
         .catch((err) => { if (this.tasksRequestSeq === seq) this.tasksError = err.message })
         .finally(() => { if (this.tasksRequestSeq === seq) this.tasksLoading = false })
+    },
+
+    loadFeedback() {
+      const seq = this.sessionSeq
+      getFeedback(this.username, this.wiki)
+        .then((d) => {
+          if (seq !== this.sessionSeq) return
+          this.feedback = Object.fromEntries((d.items || []).map((i) => [i.title, i.action]))
+        })
+        .catch(() => { /* votes are optional */ })
+    },
+
+    vote(task, action) {
+      const before = this.feedback[task.title]
+      this.feedback = { ...this.feedback, [task.title]: action }
+      this.feedbackError = ''
+      return sendFeedback(task, this.username, action).catch(() => {
+        this.feedback = { ...this.feedback, [task.title]: before }
+        this.feedbackError = t('tasks.voteFailed')
+      })
     },
 
     fetchRevisit() {

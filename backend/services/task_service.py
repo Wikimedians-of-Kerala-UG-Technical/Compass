@@ -35,7 +35,7 @@ MAX_PER_TYPE = 15
 GUIDED_ONLY_EDITS = 200
 NEWCOMER_EDITS = 500
 
-# Hand-set.
+# Hand-set; eval/learn_weights.py fits them to task feedback for comparison.
 WEIGHTS = {'topic': 0.30, 'place': 0.20, 'impact': 0.15, 'feasibility': 0.15, 'freshness': 0.10, 'affinity': 0.10}
 
 AFFINITY = {
