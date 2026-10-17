@@ -12,6 +12,8 @@ import {
   cdxIconReload,
   cdxIconLogoWikimediaCommons,
   cdxIconChart,
+  cdxIconBell,
+  cdxIconBellOutline,
   cdxIconMoon,
   cdxIconBright,
   cdxIconUserAvatar,
@@ -98,6 +100,15 @@ function runSearch() {
 
       <div class="shell__user">
         <span class="shell__username">{{ store.username }}<template v-if="store.profile"> · {{ store.profile.homeLang }}.wikipedia</template></span>
+        <CdxButton
+          weight="quiet"
+          :title="store.alertsOn ? $t('nav.alertsOn') : $t('nav.alertsHint')"
+          :aria-label="store.alertsOn ? $t('nav.alertsOn') : $t('nav.alertsOff')"
+          :aria-pressed="store.alertsOn"
+          @click="store.toggleAlerts()"
+        >
+          <CdxIcon :icon="store.alertsOn ? cdxIconBell : cdxIconBellOutline" />
+        </CdxButton>
         <CdxButton weight="quiet" :title="themeLabel" :aria-label="themeLabel" @click="cycleTheme">
           <CdxIcon :icon="theme === 'light' ? cdxIconBright : cdxIconMoon" />
         </CdxButton>

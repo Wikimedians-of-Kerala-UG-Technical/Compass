@@ -1,6 +1,7 @@
 import pytest
 
 from services import feedback_service as fb, store, wiki
+from services.alerts_service import AlertHub
 
 
 def test_feedback_record_and_hide():
@@ -35,3 +36,22 @@ def test_verify_edits_marks_only_later_edits(monkeypatch):
     monkeypatch.setattr(fb.time, 'time', lambda: 1_791_000_000)
     assert fb.verify_edits('A', 'enwiki') == 1
     assert fb.summary('A', 'enwiki')['edited'] == 1
+
+
+def test_alert_hub_routes_events(monkeypatch):
+    hub = AlertHub(url='http://unused')
+    monkeypatch.setattr(hub, '_tracking_categories', lambda dbname: {'All articles lacking sources': 'add_refs'})
+    monkeypatch.setattr('threading.Thread.start', lambda self: None)  # no stream in tests
+    sid, q = hub.subscribe('Me', 'mlwiki', ['കൊച്ചി'])
+    hub.handle({'type': 'edit', 'namespace': 0, 'wiki': 'mlwiki', 'title': 'കൊച്ചി', 'user': 'Other',
+                'revision': {'new': 7}, 'timestamp': 1})
+    hub.handle({'type': 'edit', 'namespace': 0, 'wiki': 'mlwiki', 'title': 'കൊച്ചി', 'user': 'Me', 'timestamp': 2})
+    hub.handle({'type': 'edit', 'namespace': 0, 'wiki': 'enwiki', 'title': 'കൊച്ചി', 'user': 'Other', 'timestamp': 3})
+    monkeypatch.setattr(hub, '_has_category', lambda dbname, title, cat: True)
+    hub.handle({'type': 'categorize', 'wiki': 'mlwiki', 'title': 'വർഗ്ഗം:All articles lacking sources',
+                'comment': '[[:കൊച്ചി]] വർഗ്ഗത്തിൽ ചേർത്തു', 'user': 'Bot', 'timestamp': 4})
+    alerts = [q.get_nowait() for _ in range(q.qsize())]
+    assert [(a['kind'], a['user']) for a in alerts] == [('edit', 'Other'), ('tagged', 'Bot')]
+    assert alerts[0]['diffUrl'] == 'https://ml.wikipedia.org/w/index.php?diff=7'
+    hub.unsubscribe(sid)
+    assert hub.subscribers() == 0 and hub._index == {}

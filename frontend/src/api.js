@@ -103,3 +103,10 @@ export function sendFeedback(task, username, action) {
 export function getFeedback(username, wiki) {
   return get('/api/feedback/' + u(username), { wiki }, 'Feedback')
 }
+
+// Live alerts (server-sent events). Returns the EventSource; the caller closes it.
+export function openAlerts(username, wiki) {
+  return new EventSource(API_BASE + '/api/alerts/' + u(username) + '/stream' + query({ wiki }), {
+    withCredentials: true,
+  })
+}

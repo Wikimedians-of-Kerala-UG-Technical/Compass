@@ -13,6 +13,7 @@ vi.mock('../api.js', () => ({
   getContribute: vi.fn(),
   getStats: vi.fn(),
   getFeedback: vi.fn(),
+  openAlerts: vi.fn(),
 }))
 
 const { useAppStore, urlName } = await import('../stores/appStore.js')

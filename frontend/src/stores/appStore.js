@@ -10,6 +10,7 @@ import {
   getStats,
   getFeedback,
   sendFeedback,
+  openAlerts,
 } from '../api.js'
 import { router } from '../router.js'
 import { i18n } from '../i18n.js'
@@ -18,7 +19,9 @@ const t = (...args) => i18n.global.t(...args)
 
 const RECENT_KEY = 'compass-recent'
 const RECENT_MAX = 6
+const ALERTS_MAX = 30
 const HIDDEN_ACTIONS = ['down', 'done', 'dismiss']
+let alertSource = null // the open EventSource; not state, since it can't be serialised
 
 // Usernames go in URLs with underscores, the way Wikipedia writes them.
 export const urlName = (name) => (name || '').trim().replace(/ /g, '_')
@@ -91,6 +94,11 @@ export const useAppStore = defineStore('app', {
     stats: null,
     statsLoading: false,
     statsError: '',
+
+    // live alerts (EventStreams via the backend)
+    alertsOn: false,
+    alerts: [],
+    alertsWatching: 0,
 
     // universal top-bar search -> Guide view
     guideQuery: '',
@@ -167,6 +175,7 @@ export const useAppStore = defineStore('app', {
       this.requestedWiki = wiki || null
       this.screen = 'loading'
       const seq = ++this.sessionSeq
+      this.stopAlerts()
       this.resetData()
 
       getProfile(uname, this.wiki)
@@ -221,6 +230,7 @@ export const useAppStore = defineStore('app', {
       this.contributeError = ''
       this.stats = null
       this.statsError = ''
+      this.alerts = []
     },
 
     // -- data --------------------------------------------------------------
@@ -326,8 +336,44 @@ export const useAppStore = defineStore('app', {
         .finally(() => { this.statsLoading = false })
     },
 
+    // -- live alerts -----------------------------------------------------------
+    toggleAlerts() {
+      if (this.alertsOn) {
+        this.stopAlerts()
+        return
+      }
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {})
+      }
+      this.startAlerts()
+    },
+
+    startAlerts() {
+      this.stopAlerts()
+      const source = openAlerts(this.username, this.wiki)
+      alertSource = source
+      this.alertsOn = true
+      source.addEventListener('ready', (e) => {
+        try { this.alertsWatching = JSON.parse(e.data).watching } catch { /* ignore */ }
+      })
+      source.addEventListener('alert', (e) => {
+        let alert
+        try { alert = JSON.parse(e.data) } catch { return }
+        this.alerts = [alert, ...this.alerts].slice(0, ALERTS_MAX)
+        notify(alert)
+      })
+      // EventSource reconnects by itself after a dropped connection.
+    },
+
+    stopAlerts() {
+      if (alertSource) alertSource.close()
+      alertSource = null
+      this.alertsOn = false
+    },
+
     logout() {
       this.sessionSeq += 1
+      this.stopAlerts()
       // Leave the dashboard before clearing its data: the views assume a profile and
       // would crash rendering a null one.
       return router.push({ name: 'onboard' }).finally(() => {
@@ -342,3 +388,20 @@ export const useAppStore = defineStore('app', {
     },
   },
 })
+
+export function alertText(alert) {
+  if (alert.kind === 'edit') return t('overview.liveEdit', { user: alert.user, title: alert.title })
+  if (alert.kind === 'tagged') return t('overview.liveTagged', { title: alert.title, label: alert.label })
+  return t('overview.liveUntagged', { title: alert.title, label: alert.label })
+}
+
+function notify(alert) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') return // it's on screen already
+  try {
+    const n = new Notification(t('app.name'), { body: alertText(alert), tag: `${alert.wiki}:${alert.title}` })
+    n.onclick = () => window.open(alert.diffUrl || alert.url, '_blank', 'noopener')
+  } catch {
+    /* some browsers only allow notifications from a service worker */
+  }
+}

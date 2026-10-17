@@ -44,7 +44,10 @@
     "search": "Look up any article…",
     "searchLabel": "Look up an article",
     "refresh": "Refresh trends and tasks",
-    "newUser": "New user"
+    "newUser": "New user",
+    "alertsOn": "Live alerts on",
+    "alertsOff": "Live alerts off",
+    "alertsHint": "Get a notification when someone edits or tags one of your articles"
   },
   "overview": {
     "welcome": "Welcome back, {name}",
@@ -58,6 +61,11 @@
     "focusUse": "— used for \"near you\" tasks and local gaps.",
     "noPlaces": "None of your recent articles are about a place, so tasks aren't limited to a region.",
     "whatNext": "What next",
+    "live": "Live on your articles",
+    "liveEmpty": "Watching {count} of your articles. Edits and new tags by others will appear here as they happen.",
+    "liveEdit": "{user} edited {title}",
+    "liveTagged": "{title} was tagged: {label}",
+    "liveUntagged": "{title} is no longer tagged: {label}",
     "card": {
       "tasksLoading": "Finding tasks for you…",
       "tasks": "No tasks ready | 1 task ready | {n} tasks ready",

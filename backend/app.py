@@ -74,7 +74,9 @@ def _register_limits(app):
 
     @app.before_request
     def limit():
-        if not request.path.startswith('/api/') or request.method == 'OPTIONS':
+        # Live streams hold one connection open; counting them would only penalise
+        # users who keep a tab open.
+        if not request.path.startswith('/api/') or request.path.endswith('/stream') or request.method == 'OPTIONS':
             return None
         wait = limiter.check(request.remote_addr or 'unknown')
         if wait:

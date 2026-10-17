@@ -10,8 +10,9 @@ import {
   cdxIconMapPin,
   cdxIconLogoWikimediaCommons,
   cdxIconChart,
+  cdxIconBell,
 } from '@wikimedia/codex-icons'
-import { useAppStore } from '../../stores/appStore.js'
+import { useAppStore, alertText } from '../../stores/appStore.js'
 import TrendingCard from '../widgets/TrendingCard.vue'
 import NewsCard from '../widgets/NewsCard.vue'
 
@@ -77,6 +78,10 @@ const dispatchCards = computed(() => {
     { key: 'stats', icon: cdxIconChart, title: t('overview.card.stats'), desc: t('overview.card.statsDesc') },
   ]
 })
+
+function alertTime(a) {
+  return a.timestamp ? new Date(a.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+}
 </script>
 
 <template>
@@ -125,6 +130,20 @@ const dispatchCards = computed(() => {
       <CdxInfoChip v-if="profile.sisterProjects?.commonswiki" status="subtle">
         Commons · {{ profile.sisterProjects.commonswiki.toLocaleString() }}
       </CdxInfoChip>
+    </div>
+
+    <div v-if="store.alertsOn" class="panel" style="margin-bottom: 20px" aria-live="polite">
+      <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px">
+        <CdxIcon :icon="cdxIconBell" size="small" /> {{ $t('overview.live') }}
+      </div>
+      <p v-if="!store.alerts.length" style="font-size: 0.8125rem; color: var(--color-subtle)">
+        {{ $t('overview.liveEmpty', { count: store.alertsWatching }) }}
+      </p>
+      <div v-for="(a, i) in store.alerts" :key="i" class="alert-row">
+        <span class="alert-row__time">{{ alertTime(a) }}</span>
+        <a :href="a.diffUrl || a.url" target="_blank" rel="noopener">{{ alertText(a) }}</a>
+        <CdxInfoChip v-if="a.kind !== 'edit'" :status="a.kind === 'tagged' ? 'warning' : 'success'">{{ a.label }}</CdxInfoChip>
+      </div>
     </div>
 
     <div class="panel" style="margin-bottom: 20px">
