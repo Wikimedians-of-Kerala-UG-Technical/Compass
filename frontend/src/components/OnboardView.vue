@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { CdxTextInput, CdxButton, CdxMessage, CdxIcon } from '@wikimedia/codex'
 import { cdxIconArticleSearch, cdxIconClose } from '@wikimedia/codex-icons'
 import { useAppStore } from '../stores/appStore.js'
@@ -48,6 +49,7 @@ function submit() {
         </span>
       </div>
 
+      <RouterLink class="onboard__event" :to="{ name: 'event' }">{{ $t('onboard.eventLink') }}</RouterLink>
     </div>
   </div>
 </template>

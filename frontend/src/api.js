@@ -110,3 +110,16 @@ export function openAlerts(username, wiki) {
     withCredentials: true,
   })
 }
+
+// Events (Wikimedia Event Registration), with the worklist ranked per participant
+export function resolveEvent(ref) {
+  return get('/api/events/resolve', { ref }, 'Event')
+}
+
+export function getEvent(id) {
+  return get('/api/events/' + u(id), null, 'Event')
+}
+
+export function rankEvent(id, username, wiki) {
+  return get('/api/events/' + u(id) + '/rank/' + u(username), { wiki }, 'Ranking')
+}

@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { CdxInfoChip, CdxMessage, CdxIcon } from '@wikimedia/codex'
 import { cdxIconLogoWikimediaCommons, cdxIconLogoWikidata, cdxIconCalendar } from '@wikimedia/codex-icons'
-import { useAppStore } from '../../stores/appStore.js'
+import { RouterLink } from 'vue-router'
+import { useAppStore, urlName } from '../../stores/appStore.js'
 import LoadingState from '../widgets/LoadingState.vue'
 
 const store = useAppStore()
@@ -70,6 +71,9 @@ const events = computed(() => c.value?.events || [])
         <div v-for="e in events" :key="e.id || e.event_id" class="item-card">
           <div class="item-card__title">{{ e.name || e.event_name || $t('contribute.event') }}</div>
           <div class="item-card__reason">{{ $t('contribute.includes', { titles: e.yourArticles.join(', ') }) }}</div>
+          <RouterLink v-if="e.id || e.event_id" :to="{ name: 'event', params: { id: e.id || e.event_id }, query: { user: urlName(store.username) } }">
+            {{ $t('contribute.openEvent') }}
+          </RouterLink>
         </div>
       </template>
     </template>

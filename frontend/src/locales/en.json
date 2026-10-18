@@ -26,7 +26,8 @@
     "empty": "Please enter a Wikipedia username.",
     "failed": "Failed to load profile. Please try again.",
     "recent": "Recently viewed",
-    "forget": "Forget {name}"
+    "forget": "Forget {name}",
+    "eventLink": "At an edit-a-thon? See its worklist ranked for you"
   },
   "loading": {
     "title": "Loading {name}'s profile…",
@@ -167,7 +168,8 @@
     "missing": "No {lang} {what}",
     "campaigns": "Campaigns that include your articles",
     "event": "Event",
-    "includes": "Includes: {titles}"
+    "includes": "Includes: {titles}",
+    "openEvent": "See this event's worklist ranked for you"
   },
   "guide": {
     "title": "Article Guide",
@@ -224,6 +226,29 @@
     "calendarDay": "{date}: {n} edits",
     "compass": "Compass tasks",
     "compassSummary": "{up} liked · {done} marked done · {edited} edited after you saw them"
+  },
+  "event": {
+    "title": "Your edit-a-thon, ranked for you",
+    "sub": "Organisers run edit-a-thons with Wikimedia's Event Registration: signup, a worklist of articles, and progress tracking. Everyone there sees the same worklist. Paste the event here to see it ordered by what suits you.",
+    "refLabel": "Event ID, Special:EventDetails link or Event: page",
+    "refPlaceholder": "e.g. 4579 or https://meta.wikimedia.org/wiki/Event:…",
+    "open": "Open event",
+    "dates": "{starts} – {ends}",
+    "officialPage": "Event page",
+    "progress": "Register and track progress",
+    "worklistSize": "{n} articles on the worklist",
+    "noWorklist": "This event has no worklist yet, so there's nothing to rank. Organisers add articles on the event's Worklist tab.",
+    "usernameLabel": "Your Wikimedia username",
+    "rank": "Rank for me",
+    "participants": "Registered participants ({n})",
+    "ranking": "Ranking the worklist for {name}…",
+    "rankedFor": "Best fits for {name}",
+    "rankedSub": "{shown} of {total} articles on {wiki}, best fit first.",
+    "wiki": "Worklist wiki",
+    "toCreate": "Not written yet ({n})",
+    "toCreateSub": "On the worklist but missing on {wiki}. Writing one is a bigger job.",
+    "create": "Create",
+    "needs": "Needs"
   },
   "trends": {
     "title": "Read today, needs work",
