@@ -1,0 +1,22 @@
+# Nightly check that every Wikimedia and external API Compass depends on still answers
+# the way WIKIMEDIA-RESEARCH.md describes. A failure here usually means an upstream
+# change (a renamed parameter, a retired endpoint), not a bug in Compass.
+name: Probe external APIs
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements-dev.txt
+      - run: python eval/probe_apis.py
+        env:
+          COMPASS_EVAL_UA: 'CompassEval/1.0 (https://github.com/${{ github.repository }}; nightly API probe)'

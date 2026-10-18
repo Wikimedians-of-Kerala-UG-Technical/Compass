@@ -61,7 +61,20 @@ CHECKS = {
     'openalex works search': lambda: bool(session.get('https://api.openalex.org/works', params={'search': 'Lake Louise criteria', 'per-page': 1}, timeout=60).json()['results']),
     'pubmed esearch': lambda: bool(session.get('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi', params={'db': 'pubmed', 'term': 'tuberculosis', 'retmode': 'json', 'retmax': 1}, timeout=60).json()['esearchresult']['idlist']),
     'campaignevents discovery': lambda: session.get(f'https://{EN}/w/rest.php/campaignevents/v0/event_discovery/discoverable_events', params={'page': 'Kerala'}, timeout=60).status_code == 200,
+    # Added with the v2.1 features
+    'pageviews desktop split': lambda: session.get('https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/desktop/user/Kerala/daily/20261001/20261001', timeout=30).json()['items'][0]['views'] > 0,
+    'cirrus incoming_links sort': lambda: len(api(EN, action='query', list='search', srsearch='articletopic:films articlecountry:ind', srsort='incoming_links_desc', srlimit=5)['query']['search']) == 5,
+    'open library search': lambda: len(session.get('https://openlibrary.org/search.json', params={'q': 'Kerala history', 'limit': 2}, timeout=30).json()['docs']) > 0,
+    'internet archive search': lambda: len(session.get('https://archive.org/advancedsearch.php', params={'q': '"Travancore" AND mediatype:texts', 'fl[]': 'identifier', 'rows': 2, 'output': 'json'}, timeout=30).json()['response']['docs']) > 0,
+    'eventstreams recentchange': lambda: _stream_ok(),
 }
+
+
+def _stream_ok():
+    with session.get('https://stream.wikimedia.org/v2/stream/recentchange', stream=True, timeout=30,
+                     headers={'Accept': 'text/event-stream'}) as r:
+        return any(line.startswith('data: ') for line, _ in zip(r.iter_lines(decode_unicode=True), range(200)))
+
 
 if __name__ == '__main__':
     fails = 0
