@@ -1,5 +1,12 @@
-# Vue 3 + Vite
+# Compass frontend
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Vue 3 + Vite, with Pinia (state), vue-router (every screen has a URL), vue-i18n (all interface text in `src/locales/en.json`) and [Wikimedia Codex](https://doc.wikimedia.org/codex/) components and design tokens.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+```bash
+npm install
+npm run dev      # http://localhost:5173, expects the backend on :5000
+npm test         # vitest: store, URL sync, message keys
+npm run build    # dist/; set VITE_API_BASE for a separate backend ("" = same origin)
+```
+
+How the store, router and API layer fit together: [Frontend State](../wiki/Frontend-State.md).

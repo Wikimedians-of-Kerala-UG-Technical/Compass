@@ -49,6 +49,9 @@ Compass has eight user-facing features. Each has its own page covering data sour
 | **Article Guide** | How exactly do I improve *this* article? | [[Feature-Article-Guide]] |
 | **Commons & Wikidata** | Which of my photos could go into articles; which nearby items lack my language? | [[Feature-Contribute]] |
 | **Trends** | What are readers near me reading that needs work? | [[Feature-Trends]] |
+| **Stats & feedback** | How am I doing, and did the suggestions suit me? | [[Feature-Stats-and-Feedback]] |
+| **Live alerts** | Has someone just edited or tagged one of my articles? | [[Feature-Live-Alerts]] |
+| **Events** | An edit-a-thon's worklist (from Event Registration), ranked for each participant | [[Feature-Events]] |
 
 ---
 

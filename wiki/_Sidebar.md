@@ -19,6 +19,9 @@
 - [[Feature-Contribute]]
 - [[Feature-Article-Guide]]
 - [[Feature-Trends]]
+- [[Feature-Stats-and-Feedback]]
+- [[Feature-Live-Alerts]]
+- [[Feature-Events]]
 
 **Maintenance**
 - [[Known-Issues-and-Limitations]]

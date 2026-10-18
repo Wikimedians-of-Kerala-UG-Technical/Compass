@@ -1,5 +1,4 @@
 
-Contributor_C_Testing_Guide
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,15 +15,18 @@ dist-ssr
 *.log
 response.json
 scratch.py
-frontend/js/api.js
-frontend/js/guide-view.js
-locustfile.py
 *.pyc
 frontend/public/temperature.html
-.claude
+.venv
 
 # evaluation raw outputs (large; see eval/README.md)
 eval/runs/
 
 # disk cache (see COMPASS_CACHE_PATH)
 backend/.cache/
+
+# Compass's own data: task feedback (see COMPASS_DB_PATH)
+backend/.data/
+
+# personal task list
+todo.md

@@ -26,4 +26,6 @@ Example: Ernakulam district → St. Francis Church, Santa Cruz Basilica, Jawahar
 
 ## Campaigns
 
-`/w/rest.php/campaignevents/v0/event_discovery/discoverable_events?page=<title>` for the editor's 10 most-edited articles. It lists active events (CampaignEvents extension) whose worklists include them. It's empty for most editors today, because few events use worklists yet.
+`/w/rest.php/campaignevents/v0/event_discovery/discoverable_events?page=<title>` for the editor's 10 most-edited articles. It lists active events (CampaignEvents extension) whose worklists include them. Each one links to [[Feature-Events]], which ranks that event's worklist for the editor.
+
+The endpoint only answers for a logged-in Wikimedia user: for an anonymous request (which is what Compass's server sends) it returns `[]`, so this list is currently always empty.

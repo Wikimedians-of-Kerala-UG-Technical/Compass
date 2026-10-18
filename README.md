@@ -13,7 +13,7 @@ Wikipedia has millions of articles that need work, but no good way to match edit
 
 Compass does the opposite. You type in a Wikimedia username. It finds the Wikipedia that editor actually works on (Malayalam, Tamil, English…), studies their edits there, and returns work they'd recognise as theirs.
 
-There are no accounts and nothing to sign up for. It reads public contributions only.
+There are no accounts and nothing to sign up for. It reads public contributions only. Every screen has a shareable link, such as `/u/Ranjithsiji/tasks`.
 
 ---
 
@@ -25,15 +25,22 @@ There are no accounts and nothing to sign up for. It reads public contributions 
 4. **Discover.** Articles and sections to translate into their languages, from Content Translation's recommender, plus articles about their district that are missing in their language.
 5. **Commons & Wikidata.** Their photos that no article uses yet, with candidate articles, and Wikidata items near them missing a description in their language.
 6. **Article Guide.** Points to the exact uncited paragraph, the dated `{{citation needed}}`, dead links, a Wikidata image to add, sections missing compared with English, and sources (PubMed reviews for medicine, OpenAlex, CrossRef) as ready-to-paste `{{cite journal}}`.
-7. **Trends.** What readers in their country and on their wiki read yesterday that carries a maintenance tag.
+7. **Trends.** What readers in their country and on their wiki read yesterday that carries a maintenance tag, minus bot traffic.
+8. **Your stats.** Edit streak, the last 30 days, and how many readers saw the articles they worked on.
+9. **Feedback.** Vote on any task (good, done, not for me, hide). Votes shape their list and are stored with the ranking signals, so the weights can be fitted to real outcomes.
+10. **Live alerts.** A notification when someone edits or tags one of their articles, straight from Wikimedia's EventStreams.
+11. **Events.** Paste an edit-a-thon from Wikimedia's Event Registration and its worklist is ordered for you. Signup and progress stay on the official event page.
+
+Newcomers (under 200 edits) get Wikipedia's guided link and image tasks. Monolingual editors get important articles missing in their language.
 
 ---
 
 ## How it's built
 
 ```
-frontend/   Vue 3 + Vite + Pinia + Wikimedia Codex
-backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, TTL caches (memory + SQLite)
+frontend/   Vue 3 + Vite + Pinia + vue-router + vue-i18n + Wikimedia Codex (light and dark)
+backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, TTL caches (memory + SQLite),
+            a small SQLite store for task feedback; tests in backend/tests
 eval/       Reproducible evaluation harness (see eval/README.md and EVALUATION.md)
 legacy/     The original single-file prototype (inactive)
 ```
@@ -50,20 +57,24 @@ legacy/     The original single-file prototype (inactive)
 | `GET /api/contribute/<username>` | Unused Commons photos; Wikidata gaps; campaigns |
 | `GET /api/trends` | Most-read articles that need work (`?country&wiki&langs`) |
 | `GET /api/article/<title>/guide` | Paragraph-level analysis |
-| `GET /api/article/<title>/external-references` | Sources with citation templates |
+| `GET /api/article/<title>/external-references` | Sources (journals, books, archives) with citation templates |
+| `GET /api/stats/<username>` | Streak, last 30 days, readers reached |
+| `POST /api/feedback`, `GET /api/feedback/<username>` | Task votes, and which voted articles were then edited |
+| `GET /api/alerts/<username>/stream` | Live alerts (server-sent events) |
+| `/api/events…` | An Event Registration worklist, ranked for one editor |
 
-Data sources: MediaWiki Action and REST APIs on any wiki, Wikidata and its Query Service, Commons, Pageviews, Lift Wing, Content Translation, Citoid, PubMed, OpenAlex and CrossRef. `WIKIMEDIA-RESEARCH.md` explains each one, and `python eval/probe_apis.py` checks that they all still answer.
+Data sources: MediaWiki Action and REST APIs on any wiki, Wikidata and its Query Service, Commons, Pageviews, EventStreams, Lift Wing, Content Translation, Citoid, PubMed, OpenAlex, CrossRef, Open Library and the Internet Archive. `WIKIMEDIA-RESEARCH.md` explains each one, and `python eval/probe_apis.py` checks that they all still answer.
 
 ---
 
 ## Running it locally
 
-**Backend** (Flask, serves on `:5000`; see the wiki's Getting Started page for env vars):
+**Backend** (Flask, serves on `:5000`; see [Getting Started](wiki/Getting-Started.md) for env vars):
 
 ```bash
-cd backend
-pip install -r requirements.txt
-python app.py
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+cd backend && python app.py
 ```
 
 **Frontend** (Vite dev server, expects the backend running on `:5000`):
@@ -73,6 +84,15 @@ cd frontend
 npm install
 npm run dev
 ```
+
+**Tests and lint** (also run by CI on every pull request):
+
+```bash
+pytest && ruff check .
+cd frontend && npm test
+```
+
+**Production:** `docker build -t compass . && docker run -p 8000:8000 -v compass-data:/data compass` serves the API and the app together. See [Getting Started](wiki/Getting-Started.md#production) for gunicorn and proxy settings.
 
 ---
 
@@ -86,5 +106,5 @@ Full developer documentation is available in our [GitHub Wiki](https://github.co
 - [API Reference](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/API-Reference) — request/response shapes for every endpoint
 - [Known Issues and Limitations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Known-Issues-and-Limitations) — what's approximate or fragile
 
-Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Commons & Wikidata](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Contribute), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends).
+Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Commons & Wikidata](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Contribute), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends), [Stats & feedback](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Stats-and-Feedback), [Live alerts](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Live-Alerts), [Events](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Events).
 

@@ -32,7 +32,7 @@ Compass is meant for **any** Wikimedia editor, not only Kerala or India. The coh
 | `verify.py` | Spot-checks: `pageviews`, `tags`, `shape`, `sitelinks`, `search`, `newcomers` |
 | `digest.py` | Readable per-user dump you use when judging relevance |
 | `metrics.py` | Automated cohort metrics, printed as tables and optionally saved as JSON |
-| `probe_apis.py` | Re-verifies all 36 external APIs that [`../WIKIMEDIA-RESEARCH.md`](../WIKIMEDIA-RESEARCH.md) relies on (PASS/FAIL) |
+| `probe_apis.py` | Re-verifies all 41 external APIs that [`../WIKIMEDIA-RESEARCH.md`](../WIKIMEDIA-RESEARCH.md) relies on (PASS/FAIL) |
 | `cohort.md` | The standard test cohort and how to refresh it |
 | `baseline/` | Committed metrics from past runs, for comparing runs over time |
 | `runs/` | Raw outputs, **git-ignored** (≈9 MB per run) |

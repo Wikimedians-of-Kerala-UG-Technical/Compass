@@ -36,7 +36,7 @@ flowchart TD
 
 ## Topics
 
-Each edited article has topic weights, e.g. `Culture.Media.Films|996`. Compass sums them over the edited articles and divides by the article count, giving a share. Topics with ≥ 5% share are kept, and regional topics (`Geography.Regions.*`) are reported separately as `regions`. A topic's `slug` (e.g. `films`, `medicine-and-health`) works directly as CirrusSearch's `articletopic:` keyword.
+Each edited article has topic weights, e.g. `Culture.Media.Films|996`. Compass sums them over the edited articles, each weighted by `article_weight`: `1 + log2(edits on it) + 0.5 × log10(1 + bytes added / 100)`. Articles the editor keeps returning to and articles they wrote a lot of count for more than one-off fixes. The weighted sum divided by the total weight gives a share. Topics with ≥ 5% share are kept, and regional topics (`Geography.Regions.*`) are reported separately as `regions`. A topic's `slug` (e.g. `films`, `medicine-and-health`) works directly as CirrusSearch's `articletopic:` keyword.
 
 Examples (October 2026):
 
