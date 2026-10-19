@@ -17,11 +17,20 @@ There are no accounts and nothing to sign up for. It reads public contributions 
 
 ---
 
-## How Compass started
+## Behind Compass
 
-Compass began as an idea by Netha Hussain: a tool that looks at what an editor has already done and suggests what they could work on next, instead of handing everyone the same maintenance lists. Her first version was a single page that ran in the browser and scored tasks from an editor's recent edits; it is kept in `legacy/`.
+Compass began as [WikiTask Pro](https://github.com/nethahussain/wikitask-pro), created by [Netha Hussain](https://github.com/nethahussain). The original prototype ran entirely in the browser, with no backend or dependencies (preserved in [`legacy/`](legacy/README.md)).
+
 
 The technical team of the Wikimedians of Kerala User Group then built that idea into what Compass is now: a backend that works on any language Wikipedia and reads Wikipedia's own topic and country labels, tasks ranked by signals that each card explains, and the features listed below.
+
+- [Netha Hussain](https://github.com/nethahussain)
+- [Akash A](https://github.com/akashanil-dev)
+- [Albin Jojo](https://github.com/albinjojo)
+- [Edson Edwin Ninan](https://github.com/Edson-Edwin)
+- [Mathews](https://github.com/MatthewsM2)
+
+See the [GitHub contributors page](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/graphs/contributors) for contribution activity.
 
 ---
 
