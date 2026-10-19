@@ -31,7 +31,7 @@ There are no accounts and nothing to sign up for. It reads public contributions 
 10. **Live alerts.** A notification when someone edits or tags one of their articles, straight from Wikimedia's EventStreams.
 11. **Events.** Paste an edit-a-thon from Wikimedia's Event Registration and its worklist is ordered for you. Signup and progress stay on the official event page.
 
-Newcomers (under 200 edits) get Wikipedia's guided link and image tasks. Monolingual editors get important articles missing in their language.
+Newcomers (under 200 edits) get Wikipedia's guided link and image tasks. Monolingual editors get important articles missing in their language. Logging in with a Wikimedia account (optional) adds the watchlist to Revisit and the topics chosen on Special:Homepage.
 
 ---
 
@@ -40,7 +40,7 @@ Newcomers (under 200 edits) get Wikipedia's guided link and image tasks. Monolin
 ```
 frontend/   Vue 3 + Vite + Pinia + vue-router + vue-i18n + Wikimedia Codex (light and dark)
 backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, TTL caches (memory + SQLite),
-            a small SQLite store for task feedback; tests in backend/tests
+            a small SQLite store for feedback and logins; tests in backend/tests
 eval/       Reproducible evaluation harness (see eval/README.md and EVALUATION.md)
 legacy/     The original single-file prototype (inactive)
 ```
@@ -59,9 +59,10 @@ legacy/     The original single-file prototype (inactive)
 | `GET /api/article/<title>/guide` | Paragraph-level analysis |
 | `GET /api/article/<title>/external-references` | Sources (journals, books, archives) with citation templates |
 | `GET /api/stats/<username>` | Streak, last 30 days, readers reached |
-| `POST /api/feedback`, `GET`/`DELETE /api/feedback/<username>` | Task votes (and undo), and which voted articles were then edited |
-| `GET /api/alerts/<username>/stream` | Live alerts (server-sent events) |
+| `POST /api/feedback`, `GET`/`DELETE /api/feedback/<username>` | Task votes (the editor's own, logged in), and which voted articles were then edited |
+| `GET /api/alerts/<username>/stream` | Live alerts on your own articles, logged in (server-sent events) |
 | `/api/events…` | An Event Registration worklist, ranked for one editor |
+| `/api/auth/…`, `/api/me/…` | Optional Wikimedia login; watchlist Revisit; Homepage tasks |
 
 Data sources: MediaWiki Action and REST APIs on any wiki, Wikidata and its Query Service, Commons, Pageviews, EventStreams, Lift Wing, Content Translation, Citoid, PubMed, OpenAlex, CrossRef, Open Library and the Internet Archive. `WIKIMEDIA-RESEARCH.md` explains each one, and `python eval/probe_apis.py` checks that they all still answer.
 
@@ -92,7 +93,7 @@ pytest && ruff check .
 cd frontend && npm test
 ```
 
-**Production:** `docker build -t compass . && docker run -p 8000:8000 -v compass-data:/data compass` serves the API and the app together. See [Getting Started](wiki/Getting-Started.md#production) for gunicorn and proxy settings.
+**Production:** `docker build -t compass . && docker run -p 8000:8000 -v compass-data:/data compass` serves the API and the app together. See [Getting Started](wiki/Getting-Started.md#production) for gunicorn, login and proxy settings.
 
 ---
 

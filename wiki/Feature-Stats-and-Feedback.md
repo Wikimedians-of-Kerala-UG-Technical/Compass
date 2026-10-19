@@ -33,4 +33,4 @@ python eval/learn_weights.py --db backend/.data/compass.db
 
 Fits a logistic regression (positives: `up`, `done` or edited; negatives: `down`, `dismiss`), holds out 20% to compare accuracy with the current weights, and prints the fitted weights rescaled to the same total as `WEIGHTS` in `task_service.py`. It changes nothing by itself and refuses to run on fewer than 100 mixed rows.
 
-Votes need no login, so anyone can vote on any editor's tasks. Use the fitted weights as a hypothesis, and confirm them with the evaluation in `eval/README.md`.
+Only the editor's own votes are stored: voting, reading votes and undoing need the editor logged in with their Wikimedia account (`403` otherwise). On someone else's dashboard, votes are kept in the visitor's browser (`localStorage`, `compass-votes:<wiki>:<user>`) and never change that editor's list, their stats or the training data. Votes are private: `/api/tasks` only applies the hidden list for the owner, and `/api/stats` returns `compass: null` to anyone else. Use the fitted weights as a hypothesis, and confirm them with the evaluation in `eval/README.md`.

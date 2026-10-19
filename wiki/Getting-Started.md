@@ -6,7 +6,7 @@
 - **Node.js 20+**
 - An internet connection: everything is fetched live from Wikimedia APIs
 
-No accounts or API keys are needed.
+No accounts or API keys are needed. Login with a Wikimedia account is optional (see below).
 
 ## Run it
 
@@ -25,9 +25,9 @@ Dependencies are pinned in `backend/requirements.txt`: `flask`, `flask-cors`, `r
 |---|---|---|
 | `FLASK_DEBUG` | off | `1` for the auto-reloader and debugger |
 | `COMPASS_HOST` / `COMPASS_PORT` | `127.0.0.1` / `5000` | Bind address for `python app.py` |
-| `COMPASS_CORS_ORIGINS` | the Vite dev and preview servers | Comma-separated allowed origins; `*` for a public read-only API |
+| `COMPASS_CORS_ORIGINS` | the Vite dev and preview servers | Comma-separated allowed origins; `*` for a public read-only API (login then can't work cross-origin) |
 | `COMPASS_CACHE_PATH` | `backend/.cache/compass.sqlite3` | Disk cache shared by restarts and workers. Empty = memory only. Delete the file to start cold |
-| `COMPASS_DB_PATH` | `backend/.data/compass.db` | Compass's own data: task feedback. Back this one up |
+| `COMPASS_DB_PATH` | `backend/.data/compass.db` | Compass's own data: task feedback and login sessions. Back this one up |
 | `COMPASS_RATE_LIMIT` | `120/minute` | Per-client limit on `/api/*` (per worker). `0` turns it off |
 | `COMPASS_TRUST_PROXY` | off | `1` behind a reverse proxy, so the rate limit sees real client addresses |
 | `COMPASS_USER_AGENT` | `Compass/2.0 (repo URL)` | Add a contact address when you deploy ([User-Agent policy](https://meta.wikimedia.org/wiki/User-Agent_policy)) |
@@ -35,6 +35,10 @@ Dependencies are pinned in `backend/requirements.txt`: `flask`, `flask-cors`, `r
 | `COMPASS_LOG_LEVEL` | `INFO` | Python log level |
 | `SEMANTIC_SCHOLAR_API_KEY` | unset | Enables Semantic Scholar in Sources |
 | `GOOGLE_BOOKS_API_KEY` | unset | Enables Google Books in Sources (the shared anonymous quota is always used up) |
+| `COMPASS_OAUTH_CLIENT_ID` / `COMPASS_OAUTH_CLIENT_SECRET` | unset | Enable "Log in" (see below) |
+| `COMPASS_OAUTH_CALLBACK` | `http://127.0.0.1:5000/api/auth/callback` | Must match the consumer's registered callback |
+| `COMPASS_FRONTEND_URL` | unset | Where login returns to by default; also allowed as a return address |
+| `COMPASS_SECRET_KEY` | random per process | Signs the login state cookie. Required with login and more than one worker |
 
 ### Frontend (Vite on `:5173`)
 
@@ -55,6 +59,16 @@ cd frontend && npm test      # store, router sync and i18n key coverage
 ```
 
 CI (`.github/workflows/ci.yml`) runs all three plus `npm run build` on every PR. `probe-apis.yml` runs `eval/probe_apis.py` nightly, so an upstream API change shows up as a failed run.
+
+## Optional: login with a Wikimedia account
+
+Login adds the editor's watchlist to Revisit and, for newcomers, Growth's task list for the topics they chose on Special:Homepage. Everything else works without it.
+
+1. Propose an OAuth 2.0 consumer at [Special:OAuthConsumerRegistration/propose/oauth2](https://meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose/oauth2): confidential client, grants "Basic rights" and "View your watchlist", callback `https://<your host>/api/auth/callback`.
+2. Set `COMPASS_OAUTH_CLIENT_ID`, `COMPASS_OAUTH_CLIENT_SECRET`, `COMPASS_OAUTH_CALLBACK`, `COMPASS_FRONTEND_URL` and `COMPASS_SECRET_KEY`.
+3. Serve the frontend and backend from the same site (the Docker image does), or list the frontend in `COMPASS_CORS_ORIGINS`: the session cookie is `SameSite=Lax`.
+
+Tokens stay on the server, in `COMPASS_DB_PATH`; the browser only holds an opaque session id.
 
 ## What to expect
 

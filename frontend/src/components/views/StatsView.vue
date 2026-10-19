@@ -103,7 +103,7 @@ const summary = computed(() => {
         </div>
       </div>
 
-      <div class="panel">
+      <div v-if="s.compass" class="panel">
         <div class="section-title">{{ $t('stats.compass') }}</div>
         <p style="font-size: 0.8125rem">{{ summary }}</p>
       </div>

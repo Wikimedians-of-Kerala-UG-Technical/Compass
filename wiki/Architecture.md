@@ -47,7 +47,7 @@ flowchart TB
 | `wsgi.py`, `gunicorn.conf.py` | Production entry point and threaded-worker settings. |
 | `warm.py` | Pre-builds the cached dashboard for given usernames (cron). |
 | `services/wiki.py` | The HTTP client: `api(dbname, params, post, token)`, `api_pages` (50-title batches over POST), `search`, `get_json`/`post_json`, host and URL helpers, `normalize_username`, `UserError`, and `TTLCache` (thread-safe, with per-key compute locks that are freed after use; named caches are also written to SQLite as tagged JSON). |
-| `services/store.py` | Compass's own SQLite data (`COMPASS_DB_PATH`): task feedback. Never purged. |
+| `services/store.py` | Compass's own SQLite data (`COMPASS_DB_PATH`): feedback and login sessions. Never purged. |
 | `services/ratelimit.py` | Sliding-window limit per client address, per process. |
 | `services/signals.py` | Per-article signals from `prop=cirrusdoc|pageassessments|info`: ML topics and country, Growth recommendations, popularity, incoming links, size, coordinates, categories, templates, quality class, protection. Cached 24 h. |
 | `services/maintenance.py` | Maintenance issues on any wiki. English tracking categories and templates are mapped to local names through interlanguage links. `issues_of(sig)` and `search_filter(key)`. |
@@ -57,6 +57,7 @@ flowchart TB
 | `services/stats_service.py` | Streak, last-30-day activity and readers reached, from live contributions. |
 | `services/event_service.py` | Events: resolve an Event Registration event, read its worklist and participants, rank the worklist for one editor. |
 | `services/alerts_service.py` | `AlertHub`: one shared EventStreams connection, routing edits and tracking-category changes to subscriber queues. |
+| `services/auth_service.py` | Optional OAuth 2 login: token exchange and refresh, sessions, watchlist, Special:Homepage choices, `list=growthtasks`. |
 | `services/geo_service.py` | Wikidata P131 hierarchy walk with ranks and P576 handling; focus selection. |
 | `services/revisit_service.py` | Tags on the editor's own articles, with dates; new since last edit; revert risk of the latest edit. |
 | `services/discover_service.py` | CX recommendation API (articles, sections), WDQS region gaps, and "missing in your language" for monolingual editors (CirrusSearch on enwiki + langlinks). |

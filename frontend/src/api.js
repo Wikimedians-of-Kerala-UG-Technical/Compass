@@ -72,8 +72,10 @@ export function getGeo(username, wiki) {
   return get('/api/geo/' + u(username), { wiki }, 'Geo')
 }
 
-export function getRevisit(username, wiki) {
-  return get('/api/revisit/' + u(username), { wiki }, 'Revisit')
+export function getRevisit(username, wiki, { watchlist } = {}) {
+  return watchlist
+    ? get('/api/me/revisit', { wiki }, 'Revisit')
+    : get('/api/revisit/' + u(username), { wiki }, 'Revisit')
 }
 
 export function getContribute(username, { wiki, place } = {}) {
@@ -108,6 +110,23 @@ export function clearFeedback(username, wiki, title) {
 
 export function getFeedback(username, wiki) {
   return get('/api/feedback/' + u(username), { wiki }, 'Feedback')
+}
+
+// Login (optional; the server reports whether it's configured).
+export function getAuthStatus() {
+  return get('/api/auth/status', null, 'Login')
+}
+
+export function loginUrl(returnTo) {
+  return API_BASE + '/api/auth/login' + query({ return: returnTo })
+}
+
+export function logout() {
+  return request('POST', '/api/auth/logout', { label: 'Logout' })
+}
+
+export function getNewcomerTasks(wiki) {
+  return get('/api/me/newcomer-tasks', { wiki }, 'Newcomer tasks')
 }
 
 // Live alerts (server-sent events). Returns the EventSource; the caller closes it.

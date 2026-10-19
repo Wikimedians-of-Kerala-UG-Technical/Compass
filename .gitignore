@@ -25,7 +25,7 @@ eval/runs/
 # disk cache (see COMPASS_CACHE_PATH)
 backend/.cache/
 
-# Compass's own data: task feedback (see COMPASS_DB_PATH)
+# Compass's own data: feedback, login sessions (see COMPASS_DB_PATH)
 backend/.data/
 
 # personal task list

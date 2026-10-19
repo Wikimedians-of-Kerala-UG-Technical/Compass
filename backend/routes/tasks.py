@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from routes.auth import is_owner
 from services import feedback_service
 from services.profile_service import build_profile
 from services.task_service import find_tasks
@@ -18,7 +19,10 @@ def tasks(username):
         place = {'name': request.args.get('place') or 'your area', 'coord': {'lat': lat, 'lon': lon}}
     result = find_tasks(profile, place)
     # Tasks the editor voted down, dismissed or finished don't come back. They're returned
-    # separately so the editor can restore one (undo).
+    # separately so the editor can restore one (undo). Votes are private, so a visitor gets
+    # the plain ranking.
+    if not is_owner(profile['username']):
+        return jsonify(result)
     hidden = feedback_service.hidden_titles(profile['username'], profile['homeWiki'])
     if hidden:
         kept = [t for t in result['tasks'] if t['title'] not in hidden]

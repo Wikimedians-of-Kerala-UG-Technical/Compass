@@ -20,6 +20,12 @@ def create_app():
                         format='%(asctime)s %(levelname)s %(name)s: %(message)s')
     app = Flask(__name__)
     app.json.ensure_ascii = False  # Malayalam, Tamil… titles stay readable in responses
+    # Signs the short-lived OAuth state cookie. Set it when login is enabled and more
+    # than one worker runs, or a login started on one worker fails on another.
+    app.secret_key = os.environ.get('COMPASS_SECRET_KEY') or os.urandom(32)
+    app.config.update(SESSION_COOKIE_SAMESITE='Lax', SESSION_COOKIE_HTTPONLY=True)
+    if os.environ.get('COMPASS_OAUTH_CLIENT_ID') and not os.environ.get('COMPASS_SECRET_KEY'):
+        log.warning('COMPASS_OAUTH_CLIENT_ID is set but COMPASS_SECRET_KEY is not; logins only work with one worker')
     CORS(app, origins=os.environ.get('COMPASS_CORS_ORIGINS', DEFAULT_ORIGINS).split(','),
          supports_credentials=True)
     if os.environ.get('COMPASS_TRUST_PROXY') == '1':

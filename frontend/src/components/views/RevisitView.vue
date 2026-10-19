@@ -44,6 +44,7 @@ function diffUrl(task) {
     <h1 class="section-heading">{{ $t('revisit.title') }}</h1>
     <p class="section-sub">
       {{ $t('revisit.sub') }}
+      <template v-if="store.revisitWatchlist"> {{ $t('revisit.withWatchlist', { n: store.revisitWatchlist }) }}</template>
     </p>
 
     <LoadingState v-if="store.revisitLoading && !store.revisit.length" :title="$t('revisit.loading')" :sub="$t('revisit.loadingSub')" />

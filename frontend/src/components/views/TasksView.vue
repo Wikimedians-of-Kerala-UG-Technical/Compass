@@ -33,17 +33,20 @@ watch(() => store.lastHidden, (h) => {
 })
 onBeforeUnmount(() => clearTimeout(undoTimer))
 
+// On someone else's dashboard a vote only marks the task in this browser, so the
+// tooltips don't promise anything about their list or what Compass learns.
 function voteTitle(task, v) {
-  return store.feedback[task.title] === v.action ? `${t(v.label)} ${t('tasks.clickToUndo')}` : t(v.label)
+  const label = t(store.isSelf ? v.label : v.visitor)
+  return store.feedback[task.title] === v.action ? `${label} ${t('tasks.clickToUndo')}` : label
 }
 const refiningWithGeo = computed(() => store.geoLoading && !store.tasksLoading)
 const guided = computed(() => store.tasksMeta?.mode === 'guided')
 
 const votes = [
-  { action: 'up', icon: iconThumbsUp, label: 'tasks.good' },
-  { action: 'done', icon: cdxIconCheck, label: 'tasks.done' },
-  { action: 'down', icon: iconThumbsDown, label: 'tasks.bad' },
-  { action: 'dismiss', icon: cdxIconEyeClosed, label: 'tasks.dismiss' },
+  { action: 'up', icon: iconThumbsUp, label: 'tasks.good', visitor: 'tasks.goodVisitor' },
+  { action: 'done', icon: cdxIconCheck, label: 'tasks.done', visitor: 'tasks.doneVisitor' },
+  { action: 'down', icon: iconThumbsDown, label: 'tasks.bad', visitor: 'tasks.badVisitor' },
+  { action: 'dismiss', icon: cdxIconEyeClosed, label: 'tasks.dismiss', visitor: 'tasks.dismissVisitor' },
 ]
 
 function effortStatus(effort) {
@@ -57,6 +60,7 @@ function effortStatus(effort) {
     <p class="section-sub">{{ $t('tasks.sub', { wiki: `${store.profile?.homeLang}.wikipedia` }) }}</p>
 
     <CdxMessage v-if="guided" type="notice" style="margin-bottom: 12px">{{ $t('tasks.guided') }}</CdxMessage>
+    <p v-if="!store.isSelf && store.profile" class="note-bar">{{ $t('tasks.visitorVotes', { name: store.profile.username }) }}</p>
 
     <div v-if="refiningWithGeo" class="note-bar">{{ $t('tasks.geoRefining') }}</div>
 
@@ -67,6 +71,22 @@ function effortStatus(effort) {
     <template v-else>
       <CdxMessage v-if="store.tasksMeta?.partial" type="warning" style="margin-bottom: 12px">{{ $t('app.partial') }}</CdxMessage>
       <CdxMessage v-if="store.feedbackError" type="error" style="margin-bottom: 12px">{{ store.feedbackError }}</CdxMessage>
+
+      <template v-if="store.newcomerTasks.length">
+        <div class="section-title">{{ $t('tasks.homepage') }}</div>
+        <p class="section-sub">{{ $t('tasks.homepageHint') }}</p>
+        <div v-for="n in store.newcomerTasks" :key="'h' + n.title" class="item-card">
+          <div class="item-card__head">
+            <span class="item-card__title"><a :href="n.url" target="_blank" rel="noopener">{{ n.title }}</a></span>
+            <CdxInfoChip status="success">{{ n.type }}</CdxInfoChip>
+          </div>
+          <div class="item-card__actions">
+            <a :href="n.editUrl" target="_blank" rel="noopener" class="cdx-button cdx-button--action-progressive cdx-button--weight-primary">
+              {{ $t('app.editOnWikipedia') }}
+            </a>
+          </div>
+        </div>
+      </template>
 
       <CdxToggleButtonGroup v-model="activeFilter" :buttons="filterButtons" style="margin-bottom: 16px" />
 
@@ -126,7 +146,7 @@ function effortStatus(effort) {
             </button>
           </span>
         </div>
-        <div v-if="store.feedback[task.title] === 'up'" class="item-card__reason" style="margin-top: 4px">{{ $t('tasks.thanks') }}</div>
+        <div v-if="store.feedback[task.title] === 'up' && store.isSelf" class="item-card__reason" style="margin-top: 4px">{{ $t('tasks.thanks') }}</div>
       </div>
     </template>
 

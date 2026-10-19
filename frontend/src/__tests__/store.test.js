@@ -14,12 +14,24 @@ vi.mock('../api.js', () => ({
   getContribute: vi.fn(),
   getStats: vi.fn(),
   getFeedback: vi.fn(),
+  getAuthStatus: vi.fn(),
+  getNewcomerTasks: vi.fn(),
+  logout: vi.fn(),
   openAlerts: vi.fn(),
 }))
 
 const { useAppStore, urlName } = await import('../stores/appStore.js')
 const { router } = await import('../router.js')
 const api = await import('../api.js')
+
+// The editor themselves, logged in: votes go to the server.
+function ownerOf(name) {
+  const store = useAppStore()
+  store.username = name
+  store.profile = { username: name, homeWiki: 'enwiki' }
+  store.auth = { enabled: true, username: name }
+  return store
+}
 
 describe('app store', () => {
   beforeEach(() => {
@@ -50,8 +62,7 @@ describe('app store', () => {
   })
 
   it('hides voted-down tasks and rolls back a failed vote', async () => {
-    const store = useAppStore()
-    store.username = 'Tester'
+    const store = ownerOf('Tester')
     store.tasks = [{ title: 'A', wiki: 'enwiki' }, { title: 'B', wiki: 'enwiki' }]
     await store.vote(store.tasks[0], 'down')
     expect(store.visibleTasks.map((t) => t.title)).toEqual(['B'])
@@ -82,8 +93,7 @@ describe('app store', () => {
   })
 
   it('undoes votes: clicking again, the undo bar and restoring a server-hidden task', async () => {
-    const store = useAppStore()
-    store.username = 'Tester'
+    const store = ownerOf('Tester')
     store.tasks = [{ title: 'A', wiki: 'enwiki' }]
     store.hiddenTasks = [{ title: 'B', wiki: 'enwiki' }]
     store.feedback = { B: 'down' }
@@ -109,6 +119,25 @@ describe('app store', () => {
     await store.unvote(store.tasks[0])
     expect(store.feedback.A).toBe('dismiss') // rolled back
     expect(store.feedbackError).toBeTruthy()
+  })
+
+  it('keeps a visitor\'s votes in this browser only', async () => {
+    const store = useAppStore()
+    store.username = 'Tester'
+    store.profile = { username: 'Tester', homeWiki: 'enwiki' }
+    store.auth = { enabled: true, username: 'Someone else' }
+    store.tasks = [{ title: 'A', wiki: 'enwiki' }, { title: 'B', wiki: 'enwiki' }]
+    await store.vote(store.tasks[0], 'down')
+    expect(store.visibleTasks.map((t) => t.title)).toEqual(['B'])
+    expect(api.sendFeedback).not.toHaveBeenCalled()
+    expect(JSON.parse(localStorage.getItem('compass-votes:enwiki:Tester'))).toEqual({ A: 'down' })
+    store.feedback = {}
+    store.loadFeedback() // a reload reads them back from this browser, not the server
+    expect(store.feedback).toEqual({ A: 'down' })
+    expect(api.getFeedback).not.toHaveBeenCalled()
+    await store.unvote(store.tasks[0])
+    expect(api.clearFeedback).not.toHaveBeenCalled()
+    expect(JSON.parse(localStorage.getItem('compass-votes:enwiki:Tester'))).toEqual({})
   })
 
   it('offers a correctly capitalised username when the account is missing', async () => {

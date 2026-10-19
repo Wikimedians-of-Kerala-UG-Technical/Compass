@@ -53,6 +53,7 @@ function submit() {
       </div>
 
       <RouterLink class="onboard__event" :to="{ name: 'event' }">{{ $t('onboard.eventLink') }}</RouterLink>
+      <RouterLink class="onboard__privacy" :to="{ name: 'privacy' }">{{ $t('privacy.link') }}</RouterLink>
     </div>
   </div>
 </template>

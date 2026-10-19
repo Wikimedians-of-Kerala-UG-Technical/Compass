@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { CdxInfoChip, CdxIcon } from '@wikimedia/codex'
 import {
@@ -86,9 +87,15 @@ function alertTime(a) {
 
 <template>
   <div>
-    <h1 class="section-heading">{{ $t('overview.welcome', { name: profile.username }) }}</h1>
+    <h1 class="section-heading">
+      {{ store.isSelf ? $t('overview.welcome', { name: profile.username }) : $t('overview.dashboardOf', { name: profile.username }) }}
+    </h1>
+    <p v-if="!store.isSelf" class="note-bar public-note">
+      {{ $t('overview.publicView', { name: profile.username }) }}
+      <RouterLink :to="{ name: 'privacy' }">{{ $t('privacy.link') }}</RouterLink>
+    </p>
     <p class="section-sub">
-      {{ $t('overview.builtFrom', { count: profile.editsAnalysed.toLocaleString(), wiki: `${profile.homeLang}.wikipedia` }) }}
+      {{ $t(store.isSelf ? 'overview.builtFrom' : 'overview.builtFromOther', { count: profile.editsAnalysed.toLocaleString(), wiki: `${profile.homeLang}.wikipedia` }) }}
       <template v-if="wikis.length > 1">
         {{ $t('overview.switchWiki') }}
         <a

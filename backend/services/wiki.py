@@ -120,15 +120,18 @@ def _request(method, url, retries=4, **kwargs):
     raise RuntimeError(f'Request to {url} failed after {retries} attempts: {last}')
 
 
-def api(dbname, params, post=False):
+def api(dbname, params, post=False, token=None):
     """MediaWiki Action API call on any wiki. Uses POST for batches (long titles lists
     in non-Latin scripts overflow GET URLs). Raises on API errors. Compass only reads
     and serves a waiting user, so it doesn't send `maxlag` (that's for bots), but it
-    still backs off if the API reports lag."""
+    still backs off if the API reports lag. `token` is a logged-in user's OAuth 2 access
+    token (see auth_service); never cache what such a call returns in a shared cache."""
     params = {**params, 'format': 'json', 'formatversion': 2}
     url = f'https://{host(dbname)}/w/api.php'
+    headers = {'Authorization': f'Bearer {token}'} if token else None
     for _ in range(3):
-        r = _request('POST', url, data=params) if post else _request('GET', url, params=params)
+        r = (_request('POST', url, data=params, headers=headers) if post
+             else _request('GET', url, params=params, headers=headers))
         r.raise_for_status()
         data = r.json()
         err = data.get('error')

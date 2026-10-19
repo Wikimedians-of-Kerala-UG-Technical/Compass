@@ -56,7 +56,7 @@ What's approximate or missing in Compass. Read this before trusting an output or
 - The weights (`WEIGHTS` in `task_service.py`: 0.30/0.20/0.15/0.15/0.10/0.10) are still hand-set. Task feedback is now stored with each card's signals and `eval/learn_weights.py` fits weights to it, but it needs a few hundred mixed votes before the result means anything, and votes need no login, so anyone can vote on anyone's tasks. Treat fitted weights as a suggestion to test with the evaluation, not a replacement.
 - "Biography" and "Media" are broad topics. For editors whose top topic is broad, the category and similar-article scopes matter most.
 - Topics now weigh bytes added as well as edit count (`article_weight` in `profile_service.py`), to help editors whose recent edits are broad (Cwmhiraeth). The effect hasn't been re-measured with the evaluation harness yet.
-- Newcomers (< 200 edits) get Growth's guided tasks only. Compass can't read the topics they picked on Special:Homepage (user preferences are private), so it uses their detected topics plus the whole wiki.
+- Newcomers (< 200 edits) get Growth's guided tasks only. Without login, Compass can't read the topics they picked on Special:Homepage (user preferences are private), so it uses their detected topics plus the whole wiki.
 
 ### Sources
 - Book catalogues and Internet Archive match loosely. Their results are kept only when the title shares words with the article title, which drops noise but also drops relevant books with different titles. Google Books needs `GOOGLE_BOOKS_API_KEY`: the anonymous quota is always exhausted.
@@ -83,6 +83,7 @@ What's approximate or missing in Compass. Read this before trusting an output or
 
 ### Interface
 - Only English messages exist so far. The interface is ready for translation (`frontend/src/locales/en.json`), but translations, and a translatewiki.net setup, still need people who speak the languages.
+- Login (OAuth 2) is implemented but has only been tested without a registered consumer. The first real deployment should check the full flow, especially the `list=growthtasks` response shape, which can't be read anonymously.
 
 ### Not built yet
 - Toolforge deployment itself (a Dockerfile, a `Procfile` and gunicorn settings are ready).

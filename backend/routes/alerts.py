@@ -14,12 +14,22 @@ KEEPALIVE_SECS = 25
 @bp.route('/api/alerts/<username>/stream')
 def stream(username):
     """Server-sent events for the editor's articles (created, heavily edited and the
-    200 they edited most recently). Each event is a
+    200 they edited most recently, plus the watchlist when logged in). Each event is a
     JSON alert from alerts_service; a comment line every 25 s keeps proxies from
-    closing the connection. Needs a threaded server (gunicorn --threads)."""
+    closing the connection. Needs a threaded server (gunicorn --threads). Only for the
+    editor themselves: a live feed of someone else's articles would read as monitoring."""
+    from routes.auth import current_user, require_owner
+    require_owner(username)
     profile = build_profile(username, request.args.get('wiki') or None)
     titles = set(profile.get('createdArticles') or []) | {h['title'] for h in profile.get('heavilyEdited') or []}
     titles |= set(profile.get('_editedTitles') or [])
+    user = current_user()
+    if user:
+        from services.auth_service import watchlist
+        try:
+            titles |= set(watchlist(profile['homeWiki'], user['token']))
+        except RuntimeError:
+            pass
     sub_id, q = hub.subscribe(profile['username'], profile['homeWiki'], titles)
 
     def events():

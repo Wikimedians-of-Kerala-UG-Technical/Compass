@@ -10,7 +10,7 @@ Answers: *which of my own articles need me again?* The editor already knows thes
 
 ## Which articles
 
-The editor's 50 most recent **creations** (`ucshow=new`, so exact) plus their 15 most-edited articles (3+ edits), all on the home wiki. The backend reads them from the cached profile, so the frontend no longer sends the lists as JSON.
+The editor's 50 most recent **creations** (`ucshow=new`, so exact) plus their 15 most-edited articles (3+ edits), all on the home wiki. The backend reads them from the cached profile, so the frontend no longer sends the lists as JSON. When the editor is logged in with their Wikimedia account, up to 300 articles from their **watchlist** on that wiki are checked as well (`/api/me/revisit`, `source: "watched"`).
 
 ## What is checked
 

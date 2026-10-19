@@ -6,11 +6,13 @@
 
 Answers: *has someone just edited or tagged one of my articles?*
 
+Only on your own dashboard, logged in with your Wikimedia account: a live feed of someone else's articles would read as monitoring them. The bell is hidden on other people's dashboards, and the stream returns `403`.
+
 ---
 
 ## How it works
 
-1. The browser opens an `EventSource` to the stream endpoint. The backend builds the editor's watch set: articles they created, heavily edited, or edited among their last 200.
+1. The browser opens an `EventSource` to the stream endpoint. The backend builds the editor's watch set: articles they created, heavily edited, or edited among their last 200, plus their watchlist when they're logged in.
 2. `AlertHub` keeps **one** connection to Wikimedia's public `recentchange` stream (all wikis, ~50 events a second) for as long as anyone is subscribed, and reconnects with `Last-Event-ID` if it drops.
 3. Each event is matched by `(wiki, title)`:
    - `edit` / `new` in the main namespace by someone other than the editor → an **edit** alert with a diff link.

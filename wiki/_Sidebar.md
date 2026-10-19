@@ -22,6 +22,7 @@
 - [[Feature-Stats-and-Feedback]]
 - [[Feature-Live-Alerts]]
 - [[Feature-Events]]
+- [[Privacy]]
 
 **Maintenance**
 - [[Known-Issues-and-Limitations]]

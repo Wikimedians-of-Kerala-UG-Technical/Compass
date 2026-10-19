@@ -10,6 +10,8 @@ import {
   cdxIconLightbulb,
   cdxIconSearch,
   cdxIconReload,
+  cdxIconLogOut,
+  cdxIconLogIn,
   cdxIconLogoWikimediaCommons,
   cdxIconChart,
   cdxIconBell,
@@ -19,6 +21,7 @@ import {
   cdxIconUserAvatar,
 } from '@wikimedia/codex-icons'
 import { useAppStore } from '../stores/appStore.js'
+import { loginUrl } from '../api.js'
 import { getTheme, setTheme } from '../theme.js'
 import OverviewView from './views/OverviewView.vue'
 import TasksView from './views/TasksView.vue'
@@ -72,6 +75,10 @@ function runSearch() {
   store.searchGuide(q)
   searchValue.value = ''
 }
+
+function login() {
+  window.location.href = loginUrl(window.location.href)
+}
 </script>
 
 <template>
@@ -101,6 +108,7 @@ function runSearch() {
       <div class="shell__user">
         <span class="shell__username">{{ store.username }}<template v-if="store.profile"> · {{ store.profile.homeLang }}.wikipedia</template></span>
         <CdxButton
+          v-if="store.isSelf"
           weight="quiet"
           :title="store.alertsOn ? $t('nav.alertsOn') : $t('nav.alertsHint')"
           :aria-label="store.alertsOn ? $t('nav.alertsOn') : $t('nav.alertsOff')"
@@ -120,6 +128,16 @@ function runSearch() {
         >
           <CdxIcon :icon="cdxIconReload" />
         </CdxButton>
+        <template v-if="store.auth.enabled">
+          <CdxButton v-if="store.auth.username" weight="quiet" @click="store.logoutAccount()">
+            <CdxIcon :icon="cdxIconLogOut" />
+            <span class="shell__btn-label">{{ $t('nav.logout', { name: store.auth.username }) }}</span>
+          </CdxButton>
+          <CdxButton v-else weight="quiet" :title="$t('nav.loginHint')" @click="login">
+            <CdxIcon :icon="cdxIconLogIn" />
+            <span class="shell__btn-label">{{ $t('nav.login') }}</span>
+          </CdxButton>
+        </template>
         <CdxButton weight="quiet" action="destructive" :aria-label="$t('nav.newUser')" @click="store.logout()">
           <CdxIcon :icon="cdxIconUserAvatar" class="shell__narrow-only" />
           <span class="shell__btn-label">{{ $t('nav.newUser') }}</span>

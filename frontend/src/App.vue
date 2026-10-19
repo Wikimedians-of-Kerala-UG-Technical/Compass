@@ -14,6 +14,7 @@ const setOffline = () => { offline.value = true }
 onMounted(() => {
   window.addEventListener('online', setOnline)
   window.addEventListener('offline', setOffline)
+  store.loadAuth()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('online', setOnline)

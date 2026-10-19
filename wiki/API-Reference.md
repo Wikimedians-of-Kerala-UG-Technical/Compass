@@ -2,7 +2,7 @@
 
 Base URL in development: `http://127.0.0.1:5000`. The frontend reads it from `VITE_API_BASE`.
 
-Endpoints are `GET` unless marked otherwise, need no login, and return JSON (UTF-8; non-Latin titles are not escaped). Every per-user endpoint accepts an optional `wiki` parameter (a dbname such as `mlwiki`). Without it, the backend uses the editor's **home wiki**, meaning the Wikipedia where they have the most edits.
+Endpoints are `GET` unless marked otherwise, need no login (except `/api/me/*`), and return JSON (UTF-8; non-Latin titles are not escaped). Every per-user endpoint accepts an optional `wiki` parameter (a dbname such as `mlwiki`). Without it, the backend uses the editor's **home wiki**, meaning the Wikipedia where they have the most edits.
 
 ## Endpoint index
 
@@ -22,6 +22,7 @@ Endpoints are `GET` unless marked otherwise, need no login, and return JSON (UTF
 | [`/api/feedback/<username>`](#feedback) | The editor's votes, after checking which articles they then edited | 1 s |
 | [`/api/alerts/<username>/stream`](#apialertsusernamestream) | Live alerts (server-sent events) | stays open |
 | [`/api/events…`](#events) | An Event Registration worklist, ranked for one editor | 1–30 s |
+| [`/api/auth/…`, `/api/me/…`](#login) | Optional Wikimedia login, watchlist Revisit, Homepage tasks | 1–15 s |
 | `/api/health` | `{"ok": true}` for load balancers | instant |
 
 The per-user endpoints share one cached profile. The first call pays for it and the others reuse it, so the dashboard's parallel requests don't fetch contributions several times.
@@ -32,7 +33,8 @@ The per-user endpoints share one cached profile. The first call pays for it and 
 |---|---|---|
 | `200` | Success | The documented payload. `partial: true` means a sub-source failed and the result may be incomplete. |
 | `400` | Malformed request (unknown feedback action, unrecognised event reference…) | `{"error": "…"}` |
-| `403` | An editor who opted out (`User:<name>/Compass-opt-out` on Meta) | `{"error": "…"}` |
+| `401` | `/api/me/*` without a login | `{"error": "…"}` |
+| `403` | Votes or live alerts for someone else's dashboard; an editor who opted out (`User:<name>/Compass-opt-out` on Meta) | `{"error": "…"}` |
 | `404` | No such account, no edits on that wiki, unknown wiki or event, event without a worklist | `{"error": "…"}` |
 | `429` | Over `COMPASS_RATE_LIMIT` | `{"error": "Too many requests…"}` and `Retry-After` |
 | `500` | Upstream or internal failure | `{"error": "Something went wrong (error 1a2b3c4d)…", "errorId": "1a2b3c4d"}`. Details only in the server log, under that id |
@@ -108,7 +110,7 @@ Full detail: [[Feature-Revisit]]
 
 | Field | Notes |
 |---|---|
-| `title`, `url`, `editUrl`, `source` (`created`/`edited`), `editCount` | |
+| `title`, `url`, `editUrl`, `source` (`created`/`edited`/`watched`), `editCount` | |
 | `tags` | `{key, label, since, newSinceYourEdit}`. `check_edit` = latest edit by someone else has revert risk ≥ 0.9 |
 | `yourLastEdit`, `lastEdit` | `lastEdit = {user, timestamp, revid, revertRisk}` |
 | `hasNew`, `weak` | Sorted new-first, weak (stub or suggestion only) last |
@@ -184,7 +186,7 @@ Full detail: [[Feature-Stats-and-Feedback]]. `?wiki=` defaults to the home wiki.
 
 Full detail: [[Feature-Stats-and-Feedback]]
 
-`POST /api/feedback` with JSON `{username, wiki, title, action, type?, scope?, signals?, score?}`, where `action` is `up`, `down`, `done` or `dismiss`. Returns `201 {id, username, wiki, title, action}`. `signals` is the task's own `signals` object; only the six known keys are stored.
+All three need the editor themselves, logged in (`403` for anyone else). `POST /api/feedback` with JSON `{username, wiki, title, action, type?, scope?, signals?, score?}`, where `action` is `up`, `down`, `done` or `dismiss`. Returns `201 {id, username, wiki, title, action}`. `signals` is the task's own `signals` object; only the six known keys are stored.
 
 `GET /api/feedback/<username>?wiki=` first marks votes whose article the editor has edited since (within 60 days), then returns `{wiki, items: [{title, action, type, editedAt}], summary}`.
 
@@ -192,7 +194,7 @@ Full detail: [[Feature-Stats-and-Feedback]]
 
 ## `/api/alerts/<username>/stream`
 
-Full detail: [[Feature-Live-Alerts]]. A `text/event-stream`. The first event is `ready` (`{watching, wiki}`); after that each `alert` event is one of:
+Full detail: [[Feature-Live-Alerts]]. Only for the editor themselves, logged in (`403` otherwise). A `text/event-stream`. The first event is `ready` (`{watching, wiki}`); after that each `alert` event is one of:
 - `{kind: "edit", title, wiki, user, comment, bot, timestamp, url, diffUrl}`: someone else edited one of the editor's articles.
 - `{kind: "tagged" | "untagged", title, wiki, issue, label, user, timestamp, url}`: an article was added to or removed from a tracking category.
 
@@ -207,3 +209,16 @@ Full detail: [[Feature-Events]]
 | `GET /api/events/resolve` | `ref`: an event ID, a `Special:EventDetails` link or an `Event:` page | `{id}` (`400` for anything else) |
 | `GET /api/events/<id>` | | `{id, name, status, starts, ends, timezone, wikis[], topics[], goal, tracksContributions, eventPage, eventPageUrl, detailsUrl, worklist: {dbname: [titles]}, participants[]}` |
 | `GET /api/events/<id>/rank/<username>` | `wiki` (optional) | `{event, username, wiki, wikis: {dbname: count}, profileWiki, items[], toCreate[], total, secs}`. Each item: `{title, wiki, url, editUrl, needs[], meta, reasons[], details[], signals, score}` |
+
+## Login
+
+Only when `COMPASS_OAUTH_CLIENT_ID` and `COMPASS_OAUTH_CLIENT_SECRET` are set (see [[Getting-Started]]).
+
+| Request | Returns |
+|---|---|
+| `GET /api/auth/status` | `{enabled, username}` |
+| `GET /api/auth/login?return=<frontend URL>` | Redirect to Meta's consent page; back to `return` afterwards (only the frontend's own origins are allowed) |
+| `GET /api/auth/callback` | Sets the `compass_session` cookie (HttpOnly, SameSite=Lax) and redirects |
+| `POST /api/auth/logout` | `{ok: true}` |
+| `GET /api/me/revisit?wiki=` | Revisit with the watchlist added: same as `/api/revisit` plus `watchlist` (count) |
+| `GET /api/me/newcomer-tasks?wiki=` | `{wiki, homepage: {topics, taskTypes}, tasks: [{title, type, difficulty, url, editUrl}]}` from `list=growthtasks` |

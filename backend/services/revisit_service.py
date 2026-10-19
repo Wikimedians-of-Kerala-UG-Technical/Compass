@@ -37,13 +37,15 @@ def _revert_risk(dbname, revid):
         return None
 
 
-def find_revisit(profile):
+def find_revisit(profile, watched=None):
+    """`watched`: titles from the editor's watchlist (logged-in only), checked as well."""
     dbname = profile['homeWiki']
     username = profile['username']
     last_edit = profile.get('_lastEdit') or {}
     created = profile.get('createdArticles') or []
     heavy = {h['title']: h for h in profile.get('heavilyEdited') or []}
-    titles = list(dict.fromkeys(created + list(heavy)))
+    watched = list(watched or [])
+    titles = list(dict.fromkeys(created + list(heavy) + watched))
     sigs = article_signals(dbname, titles)
     latest = _latest_revisions(dbname, [t for t in titles if t in sigs])
 
@@ -73,7 +75,7 @@ def find_revisit(profile):
             'wiki': dbname,
             'url': wiki.page_url(dbname, title),
             'editUrl': wiki.edit_url(dbname, title),
-            'source': 'created' if title in created else 'edited',
+            'source': 'created' if title in created else 'edited' if title in heavy else 'watched',
             'editCount': heavy.get(title, {}).get('count'),
             'yourLastEdit': mine,
             'lastEdit': {'user': rev.get('user'), 'timestamp': rev.get('timestamp'), 'revid': rev.get('revid')},
@@ -101,7 +103,9 @@ def find_revisit(profile):
         item['weak'] = not strong
         item['hasNew'] = any(t['newSinceYourEdit'] for t in item['tags'])
         labels = ', '.join(t['label'] for t in item['tags'])
-        who = 'You created this article' if item['source'] == 'created' else f'You edited this {item["editCount"]}×'
+        who = ('You created this article' if item['source'] == 'created'
+               else f'You edited this {item["editCount"]}×' if item['source'] == 'edited'
+               else 'On your watchlist')
         item['reason'] = f'{who} — {labels}'
         out.append(item)
     out.sort(key=lambda i: (not i['hasNew'], i['weak'], -len(i['tags'])))

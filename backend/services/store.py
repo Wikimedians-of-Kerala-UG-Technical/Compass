@@ -1,4 +1,4 @@
-"""Compass's own data: task feedback.
+"""Compass's own data: task feedback and login sessions.
 
 Unlike the caches in wiki.py, nothing here can be fetched again from Wikimedia, so it
 lives in its own SQLite file (COMPASS_DB_PATH) that is safe to back up and never purged.
@@ -26,6 +26,15 @@ CREATE TABLE IF NOT EXISTS feedback (
     edited_at TEXT                 -- set once the editor's edit on the article is seen
 );
 CREATE INDEX IF NOT EXISTS feedback_user ON feedback (username, wiki, created);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    expires REAL NOT NULL,
+    created REAL NOT NULL
+);
 '''
 
 

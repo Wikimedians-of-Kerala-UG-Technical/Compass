@@ -47,13 +47,19 @@
     "searchLabel": "Look up an article",
     "refresh": "Refresh trends and tasks",
     "newUser": "New user",
+    "login": "Log in",
+    "loginHint": "Log in with your Wikimedia account to include your watchlist and Special:Homepage topics",
+    "logout": "Log out {name}",
     "alertsOn": "Live alerts on",
     "alertsOff": "Live alerts off",
     "alertsHint": "Get a notification when someone edits or tags one of your articles"
   },
   "overview": {
     "welcome": "Welcome back, {name}",
+    "dashboardOf": "{name}'s dashboard",
+    "publicView": "Built only from {name}'s public edit history, which anyone can see on Wikipedia.",
     "builtFrom": "Built from your last {count} edits on {wiki}.",
+    "builtFromOther": "Built from their last {count} edits on {wiki}.",
     "switchWiki": "Switch wiki:",
     "editsOn": "Edits on {wiki} · {total} across Wikimedia",
     "created": "Articles created",
@@ -114,12 +120,20 @@
     "bad": "Not for me: removes it from your list, and Compass learns to suggest fewer like it",
     "done": "I did this: removes it from your list and counts it in Your stats",
     "dismiss": "Hide: removes it from your list for now (counted as not wanted)",
+    "goodVisitor": "Good suggestion (kept only in this browser)",
+    "doneVisitor": "Mark as done (kept only in this browser)",
+    "badVisitor": "Not for me (kept only in this browser)",
+    "dismissVisitor": "Hide (kept only in this browser)",
+    "visitorVotes": "You're viewing {name}'s tasks. Your votes here are kept only in this browser: they don't change {name}'s list or what Compass learns.",
     "thanks": "Thanks — this helps Compass learn what suits you.",
-    "voteFailed": "Couldn't save that. Try again in a moment."
+    "voteFailed": "Couldn't save that. Try again in a moment.",
+    "homepage": "From your Special:Homepage topics",
+    "homepageHint": "Growth's suggested edits for the topics you picked on Special:Homepage."
   },
   "revisit": {
     "title": "Revisit",
     "sub": "Articles you created or edited a lot that need attention: new maintenance tags (with dates), a risky-looking latest edit by someone else, or a ready-made suggestion. Problems that appeared after your last edit come first.",
+    "withWatchlist": "Including the {n} articles on your watchlist.",
     "loading": "Checking your articles…",
     "loadingSub": "Reading tags, dates and the latest edit on every article you created or edited a lot.",
     "failed": "Failed to load your articles.",
@@ -276,5 +290,25 @@
     "currentEvents": "Current Events",
     "other": "News",
     "none": "No news data."
+  },
+  "privacy": {
+    "link": "Privacy: what Compass reads and keeps",
+    "back": "← Back to Compass",
+    "title": "Privacy",
+    "intro": "Compass suggests editing tasks from public Wikimedia data. You don't need an account to use it, and it never sees your password.",
+    "reads": "What Compass reads",
+    "readsBody": "Public data only: an editor's public contributions, the pages they edit and public statistics, through Wikimedia's own APIs. Anyone can look up any editor, just as anyone can see their contributions on Wikipedia.",
+    "login": "Logging in (optional)",
+    "loginBody": "Logging in uses Wikimedia's own login page on Meta (OAuth). Compass gets permission to read your watchlist and the topics you chose on Special:Homepage, only for your own dashboard. The login token stays on the Compass server; your browser only holds a random session id. Logging out deletes the session, and sessions end after 30 days.",
+    "stored": "What Compass stores",
+    "storedBody": "When you are logged in and vote on your own tasks, Compass keeps the vote (your username, the wiki, the article, the vote and the ranking signals the task was shown with) to rank your tasks better and improve its suggestions. Undoing a vote deletes it. Votes are private: other people can't see them or change them. Public data is cached for up to a few hours to keep pages fast.",
+    "browser": "What stays in your browser",
+    "browserBody": "The editors you viewed recently, your theme, and any votes you make on someone else's dashboard. These never leave your browser, and clearing your browser data removes them.",
+    "logs": "Server logs",
+    "logsBody": "Like most websites, the server logs requests (including IP addresses) to keep the service running and stop abuse. Compass uses no analytics, ads, trackers or third-party fonts or scripts.",
+    "optOut": "Opting out",
+    "optOutBody": "To stop Compass from showing a dashboard for your account, create the page {page} on meta.wikimedia.org (any content will do). It takes effect within 10 minutes. Delete the page to opt back in.",
+    "contact": "Questions",
+    "contactBody": "Ask on the project's issue tracker on GitHub (Wikimedians-of-Kerala-UG-Technical/Compass)."
   }
 }

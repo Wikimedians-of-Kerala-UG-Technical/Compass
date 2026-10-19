@@ -51,11 +51,12 @@ flowchart TB
 | Trends | `trends`, `trendsLoading` |
 | Tasks | `tasks`, `tasksMeta` (`mode`, `scopes`, `candidates`, `hidden`, `partial`), `tasksLoading`, `tasksError`, `tasksRequestSeq`, `newcomerTasks` |
 | Feedback | `feedback` (title → latest action), `feedbackError` |
-| Revisit | `revisit`, `revisitLoading`, `revisitError` |
+| Revisit | `revisit`, `revisitWatchlist`, `revisitLoading`, `revisitError` |
 | Geo | `geo`, `geoLoading`, `geoError` |
 | Discover | `discover`, `discoverLoading`, `discoverError` |
 | Contribute | `contribute`, `contributeLoading`, `contributeError` |
 | Stats | `stats`, `statsLoading`, `statsError` (loaded when the view is first opened) |
+| Login | `auth` (`{enabled, username}`) |
 | Alerts | `alertsOn`, `alerts` (newest first, max 30), `alertsWatching` |
 | Guide | `guideQuery`, `guideWiki`, `guideQuerySeq` |
 
@@ -66,6 +67,7 @@ flowchart TB
 | `homeWiki` | `profile.homeWiki` |
 | `geoLocal` / `geoRegion` | `geo.focus.local` / `geo.focus.region`, which the backend chooses from counts |
 | `countryA2` | `profile.countries[0].a2`, for regional trends |
+| `isSelf` | Logged in as the editor whose dashboard this is (then Revisit includes the watchlist) |
 | `visibleTasks` | `tasks` minus those voted down, done or dismissed |
 
 ## Load order
@@ -78,8 +80,8 @@ flowchart TB
     B -->|failure| Z["back to / with the error"]
     C --> E["loadFeedback"]
     C --> D["loadTrends (country + home wiki + languages)"]
-    C --> F["fetchRevisit"]
-    C --> G["loadTasks, pass 1"]
+    C --> F["fetchRevisit (watchlist if isSelf)"]
+    C --> G["loadTasks, pass 1 (+ newcomer Homepage tasks if guided and isSelf)"]
     C --> H["fetchGeo"]
     H --> I["loadTasks, pass 2 (adds near focus.local)"]
     H --> J["fetchDiscover (focus region/local)"]
@@ -101,12 +103,13 @@ flowchart TB
 | `loadTrends`, `loadTasks`, `fetchRevisit`, `fetchGeo`, `fetchDiscover`, `fetchContribute`, `fetchStats` | Each has its own loading and error state. `fetchGeo` triggers task pass 2, Discover and Contribute. |
 | `vote(task, action)` | Optimistic; rolled back with `feedbackError` if the server refuses |
 | `remember(name)` / `forget(name)` | The start screen's recent list |
+| `loadAuth`, `logoutAccount` | Login status; logging out of the Wikimedia account (not the dashboard) |
 | `toggleAlerts` | Open or close the alerts `EventSource`; asks for notification permission the first time |
 | `logout()` | "New user": back to `/` and bump `sessionSeq` |
 
 ## API layer
 
-`api.js` has one `request(method, path, {params, body, headers})` helper, used through `get` and the feature functions. It sends cookies (`credentials: 'include'`), drops empty parameters, and turns a non-OK response into an `Error` with the backend's `error` message and the HTTP `status`. `API_BASE` comes from `import.meta.env.VITE_API_BASE`: unset means `http://127.0.0.1:5000`, an empty string means the same origin.
+`api.js` has one `request(method, path, {params, body, headers})` helper, used through `get` and the feature functions. It sends cookies (`credentials: 'include'`, for login), drops empty parameters, and turns a non-OK response into an `Error` with the backend's `error` message and the HTTP `status`. `API_BASE` comes from `import.meta.env.VITE_API_BASE`: unset means `http://127.0.0.1:5000`, an empty string means the same origin.
 
 ## UI conventions
 

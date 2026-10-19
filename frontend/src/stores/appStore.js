@@ -11,6 +11,9 @@ import {
   getFeedback,
   sendFeedback,
   clearFeedback,
+  getAuthStatus,
+  getNewcomerTasks,
+  logout as apiLogout,
   openAlerts,
 } from '../api.js'
 import { router } from '../router.js'
@@ -23,6 +26,27 @@ const RECENT_MAX = 6
 const ALERTS_MAX = 30
 const HIDDEN_ACTIONS = ['down', 'done', 'dismiss']
 let alertSource = null // the open EventSource; not state, since it can't be serialised
+
+// Votes on someone else's dashboard stay in this browser: they're the visitor's own
+// bookmarks and never change that editor's list or what Compass learns.
+const localVotesKey = (username, wiki) => `compass-votes:${wiki}:${username}`
+
+function readLocalVotes(username, wiki) {
+  try {
+    const votes = JSON.parse(localStorage.getItem(localVotesKey(username, wiki)) || '{}')
+    return votes && typeof votes === 'object' && !Array.isArray(votes) ? votes : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeLocalVotes(username, wiki, votes) {
+  try {
+    localStorage.setItem(localVotesKey(username, wiki), JSON.stringify(votes))
+  } catch {
+    /* private mode or storage full: the votes just won't survive a reload */
+  }
+}
 
 // The ranked tasks plus the ones the server held back because of an earlier vote.
 function allTasks(state) {
@@ -74,6 +98,7 @@ export const useAppStore = defineStore('app', {
     hiddenTasks: [], // tasks the server left out because of an earlier vote, kept so they can be restored
     tasksLoading: false,
     tasksError: '',
+    newcomerTasks: [], // logged-in newcomers: Growth's list for their Special:Homepage topics
 
     // feedback on task cards: title -> latest action
     feedback: {},
@@ -82,6 +107,7 @@ export const useAppStore = defineStore('app', {
 
     // revisit — the editor's own articles that need attention
     revisit: [],
+    revisitWatchlist: 0,
     revisitLoading: false,
     revisitError: '',
 
@@ -105,6 +131,9 @@ export const useAppStore = defineStore('app', {
     statsLoading: false,
     statsError: '',
 
+    // optional login
+    auth: { enabled: false, username: null },
+
     // live alerts (EventStreams via the backend)
     alertsOn: false,
     alerts: [],
@@ -126,6 +155,9 @@ export const useAppStore = defineStore('app', {
     geoLocal: (state) => state.geo?.focus?.local || null,
     geoRegion: (state) => state.geo?.focus?.region || null,
     countryA2: (state) => state.profile?.countries?.[0]?.a2 || null,
+    // Logged in as the editor whose dashboard this is (not just anyone who's logged in).
+    isSelf: (state) => !!state.auth.username && state.auth.username === state.profile?.username,
+    voteWiki: (state) => state.wiki || state.profile?.homeWiki || 'enwiki',
     visibleTasks: (state) => allTasks(state).filter((task) => !HIDDEN_ACTIONS.includes(state.feedback[task.title])),
     // Everything voted out of the list, newest data first; titles known only from old votes
     // (no longer among the candidates) are listed by name so they can still be restored.
@@ -242,10 +274,12 @@ export const useAppStore = defineStore('app', {
       this.tasks = []
       this.tasksMeta = null
       this.tasksError = ''
+      this.newcomerTasks = []
       this.feedback = {}
       this.hiddenTasks = []
       this.lastHidden = null
       this.revisit = []
+      this.revisitWatchlist = 0
       this.revisitError = ''
       this.geo = null
       this.geoError = ''
@@ -278,12 +312,24 @@ export const useAppStore = defineStore('app', {
           this.tasks = res.tasks || []
           this.hiddenTasks = res.hiddenTasks || []
           this.tasksMeta = res
+          if (res.mode === 'guided' && this.isSelf) this.loadNewcomerTasks()
         })
         .catch((err) => { if (this.tasksRequestSeq === seq) this.tasksError = err.message })
         .finally(() => { if (this.tasksRequestSeq === seq) this.tasksLoading = false })
     },
 
+    loadNewcomerTasks() {
+      const seq = this.sessionSeq
+      getNewcomerTasks(this.wiki)
+        .then((d) => { if (seq === this.sessionSeq) this.newcomerTasks = d.tasks || [] })
+        .catch(() => { /* optional extra; the regular guided tasks are still there */ })
+    },
+
     loadFeedback() {
+      if (!this.isSelf) {
+        this.feedback = readLocalVotes(this.username, this.voteWiki)
+        return
+      }
       const seq = this.sessionSeq
       getFeedback(this.username, this.wiki)
         .then((d) => {
@@ -300,6 +346,10 @@ export const useAppStore = defineStore('app', {
       this.feedback = { ...this.feedback, [task.title]: action }
       this.feedbackError = ''
       this.lastHidden = HIDDEN_ACTIONS.includes(action) ? { task, action } : null
+      if (!this.isSelf) {
+        writeLocalVotes(this.username, this.voteWiki, this.feedback)
+        return Promise.resolve()
+      }
       return sendFeedback(task, this.username, action).catch(() => {
         this.feedback = { ...this.feedback, [task.title]: before }
         this.lastHidden = null
@@ -314,6 +364,10 @@ export const useAppStore = defineStore('app', {
       this.feedback = rest
       this.feedbackError = ''
       if (this.lastHidden?.task.title === task.title) this.lastHidden = null
+      if (!this.isSelf) {
+        writeLocalVotes(this.username, this.voteWiki, this.feedback)
+        return Promise.resolve()
+      }
       return clearFeedback(this.username, task.wiki || this.wiki || this.profile?.homeWiki, task.title).catch(() => {
         this.feedback = { ...this.feedback, [task.title]: before }
         this.feedbackError = t('tasks.voteFailed')
@@ -324,10 +378,11 @@ export const useAppStore = defineStore('app', {
       this.revisitLoading = true
       this.revisitError = ''
       const seq = this.sessionSeq
-      getRevisit(this.username, this.wiki)
+      getRevisit(this.username, this.wiki, { watchlist: this.isSelf })
         .then((d) => {
           if (seq !== this.sessionSeq) return
           this.revisit = d.tasks || []
+          this.revisitWatchlist = d.watchlist || 0
         })
         .catch((err) => { if (seq === this.sessionSeq) this.revisitError = err.message || t('revisit.failed') })
         .finally(() => { this.revisitLoading = false })
@@ -379,8 +434,23 @@ export const useAppStore = defineStore('app', {
         .finally(() => { this.statsLoading = false })
     },
 
+    // -- login ---------------------------------------------------------------
+    loadAuth() {
+      return getAuthStatus()
+        .then((a) => { this.auth = a })
+        .catch(() => { this.auth = { enabled: false, username: null } })
+    },
+
+    logoutAccount() {
+      return apiLogout().finally(() => {
+        this.auth = { ...this.auth, username: null }
+        if (this.profile) this.fetchRevisit()
+      })
+    },
+
     // -- live alerts -----------------------------------------------------------
     toggleAlerts() {
+      if (!this.isSelf) return // live alerts are only for the editor's own articles
       if (this.alertsOn) {
         this.stopAlerts()
         return
