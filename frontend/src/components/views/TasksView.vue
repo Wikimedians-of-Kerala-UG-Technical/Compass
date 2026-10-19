@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CdxToggleButtonGroup, CdxInfoChip, CdxMessage, CdxIcon } from '@wikimedia/codex'
-import { cdxIconStar, cdxIconClose, cdxIconCheck, cdxIconEyeClosed } from '@wikimedia/codex-icons'
+import { cdxIconCheck, cdxIconEyeClosed } from '@wikimedia/codex-icons'
+import { iconThumbsUp, iconThumbsDown } from '../../icons.js'
 import { useAppStore } from '../../stores/appStore.js'
 import LoadingState from '../widgets/LoadingState.vue'
 
@@ -25,9 +26,9 @@ const refiningWithGeo = computed(() => store.geoLoading && !store.tasksLoading)
 const guided = computed(() => store.tasksMeta?.mode === 'guided')
 
 const votes = [
-  { action: 'up', icon: cdxIconStar, label: 'tasks.good' },
+  { action: 'up', icon: iconThumbsUp, label: 'tasks.good' },
   { action: 'done', icon: cdxIconCheck, label: 'tasks.done' },
-  { action: 'down', icon: cdxIconClose, label: 'tasks.bad' },
+  { action: 'down', icon: iconThumbsDown, label: 'tasks.bad' },
   { action: 'dismiss', icon: cdxIconEyeClosed, label: 'tasks.dismiss' },
 ]
 
