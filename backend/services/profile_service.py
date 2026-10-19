@@ -20,6 +20,8 @@ LANGUAGE_MIN_EDITS = 100
 
 _profiles = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='profile')
 _globals = wiki.TTLCache(ttl=6 * 3600, maxsize=500, name='global-user')
+_opt_outs = wiki.TTLCache(ttl=10 * 60, maxsize=2000, name='opt-out')
+OPT_OUT_PAGE = 'User:{name}/Compass-opt-out'
 
 REVERT_TAGS = ('mw-rollback', 'mw-undo', 'mw-manual-revert')
 
@@ -303,10 +305,29 @@ def _top_categories(dbname, titles, weights):
     return topical_categories(dbname, cat_counts, cat_weight)
 
 
+def opted_out(username):
+    """An editor can ask Compass not to build a dashboard for them by creating the page
+    User:<name>/Compass-opt-out on Meta (any content). Checked before any cached profile,
+    so it takes effect within 10 minutes."""
+    title = OPT_OUT_PAGE.format(name=username)
+
+    def check():
+        pages = list(wiki.api_pages('metawiki', [title], {'action': 'query', 'prop': 'info'}))
+        return {'out': bool(pages) and pages[0].get('missing') is None}
+    return _opt_outs.get_or_compute(username, check)['out']
+
+
+def check_opt_out(username):
+    if opted_out(username):
+        raise wiki.UserError(f'{username} has asked Compass not to show a dashboard for them '
+                             f'(meta.wikimedia.org/wiki/{wiki.quote_title(OPT_OUT_PAGE.format(name=username))}).', 403)
+
+
 def build_profile(username, dbname=None):
     username = wiki.normalize_username(username)
     if not username:
         raise wiki.UserError('Please enter a username.')
+    check_opt_out(username)
     key = (username, dbname)
     return _profiles.get_or_compute(key, lambda: _build_profile(username, dbname))
 

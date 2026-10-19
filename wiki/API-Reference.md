@@ -32,6 +32,7 @@ The per-user endpoints share one cached profile. The first call pays for it and 
 |---|---|---|
 | `200` | Success | The documented payload. `partial: true` means a sub-source failed and the result may be incomplete. |
 | `400` | Malformed request (unknown feedback action, unrecognised event reference…) | `{"error": "…"}` |
+| `403` | An editor who opted out (`User:<name>/Compass-opt-out` on Meta) | `{"error": "…"}` |
 | `404` | No such account, no edits on that wiki, unknown wiki or event, event without a worklist | `{"error": "…"}` |
 | `429` | Over `COMPASS_RATE_LIMIT` | `{"error": "Too many requests…"}` and `Retry-After` |
 | `500` | Upstream or internal failure | `{"error": "Something went wrong (error 1a2b3c4d)…", "errorId": "1a2b3c4d"}`. Details only in the server log, under that id |

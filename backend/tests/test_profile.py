@@ -1,3 +1,5 @@
+import pytest
+
 from services import profile_service as ps, wiki
 
 
@@ -80,3 +82,17 @@ def test_missing_account_error_carries_the_suggestion(client, monkeypatch):
     assert r.get_json() == {'error': 'No Wikimedia account named "Akash a". Did you mean "Akash A"?',
                             'suggestion': 'Akash A'}
 
+
+def test_opt_out_page_blocks_the_dashboard(monkeypatch):
+    ps._opt_outs._data.clear()
+    asked = []
+
+    def pages(dbname, titles, params, batch=50):
+        asked.append((dbname, titles[0]))
+        return iter([{'title': titles[0]}] if 'Private' in titles[0] else [{'title': titles[0], 'missing': True}])
+    monkeypatch.setattr(ps.wiki, 'api_pages', pages)
+    assert not ps.opted_out('Netha Hussain')
+    with pytest.raises(wiki.UserError) as e:
+        ps.build_profile('private_person')
+    assert e.value.status == 403 and 'User:Private_person/Compass-opt-out' in str(e.value)
+    assert asked == [('metawiki', 'User:Netha Hussain/Compass-opt-out'), ('metawiki', 'User:Private person/Compass-opt-out')]
