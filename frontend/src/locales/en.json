@@ -167,9 +167,10 @@
     "noGapsNoPlace": "No Wikidata gaps found — we couldn't work out a place you edit about.",
     "sitelinks": "{n} sitelinks",
     "missing": "No {lang} {what}",
-    "campaigns": "Campaigns that include your articles",
+    "campaigns": "Upcoming and ongoing events that include your articles",
     "event": "Event",
     "includes": "Includes: {titles}",
+    "includesMore": "Includes: {titles} and {n} more",
     "openEvent": "See this event's worklist ranked for you"
   },
   "guide": {

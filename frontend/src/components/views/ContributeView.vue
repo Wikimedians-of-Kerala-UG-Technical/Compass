@@ -68,10 +68,17 @@ const events = computed(() => c.value?.events || [])
         <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-top: 24px">
           <CdxIcon :icon="cdxIconCalendar" size="small" /> {{ $t('contribute.campaigns') }}
         </div>
-        <div v-for="e in events" :key="e.id || e.event_id" class="item-card">
-          <div class="item-card__title">{{ e.name || e.event_name || $t('contribute.event') }}</div>
-          <div class="item-card__reason">{{ $t('contribute.includes', { titles: e.yourArticles.join(', ') }) }}</div>
-          <RouterLink v-if="e.id || e.event_id" :to="{ name: 'event', params: { id: e.id || e.event_id }, query: { user: urlName(store.username) } }">
+        <div v-for="e in events" :key="e.id" class="item-card">
+          <div class="item-card__head">
+            <span class="item-card__title"><a :href="e.url" target="_blank" rel="noopener">{{ e.name || $t('contribute.event') }}</a></span>
+            <CdxInfoChip v-if="e.starts" status="notice">{{ $t('event.dates', { starts: e.starts.slice(0, 10), ends: (e.ends || '').slice(0, 10) }) }}</CdxInfoChip>
+          </div>
+          <div class="item-card__reason">
+            {{ e.yourArticles.length > 5
+              ? $t('contribute.includesMore', { titles: e.yourArticles.slice(0, 5).join(', '), n: e.yourArticles.length - 5 })
+              : $t('contribute.includes', { titles: e.yourArticles.join(', ') }) }}
+          </div>
+          <RouterLink :to="{ name: 'event', params: { id: e.id }, query: { user: urlName(store.username) } }">
             {{ $t('contribute.openEvent') }}
           </RouterLink>
         </div>

@@ -11,20 +11,24 @@ of edits they make, articles they already know).
 - Worklist:   the JSON page "<event page>/Worklist", e.g. {"enwiki": ["Title", ...]}
 - Participants: GET .../event_registration/{id}/participants (public registrations only)
 """
+import json
 import re
 import time
+from datetime import datetime, timedelta, timezone
 
 from services import wiki, maintenance
 from services.signals import article_signals, topic_label
 from services.task_service import AFFINITY, _cosine
 
 CENTRAL = 'https://meta.wikimedia.org/w/rest.php/campaignevents/v0'
+EVENT_NS = 1728
 MAX_RANKED = 1000       # worklist articles scored per request
 SHOWN = 100
 MAX_PARTICIPANTS = 200
 WEIGHTS = {'topic': 0.45, 'place': 0.25, 'feasibility': 0.15, 'affinity': 0.15}
 _events = wiki.TTLCache(ttl=10 * 60, maxsize=300, name='events')
 _rankings = wiki.TTLCache(ttl=30 * 60, maxsize=500, name='event-rankings')
+_worklist_index = wiki.TTLCache(ttl=30 * 60, maxsize=2, name='worklist-index')
 
 EVENT_ID_IN_URL = re.compile(r'EventDetails/(\d+)')
 EVENT_ID_IN_HTML = re.compile(r'"wgCampaignEventsEventID":(\d+)')
@@ -115,6 +119,73 @@ def _participants(event_id):
         if not last or len(page) < 20:
             break
     return names[:MAX_PARTICIPANTS]
+
+
+def worklist_index():
+    """{dbname: {title: [event pages]}} for every worklist on Meta, cached for everyone.
+
+    The extension's own lookup (`event_discovery/discoverable_events`) only answers a
+    logged-in user, so Compass reads the worklist pages themselves: there are tens of
+    them (53 in October 2026), two API calls in all.
+    """
+    return _worklist_index.get_or_compute('metawiki', _build_worklist_index)
+
+
+def _build_worklist_index():
+    pages, offset = [], 0
+    while offset is not None and offset < 2000:
+        data = wiki.api('metawiki', {'action': 'query', 'list': 'search', 'srsearch': 'intitle:Worklist',
+                                     'srnamespace': EVENT_NS, 'srlimit': 500, 'sroffset': offset, 'srprop': ''})
+        pages += [r['title'] for r in (data.get('query') or {}).get('search') or [] if r['title'].endswith('/Worklist')]
+        offset = (data.get('continue') or {}).get('sroffset')
+    index = {}
+    for page in wiki.api_pages('metawiki', pages, {'action': 'query', 'prop': 'revisions', 'rvprop': 'content',
+                                                   'rvslots': 'main'}):
+        main = ((page.get('revisions') or [{}])[0].get('slots') or {}).get('main') or {}
+        if main.get('contentmodel') != 'worklist':
+            continue  # an ordinary page that happens to be called ".../Worklist"
+        try:
+            worklist = json.loads(main.get('content') or '{}')
+        except ValueError:
+            continue
+        event_page = page['title'].rsplit('/', 1)[0]
+        for db, titles in (worklist.items() if isinstance(worklist, dict) else []):
+            for title in titles if isinstance(titles, list) else []:
+                index.setdefault(db, {}).setdefault(title, []).append(event_page)
+    return index
+
+
+def _event_summary(event_page):
+    """Light event details for an Event: page on Meta, or None (no registration, a test event)."""
+    def load():
+        try:
+            event_id = resolve(event_page)
+        except wiki.UserError:
+            return {}
+        e = wiki.get_json(f'{CENTRAL}/event_registration/{event_id}', retries=2) or {}
+        if not e.get('id') or e.get('is_test_event') or e.get('status') == 'deleted':
+            return {}
+        return {'id': e['id'], 'name': e.get('name'), 'starts': _iso(e.get('start_time')),
+                'ends': _iso(e.get('end_time')), 'url': wiki.page_url('metawiki', event_page)}
+    return _events.get_or_compute(('summary', event_page), load) or None
+
+
+def events_with_articles(dbname, titles, limit=10):
+    """Upcoming and ongoing events whose worklist includes any of these articles on
+    `dbname`, soonest first, each with the editor's articles it lists."""
+    listed = worklist_index().get(dbname) or {}
+    matches = {}
+    for title in dict.fromkeys(titles):
+        for event_page in listed.get(title, []):
+            matches.setdefault(event_page, []).append(title)
+    # Event times are in the event's own time zone; a day of slack keeps today's events.
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S')
+    found = []
+    for event_page, yours in sorted(matches.items(), key=lambda kv: -len(kv[1]))[:limit * 2]:
+        summary = _event_summary(event_page)
+        if summary and (summary['ends'] or '') >= cutoff:
+            found.append({**summary, 'yourArticles': yours})
+    return sorted(found, key=lambda e: e['starts'] or '')[:limit]
 
 
 def rank_for(event_id, username, dbname=None):

@@ -110,3 +110,37 @@ def test_routes(client, ranking):
     assert client.get('/api/events/4579').get_json()['name'] == EVENT['name']
     assert client.get('/api/events/4579/rank/Tester').get_json()['items']
     assert client.get('/api/events/resolve?ref=nope').status_code == 400
+
+
+def test_worklist_index_reads_only_real_worklists(monkeypatch):
+    es._worklist_index._data.clear()
+
+    def api(dbname, params, **kw):
+        assert params['srnamespace'] == es.EVENT_NS
+        return {'query': {'search': [{'title': 'Event:Ho Workshop/Worklist'}, {'title': 'Event:Notes/Worklist'},
+                                     {'title': 'Event:Sandbox/Worklist demo'}]}}
+
+    def pages(dbname, titles, params, batch=50):
+        assert titles == ['Event:Ho Workshop/Worklist', 'Event:Notes/Worklist']
+        yield {'title': titles[0], 'revisions': [{'slots': {'main': {
+            'contentmodel': 'worklist', 'content': '{"enwiki": ["Panafest", "Gbawe"], "mlwiki": ["കൊച്ചി"]}'}}}]}
+        yield {'title': titles[1], 'revisions': [{'slots': {'main': {'contentmodel': 'wikitext', 'content': '== x =='}}}]}
+
+    monkeypatch.setattr(wiki, 'api', api)
+    monkeypatch.setattr(wiki, 'api_pages', pages)
+    assert es.worklist_index() == {'enwiki': {'Panafest': ['Event:Ho Workshop'], 'Gbawe': ['Event:Ho Workshop']},
+                                   'mlwiki': {'കൊച്ചി': ['Event:Ho Workshop']}}
+
+
+def test_events_with_articles_keeps_events_that_have_not_ended(monkeypatch):
+    monkeypatch.setattr(es, 'worklist_index', lambda: {'enwiki': {
+        'Panafest': ['Event:Ho Workshop', 'Event:Old Drive'], 'Gbawe': ['Event:Ho Workshop'], 'Other': ['Event:Test']}})
+    summaries = {
+        'Event:Ho Workshop': {'id': 1, 'name': 'Ho', 'starts': '2099-01-01T09:00:00', 'ends': '2099-01-02T18:00:00', 'url': 'u1'},
+        'Event:Old Drive': {'id': 2, 'name': 'Old', 'starts': '2020-01-01T09:00:00', 'ends': '2020-01-31T18:00:00', 'url': 'u2'},
+        'Event:Test': None,  # a test event, or a page without registration
+    }
+    monkeypatch.setattr(es, '_event_summary', summaries.get)
+    found = es.events_with_articles('enwiki', ['Gbawe', 'Panafest', 'Other', 'Unlisted'])
+    assert found == [{**summaries['Event:Ho Workshop'], 'yourArticles': ['Gbawe', 'Panafest']}]
+    assert es.events_with_articles('mlwiki', ['Panafest']) == []
