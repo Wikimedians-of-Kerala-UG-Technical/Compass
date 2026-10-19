@@ -21,7 +21,19 @@ Read from the editor's **live** contributions on the wiki (last 90 days, up to 5
 
 ## Feedback
 
-Each Tasks card has four buttons: **good suggestion** (`up`), **I did this** (`done`), **not for me** (`down`) and **hide** (`dismiss`). Everything except `up` removes the card from that editor's list on that wiki, now and on later visits; the server filters them out of `/api/tasks` and reports how many in `hidden`.
+Each Tasks card has four buttons: 👍 **good suggestion** (`up`), ✓ **I did this** (`done`), 👎 **not for me** (`down`) and ⊘ **hide** (`dismiss`). Their tooltips say what each one does to the list and to what Compass learns. Everything except `up` removes the card from that editor's list on that wiki, now and on later visits; the server filters them out of `/api/tasks` and reports how many in `hidden`.
+
+### Undo
+
+Every vote can be taken back:
+
+- **Click the highlighted button again.** The tooltip of a vote that's on ends with "(click again to undo)".
+- **The Undo bar.** When a card disappears, a bar ("“Roti”: Not for you. Undo") stays for 8 seconds.
+- **The hidden list.** "N tasks you finished, said aren't for you, or hid are not shown. Show them" lists every hidden task with why, and a **Restore** button.
+
+Undo calls `DELETE /api/feedback/<username>?wiki=&title=`, which deletes every row for that article, so a vote taken back never counts in stats or in the weight fitting. `/api/tasks` returns the tasks it held back as `hiddenTasks`, so a restored task comes back with its full card.
+
+### What is stored
 
 Every vote is stored with the card's six ranking signals (topic, place, impact, feasibility, freshness, affinity) and score. When the editor's feedback is next read, Compass checks their contributions since each vote (60-day window) and records `edited_at` on votes whose article they then edited. That is the strongest signal: they acted on it.
 
