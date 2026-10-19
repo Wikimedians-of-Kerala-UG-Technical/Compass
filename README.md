@@ -17,6 +17,14 @@ There are no accounts and nothing to sign up for. It reads public contributions 
 
 ---
 
+## How Compass started
+
+Compass began as an idea by Netha Hussain: a tool that looks at what an editor has already done and suggests what they could work on next, instead of handing everyone the same maintenance lists. Her first version was a single page that ran in the browser and scored tasks from an editor's recent edits; it is kept in `legacy/`.
+
+The technical team of the Wikimedians of Kerala User Group then built that idea into what Compass is now: a backend that works on any language Wikipedia and reads Wikipedia's own topic and country labels, tasks ranked by signals that each card explains, and the features listed below.
+
+---
+
 ## What it does
 
 1. **Profile.** Detects the editor's home wiki and languages, and reads Wikipedia's own ML topic and country labels for the articles they edit (e.g. *Films · India* on mlwiki, *Military and warfare · United States* on enwiki).
@@ -108,3 +116,10 @@ Full developer documentation is available in our [GitHub Wiki](https://github.co
 
 Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Commons & Wikidata](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Contribute), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends), [Stats & feedback](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Stats-and-Feedback), [Live alerts](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Live-Alerts), [Events](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Events).
 
+---
+
+## License
+
+Compass is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License, version 3 or (at your option) any later version. See [LICENSE](LICENSE).
+
+The original prototype was released into the public domain under CC0, which allows it to be included under this license.
