@@ -1,6 +1,7 @@
 {
   "name": "compass-frontend",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "version": "2.1.0",
   "type": "module",
   "scripts": {
