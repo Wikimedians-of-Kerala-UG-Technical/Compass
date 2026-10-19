@@ -37,6 +37,9 @@ function submit() {
 
       <CdxMessage v-if="store.onboardError" class="onboard__error" type="error" :allow-user-dismiss="false">
         {{ store.onboardError }}
+        <CdxButton v-if="store.onboardSuggestion" class="onboard__suggestion" weight="quiet" action="progressive" @click="store.open(store.onboardSuggestion)">
+          {{ $t('onboard.openSuggestion', { name: store.onboardSuggestion }) }}
+        </CdxButton>
       </CdxMessage>
 
       <div v-if="store.recent.length" class="onboard__recent">

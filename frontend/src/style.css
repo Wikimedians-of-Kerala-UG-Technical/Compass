@@ -383,6 +383,7 @@ a:hover { text-decoration: underline; }
 .onboard__input { margin-bottom: 16px; text-align: left; }
 .onboard__btn { width: 100%; justify-content: center; }
 .onboard__error { margin-top: 16px; text-align: left; }
+.onboard__suggestion { display: block; margin-top: 6px; }
 
 .loading-screen {
   min-height: 100dvh;

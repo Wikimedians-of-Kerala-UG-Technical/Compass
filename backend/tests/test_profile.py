@@ -1,4 +1,4 @@
-from services import profile_service as ps
+from services import profile_service as ps, wiki
 
 
 def test_classify_edit_uses_tags_first():
@@ -40,3 +40,43 @@ def test_build_profile_rejects_blank_name():
     from services.wiki import UserError
     with pytest.raises(UserError):
         ps.build_profile('   ')
+
+
+def _global_user(**wikis):
+    return {'name': 'Akash A', 'editcount': sum(wikis.values()), 'wikis': {
+        db: {'dbname': db, 'editcount': n, 'url': 'https://' + wiki.host(db)} for db, n in wikis.items()}}
+
+
+def test_no_edits_message_points_to_other_projects():
+    gu = _global_user(metawiki=8, commonswiki=2, enwiki=1)
+    msg = ps.no_edits_message(gu, 'enwiki')
+    assert msg.startswith('"Akash A" has no Wikipedia edits Compass can read yet')
+    assert 'meta.wikimedia.org (8), commons.wikimedia.org (2)' in msg
+    assert 'en.wikipedia.org' not in msg
+
+
+def test_no_edits_message_for_a_chosen_wiki():
+    gu = _global_user(enwiki=500, mlwiki=40)
+    assert ps.no_edits_message(gu, 'tawiki', chosen=True) == \
+        '"Akash A" has no edits on ta.wikipedia.org. Their edits are on en.wikipedia.org (500), ml.wikipedia.org (40).'
+
+
+def test_suggest_username_tries_capitalisation(monkeypatch):
+    asked = []
+    existing = {'Akash A': 'Akash A', 'Netha Hussain': 'Netha Hussain'}
+    monkeypatch.setattr(ps, '_account_exists', lambda name: asked.append(name) or existing.get(name))
+    assert ps.suggest_username('Akash a') == 'Akash A'
+    assert ps.suggest_username('NETHA HUSSAIN') == 'Netha Hussain'
+    asked.clear()
+    assert ps.suggest_username('Nobody here') is None
+    assert asked == ['Nobody Here']  # the other variants are the name itself or a repeat
+
+
+def test_missing_account_error_carries_the_suggestion(client, monkeypatch):
+    monkeypatch.setattr(ps.wiki, 'api', lambda dbname, params, **kw: {'query': {'globaluserinfo': {'missing': True}}})
+    monkeypatch.setattr(ps, '_account_exists', lambda name: 'Akash A' if name == 'Akash A' else None)
+    r = client.get('/api/profile/akash_a')
+    assert r.status_code == 404
+    assert r.get_json() == {'error': 'No Wikimedia account named "Akash a". Did you mean "Akash A"?',
+                            'suggestion': 'Akash A'}
+

@@ -96,7 +96,10 @@ def _register_errors(app):
 
     @app.errorhandler(UserError)
     def user_error(e):
-        return jsonify({'error': str(e)}), e.status
+        body = {'error': str(e)}
+        if e.suggestion:
+            body['suggestion'] = e.suggestion
+        return jsonify(body), e.status
 
     @app.errorhandler(HTTPException)
     def http_error(e):

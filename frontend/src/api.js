@@ -25,6 +25,7 @@ function request(method, path, { params, body, label, headers } = {}) {
         .then((e) => {
           const err = new Error(e.error || `${label || 'Request'} error ${r.status}`)
           err.status = r.status
+          err.suggestion = e.suggestion // e.g. the correctly capitalised username
           throw err
         })
     }

@@ -25,6 +25,7 @@
     "submit": "Get my recommendations",
     "empty": "Please enter a Wikipedia username.",
     "failed": "Failed to load profile. Please try again.",
+    "openSuggestion": "Open {name} instead",
     "recent": "Recently viewed",
     "forget": "Forget {name}",
     "eventLink": "At an edit-a-thon? See its worklist ranked for you"

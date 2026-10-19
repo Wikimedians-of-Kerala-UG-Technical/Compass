@@ -49,6 +49,7 @@ export const useAppStore = defineStore('app', {
     screen: 'loading', // 'loading' | 'dash' (the start screen is its own route)
     username: '',
     onboardError: '',
+    onboardSuggestion: '', // an existing username that differs only in capitalisation
     activeView: 'overview', // see VIEWS in router.js
     // Which Wikipedia to work on. null = the editor's home wiki (most edits), chosen by the backend.
     wiki: null,
@@ -125,9 +126,11 @@ export const useAppStore = defineStore('app', {
       const uname = (rawUsername || '').trim()
       if (!uname) {
         this.onboardError = t('onboard.empty')
+        this.onboardSuggestion = ''
         return
       }
       this.onboardError = ''
+      this.onboardSuggestion = ''
       router.push({ name: 'dash', params: { username: urlName(uname) }, query: wiki ? { wiki } : {} })
     },
 
@@ -198,6 +201,7 @@ export const useAppStore = defineStore('app', {
         .catch((err) => {
           if (seq !== this.sessionSeq) return
           this.onboardError = err.message || t('onboard.failed')
+          this.onboardSuggestion = err.suggestion || ''
           this.username = ''
           router.replace({ name: 'onboard' })
         })
@@ -379,6 +383,7 @@ export const useAppStore = defineStore('app', {
       return router.push({ name: 'onboard' }).finally(() => {
         this.username = ''
         this.onboardError = ''
+        this.onboardSuggestion = ''
         this.activeView = 'overview'
         this.wiki = null
         this.requestedWiki = null

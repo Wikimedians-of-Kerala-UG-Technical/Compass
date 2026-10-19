@@ -27,11 +27,13 @@ session.mount('https://', adapter)
 class UserError(ValueError):
     """A problem with what the user asked for (unknown account, no edits on that wiki,
     an unsupported wiki). The API returns its message with `status` (404 by default);
-    every other error is logged and hidden."""
+    every other error is logged and hidden. `suggestion` (e.g. a correctly capitalised
+    username) is returned alongside, so the UI can offer it."""
 
-    def __init__(self, message, status=404):
+    def __init__(self, message, status=404, suggestion=None):
         super().__init__(message)
         self.status = status
+        self.suggestion = suggestion
 
 
 SPECIAL_HOSTS = {

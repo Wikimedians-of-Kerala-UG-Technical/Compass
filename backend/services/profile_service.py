@@ -32,7 +32,9 @@ def fetch_global_user(username):
         })
         info = (data.get('query') or {}).get('globaluserinfo') or {}
         if info.get('missing') is not None or not info.get('merged'):
-            raise wiki.UserError(f'No Wikimedia account named "{username}".')
+            suggestion = suggest_username(username)
+            hint = f' Did you mean "{suggestion}"?' if suggestion else ''
+            raise wiki.UserError(f'No Wikimedia account named "{username}".{hint}', suggestion=suggestion)
         per_wiki = {}
         for w in info.get('merged') or []:
             db = w.get('wiki')
@@ -41,6 +43,32 @@ def fetch_global_user(username):
         return {'name': info.get('name', username), 'editcount': info.get('editcount', 0), 'wikis': per_wiki}
     username = wiki.normalize_username(username)
     return _globals.get_or_compute(username, compute)
+
+
+def _account_exists(name):
+    data = wiki.api('metawiki', {'action': 'query', 'meta': 'globaluserinfo', 'guiuser': name})
+    info = (data.get('query') or {}).get('globaluserinfo') or {}
+    return info.get('name') if info.get('missing') is None and info.get('id') else None
+
+
+def suggest_username(name):
+    """An existing account whose name differs only in capitalisation, or None.
+
+    Only the first letter of a username is case-insensitive, so "akash_a" is "Akash a",
+    a different account from "Akash A". Tries each word capitalised, then the name in
+    lower case, then each lower-cased word capitalised."""
+    def cap_words(s):
+        return ' '.join(w[:1].upper() + w[1:] for w in s.split(' '))
+    lower = name.lower()
+    candidates = [cap_words(name), lower[:1].upper() + lower[1:], cap_words(lower)]
+    for candidate in dict.fromkeys(c for c in candidates if c != name):
+        try:
+            found = _account_exists(candidate)
+        except RuntimeError:
+            return None
+        if found:
+            return found
+    return None
 
 
 def content_wikis(global_user, min_edits=1):
@@ -56,6 +84,24 @@ def content_wikis(global_user, min_edits=1):
 def home_wiki(global_user):
     wikis = content_wikis(global_user)
     return wikis[0]['dbname'] if wikis else 'enwiki'
+
+
+def no_edits_message(global_user, home, chosen=False):
+    """Why there's no profile, and where the account's edits are instead. `chosen`: the
+    wiki was picked by the user (?wiki=), not worked out by Compass."""
+    name = global_user['name']
+    elsewhere = sorted((w for db, w in global_user['wikis'].items() if db != home),
+                       key=lambda w: w['editcount'], reverse=True)[:3]
+    where = ', '.join(f'{(w.get("url") or "").split("//")[-1] or w["dbname"]} ({w["editcount"]})' for w in elsewhere)
+    other_wikipedias = [w for w in content_wikis(global_user) if w['dbname'] != home]
+    if chosen or other_wikipedias:
+        return f'"{name}" has no edits on {wiki.host(home)}.' + (f' Their edits are on {where}.' if where else '')
+    # No Wikipedia edits at all (or only deleted ones): edits on Meta, Commons or
+    # Wikidata alone don't say what articles suit someone.
+    msg = f'"{name}" has no Wikipedia edits Compass can read yet, so there is no profile to build.'
+    if where:
+        msg += f' Their edits are on {where}.'
+    return msg + ' A few article edits on any Wikipedia are enough to get started.'
 
 
 def fetch_contribs(dbname, username, limit=CONTRIBS_LIMIT, namespace=None, show=None,
@@ -276,7 +322,7 @@ def _build_profile(username, dbname):
         babel_f = pool.submit(fetch_babel, home, username)
         contribs = fetch_contribs(home, username)
         if not contribs:
-            raise wiki.UserError(f'"{username}" has no edits on {home}.')
+            raise wiki.UserError(no_edits_message(gu, home, chosen=bool(dbname)))
 
         articles = [c for c in contribs if (c.get('ns') or 0) == 0]
         page_counts, last_edit, bytes_added = {}, {}, {}

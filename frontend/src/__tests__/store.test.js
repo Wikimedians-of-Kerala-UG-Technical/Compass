@@ -79,4 +79,15 @@ describe('app store', () => {
     store.syncFromRoute({ params: { username: 'X', view: 'guide' }, query: { article: 'Kochi', articleWiki: 'mlwiki' } })
     expect(store.guideQuerySeq).toBe(1)
   })
+
+  it('offers a correctly capitalised username when the account is missing', async () => {
+    const store = useAppStore()
+    const err = Object.assign(new Error('No Wikimedia account named "Akash a". Did you mean "Akash A"?'), { suggestion: 'Akash A' })
+    api.getProfile.mockReturnValueOnce(Promise.reject(err))
+    store.start('Akash a', null)
+    await vi.waitFor(() => expect(store.onboardSuggestion).toBe('Akash A'))
+    expect(store.onboardError).toContain('Did you mean')
+    store.open('Akash A')
+    expect(store.onboardSuggestion).toBe('')
+  })
 })
