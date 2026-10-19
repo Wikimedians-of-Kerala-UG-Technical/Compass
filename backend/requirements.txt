@@ -1,4 +1,7 @@
-flask
-flask-cors
-requests
-beautifulsoup4
+# Direct dependencies, pinned to the versions Compass is tested with.
+# Upgrade deliberately: `pip install -U <pkg>`, run the tests, then update the pin.
+flask==3.1.3
+flask-cors==6.0.5
+requests==2.34.2
+beautifulsoup4==4.15.0
+gunicorn==26.2.0

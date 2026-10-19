@@ -26,4 +26,12 @@ Example: Ernakulam district → St. Francis Church, Santa Cruz Basilica, Jawahar
 
 ## Campaigns
 
-`/w/rest.php/campaignevents/v0/event_discovery/discoverable_events?page=<title>` for the editor's 10 most-edited articles. It lists active events (CampaignEvents extension) whose worklists include them. It's empty for most editors today, because few events use worklists yet.
+Upcoming and ongoing events (Event Registration) whose worklist includes any article the editor created, edited a lot or edited recently on their home wiki. Each card shows the dates, links to the event page, and links to [[Feature-Events]], which ranks that event's worklist for the editor.
+
+The extension's own lookup (`event_discovery/discoverable_events`) only answers logged-in users and returns `[]` to anonymous requests, so Compass reads the worklists itself:
+
+1. Search Meta's Event namespace (1728) for `intitle:Worklist`, keeping pages whose content model is `worklist` (some ".../Worklist" pages are ordinary wikitext).
+2. Read them all (one batched request per 50) into an index `{dbname: {title: [event pages]}}`, cached for 30 minutes and shared by every user. In October 2026 that is 53 worklists and about 6,000 articles, built in about 2.5 s.
+3. Look up the editor's titles in the index, then resolve each matching event page to its event and drop test events and events that ended more than a day ago.
+
+Worklists whose event page lives on a wiki other than Meta aren't indexed.

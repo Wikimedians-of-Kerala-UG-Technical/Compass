@@ -6,13 +6,12 @@
    Codex doesn't prescribe.
    ============================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
 
 * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Lato, Roboto, Helvetica, Arial, sans-serif;
-  background: #f8f9fa;
+  background: var(--background-color-neutral-subtle);
   color: var(--color-base);
   min-height: 100dvh;
 }
@@ -54,7 +53,10 @@ a:hover { text-decoration: underline; }
 .shell__search {
   flex: 1;
   max-width: 420px;
+  display: flex;
+  gap: 6px;
 }
+.shell__narrow-only { display: none; }
 .shell__spacer { flex: 1; }
 .shell__user {
   display: flex;
@@ -142,6 +144,10 @@ a:hover { text-decoration: underline; }
   .bottom-nav { display: block; }
   .shell__content { padding: 16px; padding-bottom: 72px; }
   .shell__search { display: none; }
+  .shell__topbar { padding: 0 8px; gap: 4px; }
+  .shell__user { gap: 0; min-width: 0; }
+  .shell__username, .shell__btn-label { display: none; }
+  .shell__narrow-only { display: inline-block; }
 }
 
 /* -- Cards / stat tiles ------------------------------------------ */
@@ -239,7 +245,7 @@ a:hover { text-decoration: underline; }
 }
 .dispatch-card:hover {
   border-color: var(--border-color-progressive, var(--color-progressive));
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: var(--box-shadow-small, 0 2px 8px rgba(0,0,0,0.06));
 }
 .dispatch-card__icon {
   color: var(--color-progressive);
@@ -261,7 +267,8 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   margin-bottom: 6px;
 }
 .item-card__title {
@@ -272,7 +279,7 @@ a:hover { text-decoration: underline; }
 }
 .item-card__reason { font-size: 0.8125rem; color: var(--color-subtle); margin-bottom: 10px; }
 .item-card__row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.item-card__actions { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.item-card__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 
 .group-heading {
   font-size: 0.75rem;
@@ -375,6 +382,7 @@ a:hover { text-decoration: underline; }
 .onboard__input { margin-bottom: 16px; text-align: left; }
 .onboard__btn { width: 100%; justify-content: center; }
 .onboard__error { margin-top: 16px; text-align: left; }
+.onboard__suggestion { display: block; margin-top: 6px; }
 
 .loading-screen {
   min-height: 100dvh;
@@ -399,4 +407,39 @@ a:hover { text-decoration: underline; }
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* -- v2.1 additions --------------------------------------------- */
+.app-banner { position: sticky; top: 0; z-index: 200; border-radius: 0; }
+
+.note-bar {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--border-color-base);
+  background: var(--background-color-interactive-subtle);
+  color: var(--color-subtle);
+  font-size: 13px;
+}
+
+.onboard__recent { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.onboard__recent-label { width: 100%; font-size: 0.75rem; color: var(--color-subtle); }
+.recent-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-color-base);
+  border-radius: 999px;
+  background: var(--background-color-base);
+}
+.recent-chip button { background: none; border: 0; cursor: pointer; color: var(--color-base); font: inherit; }
+.recent-chip__name { padding: 4px 4px 4px 12px; font-size: 0.8125rem; }
+.recent-chip__name:hover { color: var(--color-progressive); }
+.recent-chip__x { padding: 4px 8px 4px 2px; color: var(--color-subtle) !important; display: inline-flex; }
+.onboard__event { display: block; margin-top: 20px; font-size: 0.8125rem; }
+
+.alert-row { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; padding: 4px 0; flex-wrap: wrap; }
+.alert-row__time { color: var(--color-subtle); font-variant-numeric: tabular-nums; min-width: 3.5em; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }

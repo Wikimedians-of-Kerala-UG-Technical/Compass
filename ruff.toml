@@ -1,0 +1,15 @@
+# `ruff check .` — kept to correctness rules; the code's own style (long lines,
+# compact one-liners) is left alone.
+line-length = 140
+target-version = "py311"
+extend-exclude = ["legacy", "frontend"]
+
+[lint]
+select = ["E", "F", "W", "B"]
+ignore = [
+    "E501",   # long lines: some query strings and dict literals read better on one line
+    "E731",   # lambdas assigned to names
+    "E741",   # `l` for a language in comprehensions
+    "B008",
+    "B905",   # zip() over pool.map results of the same input: lengths always match
+]

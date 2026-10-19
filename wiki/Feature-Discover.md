@@ -29,6 +29,10 @@ v1 sampled category members alphabetically, so lists started at "Aaryan…". It 
 
 `translation/sections`, seeded with the same articles, finds articles that exist in both languages where the target lacks sections. The headings come already translated: Plot → കഥാസാരം. Each section links to Content Translation with `sourcesection=` set. Reference-type sections are dropped.
 
+## Missing in your language (monolingual editors)
+
+Editors who write in one language have nothing to translate, so on a non-English home wiki Discover lists important articles their wiki lacks instead. For each of their top two topics (with their main country), English Wikipedia's search is sorted by incoming links (`articletopic:films articlecountry:ind`, `srsort=incoming_links_desc`). Results whose langlinks lack the home language are kept, with the Wikidata label in their language as a suggested title when one exists. English Wikipedia is only the index of what's central to a topic; the editor writes the article from their own sources. The equivalent Wikidata query (items in a country with many sitelinks but none on the home wiki) timed out at 60 s for India.
+
 ## Missing near you
 
 A Wikidata Query Service query for items located **directly** (P131) in the editor's focus district or region that have an English article but none in the target language, ordered by sitelink count. Transitive `P131+` over a whole state times out on WDQS, which is why it uses direct children only. Results are cached 24 h.

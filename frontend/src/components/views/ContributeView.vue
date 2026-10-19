@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { CdxInfoChip, CdxMessage, CdxIcon } from '@wikimedia/codex'
 import { cdxIconLogoWikimediaCommons, cdxIconLogoWikidata, cdxIconCalendar } from '@wikimedia/codex-icons'
-import { useAppStore } from '../../stores/appStore.js'
+import { RouterLink } from 'vue-router'
+import { useAppStore, urlName } from '../../stores/appStore.js'
 import LoadingState from '../widgets/LoadingState.vue'
 
 const store = useAppStore()
@@ -14,34 +15,25 @@ const events = computed(() => c.value?.events || [])
 
 <template>
   <div>
-    <h1 class="section-heading">Commons &amp; Wikidata</h1>
-    <p class="section-sub">
-      Work for photographers and Wikidata editors: put your own photos into articles, and fill in Wikidata items near you
-      that have no {{ c?.language || 'local-language' }} description.
-    </p>
+    <h1 class="section-heading">{{ $t('contribute.title') }}</h1>
+    <p class="section-sub">{{ $t('contribute.sub', { lang: c?.language || $t('contribute.localLanguage') }) }}</p>
 
-    <LoadingState
-      v-if="store.contributeLoading && !c"
-      title="Checking your Commons uploads and Wikidata…"
-      sub="Looking for photos you uploaded that no article uses yet, and Wikidata items in your area."
-    />
+    <LoadingState v-if="store.contributeLoading && !c" :title="$t('contribute.loading')" :sub="$t('contribute.loadingSub')" />
 
     <CdxMessage v-else-if="store.contributeError" type="error">{{ store.contributeError }}</CdxMessage>
 
-    <div v-else-if="!c" class="empty-state">Waiting for your profile and places to load…</div>
+    <div v-else-if="!c" class="empty-state">{{ $t('app.waiting') }}</div>
 
     <template v-else>
       <CdxMessage v-if="c.partial" type="warning" style="margin-bottom: 12px">
-        Some sources failed ({{ c.failed.join(', ') }}), so this page may be incomplete.
+        {{ $t('app.partialNamed', { sources: c.failed.join(', ') }) }}
       </CdxMessage>
 
       <div class="section-title" style="display: flex; align-items: center; gap: 6px">
-        <CdxIcon :icon="cdxIconLogoWikimediaCommons" size="small" /> Place your photos
+        <CdxIcon :icon="cdxIconLogoWikimediaCommons" size="small" /> {{ $t('contribute.photos') }}
       </div>
-      <p class="section-sub">
-        {{ unused.length }} of your last {{ c.commons.uploads }} Commons uploads aren't used in any Wikipedia article.
-      </p>
-      <div v-if="!unused.length" class="empty-state">All your recent photos are used somewhere. 🎉</div>
+      <p class="section-sub">{{ $t('contribute.photosSub', { unused: unused.length, uploads: c.commons.uploads }) }}</p>
+      <div v-if="!unused.length" class="empty-state">{{ $t('contribute.allUsed') }}</div>
       <div class="photo-grid">
         <div v-for="f in unused" :key="f.file" class="panel photo-card">
           <a :href="f.url" target="_blank" rel="noopener">
@@ -49,35 +41,46 @@ const events = computed(() => c.value?.events || [])
           </a>
           <div class="photo-card__name">{{ f.file.replace(/^File:/, '') }}</div>
           <div v-if="f.articles?.length" class="photo-card__articles">
-            Could go in ({{ f.matchedBy === 'location' ? 'within 1 km' : 'matching title' }}):
+            {{ $t('contribute.couldGo', { how: f.matchedBy === 'location' ? $t('contribute.byLocation') : $t('contribute.byTitle') }) }}
             <a v-for="a in f.articles" :key="a.title" :href="a.editUrl" target="_blank" rel="noopener">{{ a.title }}</a>
           </div>
         </div>
       </div>
 
       <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-top: 24px">
-        <CdxIcon :icon="cdxIconLogoWikidata" size="small" /> Wikidata gaps<template v-if="c.wikidata.place"> in {{ c.wikidata.place }}</template>
+        <CdxIcon :icon="cdxIconLogoWikidata" size="small" />
+        {{ c.wikidata.place ? $t('contribute.gapsIn', { place: c.wikidata.place }) : $t('contribute.gaps') }}
       </div>
       <div v-if="!items.length" class="empty-state">
-        No Wikidata gaps found{{ c.wikidata.place ? '' : " — we couldn't work out a place you edit about" }}.
+        {{ c.wikidata.place ? $t('contribute.noGaps') : $t('contribute.noGapsNoPlace') }}
       </div>
       <div v-for="w in items" :key="w.qid" class="item-card">
         <div class="item-card__head">
           <span class="item-card__title"><a :href="w.url" target="_blank" rel="noopener">{{ w.label }}</a></span>
-          <CdxInfoChip status="subtle">{{ w.sitelinks }} sitelinks</CdxInfoChip>
+          <CdxInfoChip status="subtle">{{ $t('contribute.sitelinks', { n: w.sitelinks }) }}</CdxInfoChip>
         </div>
         <div class="item-card__row">
-          <CdxInfoChip v-for="m in w.missing" :key="m" status="warning">No {{ c.language }} {{ m }}</CdxInfoChip>
+          <CdxInfoChip v-for="m in w.missing" :key="m" status="warning">{{ $t('contribute.missing', { lang: c.language, what: m }) }}</CdxInfoChip>
         </div>
       </div>
 
       <template v-if="events.length">
         <div class="section-title" style="display: flex; align-items: center; gap: 6px; margin-top: 24px">
-          <CdxIcon :icon="cdxIconCalendar" size="small" /> Campaigns that include your articles
+          <CdxIcon :icon="cdxIconCalendar" size="small" /> {{ $t('contribute.campaigns') }}
         </div>
-        <div v-for="e in events" :key="e.id || e.event_id" class="item-card">
-          <div class="item-card__title">{{ e.name || e.event_name || 'Event' }}</div>
-          <div class="item-card__reason">Includes: {{ e.yourArticles.join(', ') }}</div>
+        <div v-for="e in events" :key="e.id" class="item-card">
+          <div class="item-card__head">
+            <span class="item-card__title"><a :href="e.url" target="_blank" rel="noopener">{{ e.name || $t('contribute.event') }}</a></span>
+            <CdxInfoChip v-if="e.starts" status="notice">{{ $t('event.dates', { starts: e.starts.slice(0, 10), ends: (e.ends || '').slice(0, 10) }) }}</CdxInfoChip>
+          </div>
+          <div class="item-card__reason">
+            {{ e.yourArticles.length > 5
+              ? $t('contribute.includesMore', { titles: e.yourArticles.slice(0, 5).join(', '), n: e.yourArticles.length - 5 })
+              : $t('contribute.includes', { titles: e.yourArticles.join(', ') }) }}
+          </div>
+          <RouterLink :to="{ name: 'event', params: { id: e.id }, query: { user: urlName(store.username) } }">
+            {{ $t('contribute.openEvent') }}
+          </RouterLink>
         </div>
       </template>
     </template>

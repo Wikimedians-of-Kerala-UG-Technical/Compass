@@ -12,7 +12,4 @@ def trends():
     country = (request.args.get('country') or '').upper() or None
     dbname = request.args.get('wiki') or 'enwiki'
     langs = [l for l in (request.args.get('langs') or '').split(',') if l][:5]
-    try:
-        return jsonify(get_trends(country, dbname, langs))
-    except Exception as e:
-        return jsonify({'error': str(e), 'trending': [], 'news': []}), 500
+    return jsonify(get_trends(country, dbname, langs))

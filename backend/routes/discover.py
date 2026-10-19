@@ -10,14 +10,9 @@ bp = Blueprint('discover', __name__)
 def get_discoveries(username):
     """Optional `region` and `local` (Wikidata QIDs) and `regionName`, from /api/geo's
     focus, add "missing in your language" gaps for those places."""
-    try:
-        profile = build_profile(username, request.args.get('wiki') or None)
-        region = None
-        if request.args.get('region') or request.args.get('local'):
-            region = {'qid': request.args.get('region'), 'localQid': request.args.get('local'),
-                      'name': request.args.get('regionName')}
-        return jsonify({'username': username, **find_discover(profile, region)})
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
-    except Exception as e:
-        return jsonify({'error': 'Something went wrong: ' + str(e)}), 500
+    profile = build_profile(username, request.args.get('wiki') or None)
+    region = None
+    if request.args.get('region') or request.args.get('local'):
+        region = {'qid': request.args.get('region'), 'localQid': request.args.get('local'),
+                  'name': request.args.get('regionName')}
+    return jsonify({'username': profile['username'], **find_discover(profile, region)})

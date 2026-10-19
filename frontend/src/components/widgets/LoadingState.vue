@@ -8,8 +8,8 @@ defineProps({
 </script>
 
 <template>
-  <div class="loading-state fade-in">
-    <CdxProgressBar aria-label="Loading" />
+  <div class="loading-state fade-in" aria-live="polite">
+    <CdxProgressBar :aria-label="$t('app.loading')" />
     <div class="loading-state__title">{{ title }}</div>
     <div v-if="sub" class="loading-state__sub">{{ sub }}</div>
   </div>

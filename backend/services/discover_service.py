@@ -41,7 +41,7 @@ def _seeds(profile, source):
     if wiki.lang(home_db) == source:
         return titles[:5]
     mapped = []
-    for page in wiki.api_pages(home_db, titles, {'action': 'query', 'prop': 'langlinks', 'lllang': source}):
+    for page in wiki.api_pages(home_db, titles, {'action': 'query', 'prop': 'langlinks', 'lllang': source, 'lllimit': 'max'}):
         links = page.get('langlinks') or []
         if links:
             mapped.append(links[0]['title'])
@@ -85,6 +85,65 @@ SELECT ?item ?itemLabel ?enTitle ?links WHERE {{
         return []
 
 
+def missing_here(profile, limit=30):
+    """For editors who write in one language only: widely linked English articles in their
+    topics and country that their home wiki doesn't have yet. English Wikipedia is only the
+    index (its ML topic labels and incoming links say what's central to a subject); the
+    editor writes the article from scratch, in their language, from their own sources.
+    CirrusSearch answers in ~1 s, where the equivalent Wikidata query times out."""
+    home_db, home_lang = profile['homeWiki'], profile['homeLang']
+    if home_db == 'enwiki':
+        return []
+    topics = [t['slug'] for t in profile.get('topics') or []][:2]
+    country = (profile.get('countries') or [{}])[0].get('a3')
+    scopes = [f'articletopic:{t}' + (f' articlecountry:{country}' if country else '') for t in topics]
+    if country and not scopes:
+        scopes = [f'articlecountry:{country}']
+    out, seen = [], set()
+    for scope in scopes:
+        try:
+            results, _ = wiki.search('enwiki', scope, limit=80, sort='incoming_links_desc')
+        except RuntimeError:
+            continue
+        titles = [r['title'] for r in results if not r['title'].startswith('List of') and r['title'] not in seen]
+        for page in wiki.api_pages('enwiki', titles, {
+            'action': 'query', 'prop': 'langlinks|pageprops', 'lllang': home_lang, 'lllimit': 'max',
+            'ppprop': 'wikibase_item',
+        }):
+            if page.get('langlinks') or page.get('missing') is not None:
+                continue
+            seen.add(page['title'])
+            out.append({
+                'title': page['title'], 'qid': (page.get('pageprops') or {}).get('wikibase_item'),
+                'why': f'Widely linked on English Wikipedia ({scope.split()[0].split(":", 1)[1].replace("-", " ")})',
+                'sourceUrl': wiki.page_url('enwiki', page['title']),
+            })
+    # The item's label in the editor's language, when Wikidata has one, is the likely
+    # title; the link then opens that page for creation.
+    qids = [a['qid'] for a in out if a['qid']]
+    labels = {}
+    for i in range(0, len(qids), 50):
+        try:
+            data = wiki.api('wikidatawiki', {'action': 'wbgetentities', 'ids': '|'.join(qids[i:i + 50]),
+                                             'props': 'labels', 'languages': home_lang}, post=True)
+        except RuntimeError:
+            break
+        for qid, ent in (data.get('entities') or {}).items():
+            label = ((ent.get('labels') or {}).get(home_lang) or {}).get('value')
+            if label:
+                labels[qid] = label
+    for a in out:
+        a['localTitle'] = labels.get(a['qid'])
+        a['createUrl'] = wiki.edit_url(home_db, a['localTitle']) if a['localTitle'] else None
+        a['wikidataUrl'] = f'https://www.wikidata.org/wiki/{a["qid"]}' if a['qid'] else None
+    # Interleave the topics, keeping each one's link order.
+    by_why = {}
+    for a in out:
+        by_why.setdefault(a['why'], []).append(a)
+    ranked = [g[i] for i in range(max((len(g) for g in by_why.values()), default=0)) for g in by_why.values() if i < len(g)]
+    return ranked[:limit]
+
+
 def find_discover(profile, region=None):
     key = (profile['username'], profile['homeWiki'], (region or {}).get('qid'), (region or {}).get('localQid'))
     return _cache.get_or_compute(key, lambda: _discover(profile, region))
@@ -96,6 +155,7 @@ def _discover(profile, region):
     if not pairs:
         return {
             'monolingual': True, 'pairs': [], 'articles': [], 'sections': [], 'regionGaps': [],
+            'missingHere': missing_here(profile),
             'languages': profile.get('languages') or [], 'secs': round(time.time() - t0, 1),
         }
     topics = [t['slug'] for t in profile.get('topics') or []][:2]

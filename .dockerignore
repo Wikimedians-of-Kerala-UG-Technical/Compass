@@ -1,0 +1,9 @@
+.git
+.venv
+**/node_modules
+**/__pycache__
+frontend/dist
+backend/.cache
+backend/.data
+eval/runs
+legacy

@@ -28,6 +28,15 @@ FINAL = 60
 PAGEVIEW_TOP = 30
 MAX_PER_SCOPE = 5
 MAX_PER_TYPE = 15
+# Below this many edits on the home wiki, an editor gets Growth's guided tasks only
+# (add a link, add an image): they come with step-by-step help in the editor, and a
+# newcomer's few edits say too little about them to pick real gaps. Below 500 edits,
+# big and showcase articles are still left out.
+GUIDED_ONLY_EDITS = 200
+NEWCOMER_EDITS = 500
+
+# Hand-set; eval/learn_weights.py fits them to task feedback for comparison.
+WEIGHTS = {'topic': 0.30, 'place': 0.20, 'impact': 0.15, 'feasibility': 0.15, 'freshness': 0.10, 'affinity': 0.10}
 
 AFFINITY = {
     'add_citations': ('references',), 'add_refs': ('references',), 'more_refs': ('references',),
@@ -137,13 +146,20 @@ def _months_since(stamp):
 def find_tasks(profile, place=None):
     dbname = profile['homeWiki']
     t0 = time.time()
+    guided = (profile.get('homeEdits') or 0) < GUIDED_ONLY_EDITS
     scopes = _scopes(profile, place)
-    filters = _filters(dbname)
-    # Growth's quick tasks only make sense with broad scopes; categories and similar
-    # articles are already narrow enough that maintenance tags are the better signal.
-    queries = [(sid, f'{frag} {flt}', reason, kind)
-               for sid, frag, reason in scopes for kind, flt in filters
-               if kind == 'maintenance' or sid.startswith(('topic:', 'country:', 'near'))]
+    if guided:
+        filters = [('growth', 'hasrecommendation:link|image')]
+        # Every scope, plus the whole wiki, so a newcomer with no clear topic still gets tasks.
+        scopes.append(('wiki', '', 'Suggested by Wikipedia for new editors, with step-by-step help'))
+        queries = [(sid, f'{frag} {flt}'.strip(), reason, kind) for sid, frag, reason in scopes for kind, flt in filters]
+    else:
+        filters = _filters(dbname)
+        # Growth's quick tasks only make sense with broad scopes; categories and similar
+        # articles are already narrow enough that maintenance tags are the better signal.
+        queries = [(sid, f'{frag} {flt}', reason, kind)
+                   for sid, frag, reason in scopes for kind, flt in filters
+                   if kind == 'maintenance' or sid.startswith(('topic:', 'country:', 'near'))]
     failed = []
 
     def run(q):
@@ -157,7 +173,7 @@ def find_tasks(profile, place=None):
 
     candidates = {}
     with ThreadPoolExecutor(max_workers=6) as pool:
-        for (sid, query, reason, kind), results in pool.map(run, queries):
+        for (sid, _query, reason, _kind), results in pool.map(run, queries):
             for rank, r in enumerate(results):
                 c = candidates.setdefault(r['title'], {'scopes': [], 'bestRank': rank})
                 if sid not in [s[0] for s in c['scopes']]:
@@ -173,7 +189,7 @@ def find_tasks(profile, place=None):
     country_rank = {c['name']: i for i, c in enumerate(profile.get('countries') or [])}
     edit_types = profile.get('editTypes') or {}
     total_edits = sum(edit_types.values()) or 1
-    newcomer = (profile.get('homeEdits') or 0) < 500
+    newcomer = (profile.get('homeEdits') or 0) < NEWCOMER_EDITS
 
     scored = []
     for title in titles:
@@ -181,6 +197,8 @@ def find_tasks(profile, place=None):
         if not sig or sig.get('protected'):
             continue
         issues = maintenance.issues_of(dbname, sig)
+        if guided:
+            issues = [k for k in issues if k in maintenance.RECOMMENDATIONS]
         if not issues:
             continue
         if newcomer and ((sig.get('bytes') or 0) > 60000 or sig.get('quality') in ('GA', 'A', 'FA')):
@@ -222,8 +240,9 @@ def find_tasks(profile, place=None):
         if newcomer and primary in ('add_link', 'add_image'):
             affinity = 1.0
 
-        score = (0.30 * topic + 0.20 * place_score + 0.15 * impact + 0.15 * feasibility
-                 + 0.10 * freshness + 0.10 * affinity + 0.05 * m['urgency'])
+        signals = {'topic': topic, 'place': place_score, 'impact': impact, 'feasibility': feasibility,
+                   'freshness': freshness, 'affinity': affinity}
+        score = sum(WEIGHTS[k] * v for k, v in signals.items()) + 0.05 * m['urgency']
         if any(sid.startswith(('cat:', 'like:', 'near')) for sid, _ in candidates[title]['scopes']):
             score += 0.05  # found through the editor's own categories, articles or place
         if primary in ('add_link', 'add_image') and not newcomer:
@@ -255,16 +274,11 @@ def find_tasks(profile, place=None):
             'quality': sig.get('quality'),
             'size': size,
             'scope': candidates[title]['scopes'][0][0],
-            'signals': {
-                'topic': round(topic, 3), 'place': round(place_score, 3), 'impact': round(impact, 3),
-                'feasibility': round(feasibility, 3), 'freshness': round(freshness, 3), 'affinity': round(affinity, 3),
-            },
+            'signals': {k: round(v, 3) for k, v in signals.items()},
             'score': round(score, 4),
             'pageviews': None,
             'staleDays': _days_since(sig.get('lastEdit')),
         })
-
-    scored.sort(key=lambda t: t['score'], reverse=True)
 
     ranked = sorted(scored, key=lambda t: t['score'], reverse=True)
 
@@ -300,6 +314,7 @@ def find_tasks(profile, place=None):
         failed.append({'query': 'pageviews', 'error': f'{len(pv_failed)} lookups rate-limited'})
     return {
         'wiki': dbname,
+        'mode': 'guided' if guided else 'standard',
         'tasks': tasks,
         'scopes': [{'id': s, 'query': f, 'reason': r} for s, f, r in scopes],
         'candidates': len(titles),

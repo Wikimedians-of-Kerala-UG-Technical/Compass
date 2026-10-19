@@ -2,7 +2,7 @@
 
 Base URL in development: `http://127.0.0.1:5000`. The frontend reads it from `VITE_API_BASE`.
 
-All endpoints are `GET`, unauthenticated, and return JSON (UTF-8; non-Latin titles are not escaped). Every per-user endpoint accepts an optional `wiki` parameter (a dbname such as `mlwiki`). Without it, the backend uses the editor's **home wiki**, meaning the Wikipedia where they have the most edits.
+Endpoints are `GET` unless marked otherwise, need no login, and return JSON (UTF-8; non-Latin titles are not escaped). Every per-user endpoint accepts an optional `wiki` parameter (a dbname such as `mlwiki`). Without it, the backend uses the editor's **home wiki**, meaning the Wikipedia where they have the most edits.
 
 ## Endpoint index
 
@@ -16,7 +16,13 @@ All endpoints are `GET`, unauthenticated, and return JSON (UTF-8; non-Latin titl
 | [`/api/contribute/<username>`](#apicontributeusername) | Commons and Wikidata tasks | 5–20 s |
 | [`/api/trends`](#apitrends) | Most-read articles that need work, plus headlines | 5–15 s |
 | [`/api/article/<title>/guide`](#apiarticletitleguide) | Paragraph-level analysis of one article | 2–8 s |
-| [`/api/article/<title>/external-references`](#apiarticletitleexternal-references) | Citable sources with ready-to-paste templates | 5–15 s |
+| [`/api/article/<title>/external-references`](#apiarticletitleexternal-references) | Citable sources with ready-to-paste templates | 5–20 s |
+| [`/api/stats/<username>`](#apistatsusername) | Streak, last-30-day activity, readers reached | 2–5 s (cached 1 h) |
+| [`POST /api/feedback`](#feedback) | Vote on a task card | instant |
+| [`/api/feedback/<username>`](#feedback) | The editor's votes, after checking which articles they then edited | 1 s |
+| [`/api/alerts/<username>/stream`](#apialertsusernamestream) | Live alerts (server-sent events) | stays open |
+| [`/api/events…`](#events) | An Event Registration worklist, ranked for one editor | 1–30 s |
+| `/api/health` | `{"ok": true}` for load balancers | instant |
 
 The per-user endpoints share one cached profile. The first call pays for it and the others reuse it, so the dashboard's parallel requests don't fetch contributions several times.
 
@@ -25,8 +31,13 @@ The per-user endpoints share one cached profile. The first call pays for it and 
 | Status | Meaning | Body |
 |---|---|---|
 | `200` | Success | The documented payload. `partial: true` means a sub-source failed and the result may be incomplete. |
-| `404` | No such account, or no edits on that wiki | `{"error": "…"}` |
-| `500` | Upstream or internal failure | `{"error": "Something went wrong: …"}` |
+| `400` | Malformed request (unknown feedback action, unrecognised event reference…) | `{"error": "…"}` |
+| `403` | An editor who opted out (`User:<name>/Compass-opt-out` on Meta) | `{"error": "…"}` |
+| `404` | No such account, no edits on that wiki, unknown wiki or event, event without a worklist | `{"error": "…"}` |
+| `429` | Over `COMPASS_RATE_LIMIT` | `{"error": "Too many requests…"}` and `Retry-After` |
+| `500` | Upstream or internal failure | `{"error": "Something went wrong (error 1a2b3c4d)…", "errorId": "1a2b3c4d"}`. Details only in the server log, under that id |
+
+Usernames are normalised the way MediaWiki does it (underscores → spaces, first letter capitalised), so `netha_Hussain` and `Netha Hussain` share one cached profile.
 
 ---
 
@@ -69,7 +80,7 @@ Full detail: [[Feature-Task-Recommendations]]
 | `wiki` | Wiki to search (default: home wiki) |
 | `lat`, `lon`, `place` | Optional. Adds a "near where you edit" source (`nearcoord:25km`). The frontend passes `geo.focus.local`. |
 
-**Response**: `{wiki, tasks[], scopes[], candidates, partial, failed[], secs}`. Each task:
+**Response**: `{wiki, mode, tasks[], scopes[], candidates, hidden?, partial, failed[], secs}`. `mode` is `guided` for editors with fewer than 200 edits on that wiki (Growth's link and image tasks only, plus a whole-wiki scope) and `standard` otherwise. Tasks the editor voted down, marked done or dismissed are left out; `hidden` counts them. Each task:
 
 | Field | Notes |
 |---|---|
@@ -79,7 +90,7 @@ Full detail: [[Feature-Task-Recommendations]]
 | `meta` | `{label, effort, min}` |
 | `reason`, `reasons` | Why it was picked for this editor, e.g. "In “Kerala cuisine”, where you edited 23 articles" |
 | `details` | e.g. `["Start-class", "6 kB", "tagged since 2026-02", "53 views/day"]` |
-| `scope` | Which source found it: `topic:…`, `cat:…`, `near`, `like:…` |
+| `scope` | Which source found it: `topic:…`, `cat:…`, `near`, `like:…`, `wiki` (guided mode) |
 | `signals` | The six ranking components, each 0–1 |
 | `score`, `pageviews`, `quality`, `size`, `topic`, `country`, `staleDays` | |
 
@@ -112,7 +123,8 @@ Full detail: [[Feature-Discover]]
 | `region`, `local` | Wikidata QIDs from `geo.focus`, for "missing near you" gaps |
 | `regionName` | Display name |
 
-`{monolingual, pairs[], languages[], articles[], sections[], regionGaps[], partial, secs}`.
+`{monolingual, pairs[], languages[], articles[], sections[], regionGaps[], missingHere[]?, partial, secs}`.
+- `missingHere` (monolingual editors on a non-English wiki only): widely linked English articles in their topics and country with no article on their wiki: `{title, qid, why, sourceUrl, localTitle, createUrl, wikidataUrl}`. `createUrl` opens the edit page for `localTitle`, the item's Wikidata label in their language, when it has one.
 - `articles`: `{title, qid, source, target, languages, size, why, sourceUrl, translateUrl}`.
 - `sections`: `{sourceTitle, targetTitle, missing: [{section, targetHeading, size, translateUrl}], targetUrl}`.
 - `regionGaps`: `{qid, title, label, sitelinks, target, region, translateUrl, sourceUrl}`.
@@ -140,7 +152,7 @@ Full detail: [[Feature-Trends]]
 | `wiki` | Home wiki for `top/<lang>.wikipedia` |
 | `langs` | Extra language codes, comma-separated |
 
-`{country, wiki, trending[], checked, news[]}`. `trending` holds only articles with a maintenance tag or Growth suggestion: `{title, wiki, views, day, url, editUrl, issues[], quality, source}`.
+`{country, wiki, trending[], checked, droppedAsAutomated, news[]}`. Articles whose human traffic that day was more than 92% or less than 3% desktop are dropped as automated (`droppedAsAutomated` counts them). `trending` holds only articles with a maintenance tag or Growth suggestion: `{title, wiki, views, day, url, editUrl, issues[], quality, source}`.
 
 ## `/api/article/<title>/guide`
 
@@ -154,6 +166,44 @@ Full detail: [[Feature-Article-Guide]]. `?wiki=` defaults to `enwiki`. Titles ca
 
 Full detail: [[Feature-Article-Guide]]
 
-`{title, wiki, query, sourcesUsed[], medical, alreadyCitedSkipped, results[], partial, failed[], secs}`. Each result: `{title, year, venue, authors, doi, pmid, url, source, citations, cite}`, where `cite` is a ready-to-paste `{{cite journal|…}}`.
+`{title, wiki, query, sourcesUsed[], medical, alreadyCitedSkipped, keysMissing[], results[], partial, failed[], secs}`. Each result: `{title, year, venue, authors, doi, pmid, isbn?, kind?, url, source, citations, cite}`, where `cite` is a ready-to-paste `{{cite journal|…}}`, `{{cite book|…}}` or `{{cite web|…}}`. Non-medical articles also search Open Library, Internet Archive and (with `GOOGLE_BOOKS_API_KEY`) Google Books; `keysMissing` lists the optional keys that aren't set.
 
 The old `/api/article/<title>/references` endpoint was removed: it suggested other Wikipedia articles as sources, which Wikipedia doesn't allow (WP:CIRCULAR).
+
+## `/api/stats/<username>`
+
+Full detail: [[Feature-Stats-and-Feedback]]. `?wiki=` defaults to the home wiki.
+
+`{username, wiki, streak: {current, longest90}, last30: {edits, articles, bytesAdded}, readers: {monthly, articlesChecked, articlesTotal, top[]}, calendar, compass, secs}`.
+- `streak.current` counts consecutive UTC days with an edit, ending today or yesterday.
+- `readers.monthly` = 30 days of human page views for up to 25 articles edited in the last 30 days.
+- `calendar`: `{"YYYY-MM-DD": edits}` for the last 90 days.
+- `compass`: `{up, down, done, dismiss, edited}` from task feedback.
+
+## Feedback
+
+Full detail: [[Feature-Stats-and-Feedback]]
+
+`POST /api/feedback` with JSON `{username, wiki, title, action, type?, scope?, signals?, score?}`, where `action` is `up`, `down`, `done` or `dismiss`. Returns `201 {id, username, wiki, title, action}`. `signals` is the task's own `signals` object; only the six known keys are stored.
+
+`GET /api/feedback/<username>?wiki=` first marks votes whose article the editor has edited since (within 60 days), then returns `{wiki, items: [{title, action, type, editedAt}], summary}`.
+
+`DELETE /api/feedback/<username>?wiki=&title=` undoes a vote (all rows for that article): `{title, cleared}`.
+
+## `/api/alerts/<username>/stream`
+
+Full detail: [[Feature-Live-Alerts]]. A `text/event-stream`. The first event is `ready` (`{watching, wiki}`); after that each `alert` event is one of:
+- `{kind: "edit", title, wiki, user, comment, bot, timestamp, url, diffUrl}`: someone else edited one of the editor's articles.
+- `{kind: "tagged" | "untagged", title, wiki, issue, label, user, timestamp, url}`: an article was added to or removed from a tracking category.
+
+A `: keepalive` comment is sent every 25 s. Not rate-limited.
+
+## Events
+
+Full detail: [[Feature-Events]]
+
+| Request | Params | Returns |
+|---|---|---|
+| `GET /api/events/resolve` | `ref`: an event ID, a `Special:EventDetails` link or an `Event:` page | `{id}` (`400` for anything else) |
+| `GET /api/events/<id>` | | `{id, name, status, starts, ends, timezone, wikis[], topics[], goal, tracksContributions, eventPage, eventPageUrl, detailsUrl, worklist: {dbname: [titles]}, participants[]}` |
+| `GET /api/events/<id>/rank/<username>` | `wiki` (optional) | `{event, username, wiki, wikis: {dbname: count}, profileWiki, items[], toCreate[], total, secs}`. Each item: `{title, wiki, url, editUrl, needs[], meta, reasons[], details[], signals, score}` |

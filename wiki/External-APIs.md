@@ -1,6 +1,6 @@
 # External APIs
 
-Every piece of data comes from a public API. Nothing is stored, and nothing needs authentication. All calls go through `services/wiki.py`, which sets the User-Agent (override with `COMPASS_USER_AGENT`; [API etiquette](https://www.mediawiki.org/wiki/API:Etiquette) asks for contact details), retries on 429/5xx with backoff, and sends batches as POST.
+Every piece of data comes from a public API. Nothing fetched is stored beyond the caches, and nothing needs authentication (optional login uses Wikimedia OAuth 2, below). All calls go through `services/wiki.py`, which sets the User-Agent (override with `COMPASS_USER_AGENT`; [API etiquette](https://www.mediawiki.org/wiki/API:Etiquette) asks for contact details), retries on 429/5xx with backoff, and sends batches as POST.
 
 `eval/probe_apis.py` re-checks every API below with live calls: `python eval/probe_apis.py`.
 
@@ -13,11 +13,17 @@ Every piece of data comes from a public API. Nothing is stored, and nothing need
 | Action API, Commons | `https://commons.wikimedia.org/w/api.php` | `allimages`, `globalusage`, file coordinates |
 | Action API, Wikidata | `https://www.wikidata.org/w/api.php` | `wbgetentities` (places, P18 image, dates, sitelinks) |
 | REST API (Parsoid) | `https://{lang}.wikipedia.org/w/rest.php/v1/page/{title}/html` | Article Guide |
-| CampaignEvents | `/w/rest.php/campaignevents/v0/event_discovery/discoverable_events?page=` | Campaigns that include your articles |
+| CampaignEvents worklists | Meta `list=search` (`intitle:Worklist`, namespace 1728) + `prop=revisions` | Events whose worklist includes your articles |
 | Wikidata Query Service | `https://query.wikidata.org/sparql` | Region gaps; missing descriptions |
 | Pageviews | `https://wikimedia.org/api/rest_v1/metrics/pageviews/…` | `per-article` (impact), `top` (per wiki), `top-per-country` |
 | Lift Wing | `https://api.wikimedia.org/service/lw/inference/v1/models/revertrisk-language-agnostic:predict` | Suspicious latest edits on your articles |
 | CX recommendations | `https://api.wikimedia.org/service/lw/recommendation/api/v1/translation[/sections]` | Discover |
+| EventStreams | `https://stream.wikimedia.org/v2/stream/recentchange` | Live alerts (one shared connection) |
+| Open Library | `https://openlibrary.org/search.json` | Book sources |
+| Internet Archive | `https://archive.org/advancedsearch.php` | Digitised texts as sources |
+| Google Books | `https://www.googleapis.com/books/v1/volumes` | Book sources (needs `GOOGLE_BOOKS_API_KEY`) |
+| OAuth 2 (Meta) | `https://meta.wikimedia.org/w/rest.php/oauth2/{authorize,access_token,resource/profile}` | Optional login |
+| Growth tasks | `action=query&list=growthtasks` (logged-in only) | Newcomer tasks for their Special:Homepage topics |
 | cxserver | `https://cxserver.wikimedia.org/v2/suggest/sections/{title}/{from}/{to}` | Guide: missing sections with translated headings |
 | Citoid | `https://en.wikipedia.org/api/rest_v1/data/citation/mediawiki/{DOI|PMID}` | Ready-to-paste citations |
 | PubMed E-utilities | `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/` | Medical sources (reviews) |

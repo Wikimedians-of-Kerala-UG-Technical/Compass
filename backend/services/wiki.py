@@ -3,12 +3,13 @@
 Every request goes through here so the User-Agent, retry/backoff, `maxlag` and
 POST batching are handled in one place, for any wiki (`dbname`), not just enwiki.
 """
+import json
 import os
-import pickle
 import re
 import sqlite3
 import threading
 import time
+from collections import OrderedDict
 
 import requests
 
@@ -22,6 +23,18 @@ session = requests.Session()
 session.headers.update({'User-Agent': USER_AGENT, 'Accept': 'application/json'})
 adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=40)
 session.mount('https://', adapter)
+
+class UserError(ValueError):
+    """A problem with what the user asked for (unknown account, no edits on that wiki,
+    an unsupported wiki). The API returns its message with `status` (404 by default);
+    every other error is logged and hidden. `suggestion` (e.g. a correctly capitalised
+    username) is returned alongside, so the UI can offer it."""
+
+    def __init__(self, message, status=404, suggestion=None):
+        super().__init__(message)
+        self.status = status
+        self.suggestion = suggestion
+
 
 SPECIAL_HOSTS = {
     'wikidatawiki': 'www.wikidata.org',
@@ -38,7 +51,7 @@ def host(dbname):
         return SPECIAL_HOSTS[dbname]
     if dbname.endswith('wiki'):
         return dbname[:-4].replace('_', '-') + '.wikipedia.org'
-    raise ValueError(f'Unsupported wiki: {dbname}')
+    raise UserError(f'Unsupported wiki: {dbname}')
 
 
 def lang(dbname):
@@ -50,6 +63,13 @@ def dbname_from_url(url):
     """'https://ml.wikipedia.org' -> 'mlwiki' (Wikipedias only)."""
     m = re.match(r'^https://([a-z0-9-]+)\.wikipedia\.org$', url or '')
     return m.group(1).replace('-', '_') + 'wiki' if m else None
+
+
+def normalize_username(name):
+    """'vivek_joseph ' -> 'Vivek joseph', the form MediaWiki stores, so differently typed
+    names share one cache entry. Usernames always start with a capital letter."""
+    name = re.sub(r'[\s_]+', ' ', (name or '')).strip()
+    return name[:1].upper() + name[1:]
 
 
 def is_content_wikipedia(dbname):
@@ -191,9 +211,45 @@ def _db():
         conn = sqlite3.connect(CACHE_PATH, timeout=10)
         conn.execute('PRAGMA journal_mode=WAL')
         conn.execute('PRAGMA synchronous=NORMAL')
-        conn.execute('CREATE TABLE IF NOT EXISTS cache (ns TEXT, key TEXT, expires REAL, value BLOB, PRIMARY KEY (ns, key))')
+        conn.execute('DROP TABLE IF EXISTS cache')  # v2.0 stored pickles; values are JSON now
+        conn.execute('CREATE TABLE IF NOT EXISTS cache_json (ns TEXT, key TEXT, expires REAL, value TEXT, PRIMARY KEY (ns, key))')
         _db_local.conn = conn
     return conn
+
+
+def _encode(value):
+    """JSON-safe form of a cached value. Tuples, sets and non-string dict keys are tagged
+    so `_decode` gives back exactly what was stored (JSON, unlike pickle, can't run code
+    when a cache file is read)."""
+    if isinstance(value, tuple):
+        return {'__t': [_encode(v) for v in value]}
+    if isinstance(value, (set, frozenset)):
+        return {'__s': [_encode(v) for v in value]}
+    if isinstance(value, list):
+        return [_encode(v) for v in value]
+    if isinstance(value, dict):
+        if all(isinstance(k, str) and not k.startswith('__') for k in value):
+            return {k: _encode(v) for k, v in value.items()}
+        return {'__d': [[_encode(k), _encode(v)] for k, v in value.items()]}
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise TypeError(f'not cacheable on disk: {type(value).__name__}')
+
+
+def _decode(value):
+    if isinstance(value, list):
+        return [_decode(v) for v in value]
+    if isinstance(value, dict):
+        if len(value) == 1:
+            (tag, inner), = value.items()
+            if tag == '__t':
+                return tuple(_decode(v) for v in inner)
+            if tag == '__s':
+                return {_decode(v) for v in inner}
+            if tag == '__d':
+                return {_decode(k): _decode(v) for k, v in inner}
+        return {k: _decode(v) for k, v in value.items()}
+    return value
 
 
 class TTLCache:
@@ -203,30 +259,32 @@ class TTLCache:
     def __init__(self, ttl, maxsize=2000, name=None):
         self.ttl, self.maxsize = ttl, maxsize
         self.name = name if CACHE_PATH else None
-        self._data = {}
+        # Every entry of one cache has the same TTL, so insertion order is expiry order
+        # and the first entry is always the one to evict.
+        self._data = OrderedDict()
         self._lock = threading.Lock()
         self._key_locks = {}
 
     def _disk_get(self, key):
         try:
-            row = _db().execute('SELECT expires, value FROM cache WHERE ns = ? AND key = ?',
+            row = _db().execute('SELECT expires, value FROM cache_json WHERE ns = ? AND key = ?',
                                 (self.name, repr(key))).fetchone()
         except sqlite3.Error:
             return None
         if not row or row[0] <= time.time():
             return None
         try:
-            return row[0], pickle.loads(row[1])
-        except Exception:
+            return row[0], _decode(json.loads(row[1]))
+        except ValueError:
             return None
 
     def _disk_set(self, key, expires, value):
         try:
+            blob = json.dumps(_encode(value), ensure_ascii=False)
             conn = _db()
-            conn.execute('INSERT OR REPLACE INTO cache VALUES (?, ?, ?, ?)',
-                         (self.name, repr(key), expires, pickle.dumps(value, pickle.HIGHEST_PROTOCOL)))
+            conn.execute('INSERT OR REPLACE INTO cache_json VALUES (?, ?, ?, ?)', (self.name, repr(key), expires, blob))
             conn.commit()
-        except (sqlite3.Error, pickle.PicklingError, TypeError):
+        except (sqlite3.Error, TypeError, ValueError):
             pass
 
     def get(self, key):
@@ -244,9 +302,9 @@ class TTLCache:
 
     def _remember(self, key, expires, value):
         with self._lock:
-            if len(self._data) >= self.maxsize:
-                oldest = min(self._data, key=lambda k: self._data[k][0])
-                self._data.pop(oldest, None)
+            self._data.pop(key, None)
+            while len(self._data) >= self.maxsize:
+                self._data.popitem(last=False)
             self._data[key] = (expires, value)
 
     def set(self, key, value):
@@ -263,12 +321,19 @@ class TTLCache:
         if value is not None:
             return value
         with self._lock:
-            key_lock = self._key_locks.setdefault(key, threading.Lock())
-        with key_lock:
-            value = self.get(key)
-            if value is None:
-                value = self.set(key, fn())
-        return value
+            entry = self._key_locks.setdefault(key, [threading.Lock(), 0])
+            entry[1] += 1  # waiters, so the lock is only dropped once nobody holds it
+        try:
+            with entry[0]:
+                value = self.get(key)
+                if value is None:
+                    value = self.set(key, fn())
+            return value
+        finally:
+            with self._lock:
+                entry[1] -= 1
+                if not entry[1]:
+                    self._key_locks.pop(key, None)
 
 
 def purge_expired_cache():
@@ -277,7 +342,7 @@ def purge_expired_cache():
         return
     try:
         conn = _db()
-        conn.execute('DELETE FROM cache WHERE expires <= ?', (time.time(),))
+        conn.execute('DELETE FROM cache_json WHERE expires <= ?', (time.time(),))
         conn.commit()
     except sqlite3.Error:
         pass

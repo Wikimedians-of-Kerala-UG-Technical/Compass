@@ -76,7 +76,7 @@ def _local_names(dbname, ns_prefix, names):
     language = wiki.lang(dbname)
     out = {}
     titles = [f'{ns_prefix}:{n}' for n in names]
-    for page in wiki.api_pages('enwiki', titles, {'action': 'query', 'prop': 'langlinks', 'lllang': language}):
+    for page in wiki.api_pages('enwiki', titles, {'action': 'query', 'prop': 'langlinks', 'lllang': language, 'lllimit': 'max'}):
         links = page.get('langlinks') or []
         if links:
             out[page['title'].split(':', 1)[1]] = links[0]['title'].split(':', 1)[1]

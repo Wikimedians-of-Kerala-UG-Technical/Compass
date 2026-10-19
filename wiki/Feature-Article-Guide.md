@@ -35,5 +35,6 @@ The guide fetches **Parsoid HTML** (`/w/rest.php/v1/page/<title>/html`). Every s
 | Already cited | DOIs found in the article's citations are excluded |
 | Ready to paste | Each result with a DOI or PMID goes through **Citoid**, the service behind VisualEditor's Cite button. It becomes `{{cite journal |last1=… |first1=… |title=… |journal=… |date=… |volume=… |pages=… |doi=… |pmid=…}}`, with a Copy button. |
 | Semantic Scholar | Used only when `SEMANTIC_SCHOLAR_API_KEY` is set. Without a key, every call returns HTTP 429. |
+| Books and archives | Articles that aren't medical also search **Open Library** and the **Internet Archive** (searched as a phrase; the Digital Library of India collection is there), and **Google Books** when `GOOGLE_BOOKS_API_KEY` is set (the anonymous quota is always used up). Catalogue results must share at least two significant words with the article title, and archive results one: "Kerala Sahitya Akademi" otherwise gets *Kerala Varma*, and books the Akademi *published*. Books are cited by ISBN and archive items by URL, both through Citoid. |
 
 The v1 "Wikipedia references" list was removed. It suggested other Wikipedia articles as sources, which Wikipedia doesn't allow (WP:CIRCULAR).

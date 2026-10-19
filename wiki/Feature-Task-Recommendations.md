@@ -54,8 +54,10 @@ Impact uses `popularity_score` because it comes in the same batch call for every
 
 ## 4. What a card shows
 
-The title, the action ("Add references · ~20 min"), every issue with its tag date, the reason, and details ("Start-class · 6 kB · tagged since 2026-02 · 53 views/day"). Buttons go to the edit page and to the Guide, which shows exactly where in the article the problem is.
+The title, the action ("Add references · ~20 min"), every issue with its tag date, the reason, and details ("Start-class · 6 kB · tagged since 2026-02 · 53 views/day"). Buttons go to the edit page and to the Guide, which shows exactly where in the article the problem is. Four small buttons record feedback (good suggestion, I did this, not for me, hide); see [[Feature-Stats-and-Feedback]]. Cards voted down, done or hidden don't come back for that editor.
 
 ## Newcomer mode
+
+Editors with **fewer than 200** edits on the home wiki are in **guided mode** (`mode: "guided"`): only Growth's `hasrecommendation:link|image` tasks, searched in every one of their scopes plus the whole wiki (so an editor with no clear topic still gets tasks). These come with step-by-step help in the editor, and a handful of edits says too little about someone to pick real gaps.
 
 Editors with < 500 edits on the home wiki get full affinity for Growth "add a link / add an image" tasks, and never get articles over 60 kB or GA/FA-class articles. Those are machine-prepared, take about 5 minutes, and Growth's own tools on the wiki guide the edit.

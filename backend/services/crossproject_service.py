@@ -5,7 +5,8 @@
   photo's coordinates when it has them, else by its title).
 - Wikidata gaps: items in the editor's place (district/region) that have no label or
   description in their language, most widely linked first (Wikidata Query Service).
-- Campaigns: active events (CampaignEvents) whose worklists include the editor's articles.
+- Campaigns: upcoming and ongoing events (Event Registration) whose worklists include the
+  editor's articles.
 """
 import re
 import time
@@ -94,20 +95,11 @@ SELECT ?item ?itemLabel ?links ?hasLabel WHERE {{
 
 
 def campaign_events(home_db, titles):
-    """Active CampaignEvents events whose worklist contains any of these articles."""
-    found = {}
-
-    def check(title):
-        url = f'https://{wiki.host(home_db)}/w/rest.php/campaignevents/v0/event_discovery/discoverable_events'
-        return title, wiki.get_json(url, params={'page': title}, retries=1, timeout=15) or []
-
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        for title, events in pool.map(check, titles[:10]):
-            for ev in events if isinstance(events, list) else []:
-                eid = ev.get('id') or ev.get('event_id')
-                entry = found.setdefault(eid, {**ev, 'yourArticles': []})
-                entry['yourArticles'].append(title)
-    return list(found.values())
+    """Upcoming and ongoing events (Event Registration) whose worklist includes any of
+    these articles. Read from the worklist pages, because the extension's own lookup
+    only answers logged-in users."""
+    from services.event_service import events_with_articles
+    return events_with_articles(home_db, titles)
 
 
 def find_contribute(profile, place=None):
@@ -119,7 +111,9 @@ def _contribute(profile, place):
     t0 = time.time()
     home = profile['homeWiki']
     language = profile['homeLang']
-    titles = [h['title'] for h in profile.get('heavilyEdited') or []]
+    # Everything we know they work on; the worklist lookup is local, so more is free.
+    titles = list(dict.fromkeys([h['title'] for h in profile.get('heavilyEdited') or []]
+                                + (profile.get('createdArticles') or []) + (profile.get('_editedTitles') or [])))
     failed = []
     with ThreadPoolExecutor(max_workers=3) as pool:
         uploads_f = pool.submit(unused_uploads, profile['username'], home)
