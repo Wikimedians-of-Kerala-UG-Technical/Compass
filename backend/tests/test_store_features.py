@@ -25,6 +25,16 @@ def test_feedback_validation(kwargs):
         fb.record(**args)
 
 
+def test_clear_removes_every_row_for_the_article():
+    fb.record('A', 'enwiki', 'Malaria', 'up', signals={'topic': 0.5})
+    fb.record('A', 'enwiki', 'Malaria', 'dismiss')
+    fb.record('A', 'enwiki', 'Gout', 'down')
+    assert fb.clear('a', 'enwiki', 'Malaria') == 2
+    assert set(fb.latest('A', 'enwiki')) == {'Gout'}
+    assert fb.summary('A', 'enwiki')['up'] == 0 and fb.training_rows() == []
+    assert fb.clear('A', 'enwiki', 'Malaria') == 0
+
+
 def test_verify_edits_marks_only_later_edits(monkeypatch):
     fb.record('A', 'enwiki', 'Edited later', 'up')
     fb.record('A', 'enwiki', 'Never edited', 'up')

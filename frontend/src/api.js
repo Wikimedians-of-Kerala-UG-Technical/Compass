@@ -101,6 +101,11 @@ export function sendFeedback(task, username, action) {
   })
 }
 
+// Undo a vote: the editor's feedback on that article is removed.
+export function clearFeedback(username, wiki, title) {
+  return request('DELETE', '/api/feedback/' + u(username), { params: { wiki, title }, label: 'Undo' })
+}
+
 export function getFeedback(username, wiki) {
   return get('/api/feedback/' + u(username), { wiki }, 'Feedback')
 }

@@ -34,6 +34,17 @@ def record(username, dbname, title, action, task_type=None, scope=None, signals=
     return {'id': cur.lastrowid, 'username': username, 'wiki': dbname, 'title': title, 'action': action}
 
 
+def clear(username, dbname, title):
+    """Undoes the editor's vote on an article: every row for it goes, so a vote they
+    took back never reaches their stats or the weight fitting. Returns rows removed."""
+    username = wiki.normalize_username(username)
+    title = (title or '').strip()
+    if not username or not title:
+        raise wiki.UserError('Undoing a vote needs a username and an article title.', 400)
+    cur = store.execute('DELETE FROM feedback WHERE username = ? AND wiki = ? AND title = ?', (username, dbname, title))
+    return cur.rowcount
+
+
 def latest(username, dbname):
     """{title: latest feedback row} for this editor on this wiki."""
     out = {}

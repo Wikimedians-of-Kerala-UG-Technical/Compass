@@ -10,6 +10,7 @@ import {
   getStats,
   getFeedback,
   sendFeedback,
+  clearFeedback,
   openAlerts,
 } from '../api.js'
 import { router } from '../router.js'
@@ -22,6 +23,12 @@ const RECENT_MAX = 6
 const ALERTS_MAX = 30
 const HIDDEN_ACTIONS = ['down', 'done', 'dismiss']
 let alertSource = null // the open EventSource; not state, since it can't be serialised
+
+// The ranked tasks plus the ones the server held back because of an earlier vote.
+function allTasks(state) {
+  const shown = new Set(state.tasks.map((task) => task.title))
+  return [...state.tasks, ...state.hiddenTasks.filter((task) => !shown.has(task.title))]
+}
 
 // Usernames go in URLs with underscores, the way Wikipedia writes them.
 export const urlName = (name) => (name || '').trim().replace(/ /g, '_')
@@ -64,12 +71,14 @@ export const useAppStore = defineStore('app', {
 
     tasks: [],
     tasksMeta: null, // {scopes, candidates, partial, mode, hidden}
+    hiddenTasks: [], // tasks the server left out because of an earlier vote, kept so they can be restored
     tasksLoading: false,
     tasksError: '',
 
     // feedback on task cards: title -> latest action
     feedback: {},
     feedbackError: '',
+    lastHidden: null, // {task, action}: the card that just disappeared, for the Undo bar
 
     // revisit — the editor's own articles that need attention
     revisit: [],
@@ -117,7 +126,17 @@ export const useAppStore = defineStore('app', {
     geoLocal: (state) => state.geo?.focus?.local || null,
     geoRegion: (state) => state.geo?.focus?.region || null,
     countryA2: (state) => state.profile?.countries?.[0]?.a2 || null,
-    visibleTasks: (state) => state.tasks.filter((task) => !HIDDEN_ACTIONS.includes(state.feedback[task.title])),
+    visibleTasks: (state) => allTasks(state).filter((task) => !HIDDEN_ACTIONS.includes(state.feedback[task.title])),
+    // Everything voted out of the list, newest data first; titles known only from old votes
+    // (no longer among the candidates) are listed by name so they can still be restored.
+    hiddenList: (state) => {
+      const known = allTasks(state).filter((task) => HIDDEN_ACTIONS.includes(state.feedback[task.title]))
+      const titles = new Set(known.map((task) => task.title))
+      const onlyVoted = Object.entries(state.feedback)
+        .filter(([title, action]) => HIDDEN_ACTIONS.includes(action) && !titles.has(title))
+        .map(([title]) => ({ title, wiki: state.wiki || state.profile?.homeWiki }))
+      return [...known, ...onlyVoted].map((task) => ({ ...task, action: state.feedback[task.title] }))
+    },
   },
 
   actions: {
@@ -224,6 +243,8 @@ export const useAppStore = defineStore('app', {
       this.tasksMeta = null
       this.tasksError = ''
       this.feedback = {}
+      this.hiddenTasks = []
+      this.lastHidden = null
       this.revisit = []
       this.revisitError = ''
       this.geo = null
@@ -255,6 +276,7 @@ export const useAppStore = defineStore('app', {
         .then((res) => {
           if (this.tasksRequestSeq !== seq) return
           this.tasks = res.tasks || []
+          this.hiddenTasks = res.hiddenTasks || []
           this.tasksMeta = res
         })
         .catch((err) => { if (this.tasksRequestSeq === seq) this.tasksError = err.message })
@@ -272,10 +294,27 @@ export const useAppStore = defineStore('app', {
     },
 
     vote(task, action) {
+      // Clicking the vote that's already on takes it back.
+      if (this.feedback[task.title] === action) return this.unvote(task)
       const before = this.feedback[task.title]
       this.feedback = { ...this.feedback, [task.title]: action }
       this.feedbackError = ''
+      this.lastHidden = HIDDEN_ACTIONS.includes(action) ? { task, action } : null
       return sendFeedback(task, this.username, action).catch(() => {
+        this.feedback = { ...this.feedback, [task.title]: before }
+        this.lastHidden = null
+        this.feedbackError = t('tasks.voteFailed')
+      })
+    },
+
+    unvote(task) {
+      const before = this.feedback[task.title]
+      const rest = { ...this.feedback }
+      delete rest[task.title]
+      this.feedback = rest
+      this.feedbackError = ''
+      if (this.lastHidden?.task.title === task.title) this.lastHidden = null
+      return clearFeedback(this.username, task.wiki || this.wiki || this.profile?.homeWiki, task.title).catch(() => {
         this.feedback = { ...this.feedback, [task.title]: before }
         this.feedbackError = t('tasks.voteFailed')
       })

@@ -187,6 +187,8 @@ Full detail: [[Feature-Stats-and-Feedback]]
 
 `GET /api/feedback/<username>?wiki=` first marks votes whose article the editor has edited since (within 60 days), then returns `{wiki, items: [{title, action, type, editedAt}], summary}`.
 
+`DELETE /api/feedback/<username>?wiki=&title=` undoes a vote (all rows for that article): `{title, cleared}`.
+
 ## `/api/alerts/<username>/stream`
 
 Full detail: [[Feature-Live-Alerts]]. A `text/event-stream`. The first event is `ready` (`{watching, wiki}`); after that each `alert` event is one of:

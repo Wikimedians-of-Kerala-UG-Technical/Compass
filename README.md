@@ -59,7 +59,7 @@ legacy/     The original single-file prototype (inactive)
 | `GET /api/article/<title>/guide` | Paragraph-level analysis |
 | `GET /api/article/<title>/external-references` | Sources (journals, books, archives) with citation templates |
 | `GET /api/stats/<username>` | Streak, last 30 days, readers reached |
-| `POST /api/feedback`, `GET /api/feedback/<username>` | Task votes, and which voted articles were then edited |
+| `POST /api/feedback`, `GET`/`DELETE /api/feedback/<username>` | Task votes (and undo), and which voted articles were then edited |
 | `GET /api/alerts/<username>/stream` | Live alerts (server-sent events) |
 | `/api/events…` | An Event Registration worklist, ranked for one editor |
 

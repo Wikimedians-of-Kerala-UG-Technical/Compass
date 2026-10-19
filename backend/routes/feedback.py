@@ -15,6 +15,14 @@ def post_feedback():
     return jsonify(saved), 201
 
 
+@bp.route('/api/feedback/<username>', methods=['DELETE'])
+def clear_feedback(username):
+    """Undo: `?wiki=&title=` removes the editor's vote on that article."""
+    dbname = request.args.get('wiki') or 'enwiki'
+    title = request.args.get('title')
+    return jsonify({'title': title, 'cleared': feedback_service.clear(username, dbname, title)})
+
+
 @bp.route('/api/feedback/<username>')
 def get_feedback(username):
     """The editor's latest feedback per article, after checking which ones they've edited."""

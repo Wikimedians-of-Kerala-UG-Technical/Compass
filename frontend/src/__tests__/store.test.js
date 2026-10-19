@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 vi.mock('../router.js', () => ({ router: { push: vi.fn(), replace: vi.fn() } }))
 vi.mock('../api.js', () => ({
   sendFeedback: vi.fn(() => Promise.resolve({})),
+  clearFeedback: vi.fn(() => Promise.resolve({})),
   getProfile: vi.fn(),
   getTrends: vi.fn(),
   getTasks: vi.fn(),
@@ -78,6 +79,36 @@ describe('app store', () => {
     expect([store.guideQuery, store.guideWiki, store.guideQuerySeq]).toEqual(['Kochi', 'mlwiki', 1])
     store.syncFromRoute({ params: { username: 'X', view: 'guide' }, query: { article: 'Kochi', articleWiki: 'mlwiki' } })
     expect(store.guideQuerySeq).toBe(1)
+  })
+
+  it('undoes votes: clicking again, the undo bar and restoring a server-hidden task', async () => {
+    const store = useAppStore()
+    store.username = 'Tester'
+    store.tasks = [{ title: 'A', wiki: 'enwiki' }]
+    store.hiddenTasks = [{ title: 'B', wiki: 'enwiki' }]
+    store.feedback = { B: 'down' }
+    expect(store.visibleTasks.map((t) => t.title)).toEqual(['A'])
+    expect(store.hiddenList.map((h) => [h.title, h.action])).toEqual([['B', 'down']])
+
+    await store.vote(store.tasks[0], 'up')
+    await store.vote(store.tasks[0], 'up') // the same vote again takes it back
+    expect(store.feedback.A).toBeUndefined()
+    expect(api.clearFeedback).toHaveBeenCalledWith('Tester', 'enwiki', 'A')
+
+    await store.vote(store.tasks[0], 'done')
+    expect(store.lastHidden).toEqual({ task: store.tasks[0], action: 'done' })
+    await store.unvote(store.lastHidden.task)
+    expect(store.lastHidden).toBeNull()
+
+    await store.unvote(store.hiddenList[0]) // restore B from the hidden list
+    expect(store.visibleTasks.map((t) => t.title)).toEqual(['A', 'B'])
+    expect(store.hiddenList).toEqual([])
+
+    api.clearFeedback.mockReturnValueOnce(Promise.reject(new Error('offline')))
+    store.feedback = { A: 'dismiss' }
+    await store.unvote(store.tasks[0])
+    expect(store.feedback.A).toBe('dismiss') // rolled back
+    expect(store.feedbackError).toBeTruthy()
   })
 
   it('offers a correctly capitalised username when the account is missing', async () => {

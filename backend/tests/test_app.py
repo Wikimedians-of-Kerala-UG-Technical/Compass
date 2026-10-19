@@ -38,6 +38,13 @@ def test_feedback_hides_tasks(client, monkeypatch):
     body = client.get('/api/tasks/Tester').get_json()
     assert [t['title'] for t in body['tasks']] == ['B'] and body['hidden'] == 1
     assert feedback_service.hidden_titles('Tester', 'enwiki') == {'A'}
+    assert body['hiddenTasks'] == [{'title': 'A'}]  # returned so the editor can restore it
+    # Undo: the vote goes and the task comes back.
+    r = client.delete('/api/feedback/Tester?wiki=enwiki&title=A')
+    assert r.status_code == 200 and r.get_json() == {'title': 'A', 'cleared': 1}
+    body = client.get('/api/tasks/Tester').get_json()
+    assert [t['title'] for t in body['tasks']] == ['A', 'B'] and 'hiddenTasks' not in body
+    assert client.delete('/api/feedback/Tester?wiki=enwiki').status_code == 400
 
 
 def test_rate_limit(monkeypatch):

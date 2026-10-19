@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CdxToggleButtonGroup, CdxInfoChip, CdxMessage, CdxIcon } from '@wikimedia/codex'
 import { cdxIconCheck, cdxIconEyeClosed } from '@wikimedia/codex-icons'
@@ -21,7 +21,21 @@ const filterButtons = computed(() => {
 const filteredTasks = computed(() =>
   activeFilter.value === 'all' ? store.visibleTasks : store.visibleTasks.filter((task) => task.type === activeFilter.value)
 )
-const hiddenCount = computed(() => (store.tasksMeta?.hidden || 0) + store.tasks.length - store.visibleTasks.length)
+const hiddenCount = computed(() => store.hiddenList.length)
+const showHidden = ref(false)
+const hiddenReason = { done: 'tasks.hiddenDone', down: 'tasks.hiddenDown', dismiss: 'tasks.hiddenDismiss' }
+
+// The Undo bar stays a few seconds after a card disappears; the hidden list is there after that.
+let undoTimer = null
+watch(() => store.lastHidden, (h) => {
+  clearTimeout(undoTimer)
+  if (h) undoTimer = setTimeout(() => { if (store.lastHidden === h) store.lastHidden = null }, 8000)
+})
+onBeforeUnmount(() => clearTimeout(undoTimer))
+
+function voteTitle(task, v) {
+  return store.feedback[task.title] === v.action ? `${t(v.label)} ${t('tasks.clickToUndo')}` : t(v.label)
+}
 const refiningWithGeo = computed(() => store.geoLoading && !store.tasksLoading)
 const guided = computed(() => store.tasksMeta?.mode === 'guided')
 
@@ -56,7 +70,20 @@ function effortStatus(effort) {
 
       <CdxToggleButtonGroup v-model="activeFilter" :buttons="filterButtons" style="margin-bottom: 16px" />
 
-      <p v-if="hiddenCount > 0" class="section-sub">{{ $t('tasks.hidden', { n: hiddenCount }) }}</p>
+      <p v-if="hiddenCount > 0" class="section-sub">
+        {{ $t('tasks.hidden', { n: hiddenCount }) }}
+        <button class="link-button" :aria-expanded="showHidden" @click="showHidden = !showHidden">
+          {{ showHidden ? $t('tasks.hideHidden') : $t('tasks.showHidden') }}
+        </button>
+      </p>
+      <div v-if="showHidden && hiddenCount > 0" class="panel hidden-list">
+        <div v-for="h in store.hiddenList" :key="h.title" class="hidden-list__row">
+          <a v-if="h.url" :href="h.url" target="_blank" rel="noopener">{{ h.title }}</a>
+          <span v-else>{{ h.title }}</span>
+          <CdxInfoChip status="subtle">{{ $t(hiddenReason[h.action]) }}</CdxInfoChip>
+          <button class="cdx-button cdx-button--weight-quiet hidden-list__restore" @click="store.unvote(h)">{{ $t('tasks.restore') }}</button>
+        </div>
+      </div>
 
       <div v-if="!filteredTasks.length" class="empty-state">
         {{ store.visibleTasks.length ? $t('app.noFilterMatch') : $t('tasks.none') }}
@@ -90,8 +117,8 @@ function effortStatus(effort) {
               :key="v.action"
               class="cdx-button cdx-button--weight-quiet vote"
               :class="{ 'is-on': store.feedback[task.title] === v.action }"
-              :title="$t(v.label)"
-              :aria-label="$t(v.label)"
+              :title="voteTitle(task, v)"
+              :aria-label="voteTitle(task, v)"
               :aria-pressed="store.feedback[task.title] === v.action"
               @click="store.vote(task, v.action)"
             >
@@ -102,10 +129,27 @@ function effortStatus(effort) {
         <div v-if="store.feedback[task.title] === 'up'" class="item-card__reason" style="margin-top: 4px">{{ $t('tasks.thanks') }}</div>
       </div>
     </template>
+
+    <div v-if="store.lastHidden" class="undo-bar" role="status">
+      <span>{{ $t('tasks.undoBar', { title: store.lastHidden.task.title, what: $t(hiddenReason[store.lastHidden.action]) }) }}</span>
+      <button class="cdx-button cdx-button--weight-quiet cdx-button--action-progressive" @click="store.unvote(store.lastHidden.task)">{{ $t('tasks.undo') }}</button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .vote-group { display: inline-flex; gap: 2px; margin-left: auto; }
+.link-button { background: none; border: 0; padding: 0; font: inherit; color: var(--color-progressive); cursor: pointer; text-decoration: underline; }
+.hidden-list { margin-bottom: 16px; }
+.hidden-list__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; font-size: 0.875rem; }
+.hidden-list__restore { margin-left: auto; }
+.undo-bar {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 16px; border-radius: 4px; font-size: 0.875rem;
+  background: var(--background-color-inverted, #202122); color: var(--color-inverted, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.undo-bar .cdx-button { color: inherit; font-weight: bold; text-decoration: underline; }
 .vote.is-on { color: var(--color-progressive); background: var(--background-color-progressive-subtle); }
 </style>

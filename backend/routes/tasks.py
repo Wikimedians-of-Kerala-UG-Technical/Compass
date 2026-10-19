@@ -17,9 +17,11 @@ def tasks(username):
     if lat is not None and lon is not None:
         place = {'name': request.args.get('place') or 'your area', 'coord': {'lat': lat, 'lon': lon}}
     result = find_tasks(profile, place)
-    # Tasks the editor voted down, dismissed or finished don't come back.
+    # Tasks the editor voted down, dismissed or finished don't come back. They're returned
+    # separately so the editor can restore one (undo).
     hidden = feedback_service.hidden_titles(profile['username'], profile['homeWiki'])
     if hidden:
         kept = [t for t in result['tasks'] if t['title'] not in hidden]
-        result = {**result, 'tasks': kept, 'hidden': len(result['tasks']) - len(kept)}
+        removed = [t for t in result['tasks'] if t['title'] in hidden]
+        result = {**result, 'tasks': kept, 'hidden': len(removed), 'hiddenTasks': removed}
     return jsonify(result)
