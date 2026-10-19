@@ -79,7 +79,8 @@ python eval/probe_apis.py                                     # every external A
 
 ## Troubleshooting
 
-- **A user returns 404:** either no Wikimedia account has that name, or the account has no edits on the requested `wiki`. Spaces and underscores both work, and the first letter is capitalised for you, but the rest is case-sensitive (`Doc James`, not `doc james`).
+- **A user returns 404:** either no Wikimedia account has that name, or the account has no Wikipedia edits Compass can read (the message says where its edits are). Spaces and underscores both work, and the first letter is capitalised for you, but the rest is case-sensitive (`Doc James`, not `doc james`); when only the capitalisation is wrong, the error suggests the right name.
+- **A user returns 403:** the editor opted out by creating `User:<name>/Compass-opt-out` on Meta.
 - **`partial: true`:** a sub-source failed, usually from rate limiting. Wait a minute and refresh.
 - **HTTP 429 from Compass:** you hit `COMPASS_RATE_LIMIT`. Raise it, or set `0` for local testing.
 - **A 500 with an error id:** the full traceback is in the server log under that id.

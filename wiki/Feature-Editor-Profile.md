@@ -65,6 +65,17 @@ Then it checks the namespace (talk, category, file, template). After that it fal
 
 Replaces v1's `qualityTier`, which counted the editor's *own* reverts and therefore rated vandal fighters as "developing". An article edit counts as reverted if it carries `mw-reverted` and the editor's own next edit on that page is not a revert (that would be a self-revert).
 
+## When there's no profile
+
+| Situation | Response |
+|---|---|
+| No account with that name | `404`, and if an account exists that differs only in capitalisation (each word capitalised, or the name in lower case), `Did you mean "Akash A"?` with a `suggestion` field. The start screen shows it as an "Open Akash A instead" button |
+| No Wikipedia edits Compass can read (only Meta, Commons, Wikidata…, or only deleted edits) | `404` saying so, listing up to three wikis where the account has edits, e.g. `meta.wikimedia.org (8), commons.wikimedia.org (2)` |
+| No edits on a wiki chosen with `?wiki=` | `404` naming the wiki and where their edits are instead |
+| The editor opted out | `403` naming the page: an editor who creates `User:<name>/Compass-opt-out` on Meta (any content) gets no dashboard. Checked before the profile cache, so it takes effect within 10 minutes; deleting the page opts back in |
+
+`suggest_username`, `no_edits_message` and `check_opt_out` in `services/profile_service.py`.
+
 ## Caching
 
 The profile is cached for 6 h per `(username, wiki)`, with a per-key lock so the dashboard's parallel requests compute it only once.
