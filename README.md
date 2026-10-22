@@ -19,16 +19,15 @@ There are no accounts and nothing to sign up for. It reads public contributions 
 
 ## Behind Compass
 
-Compass began as [WikiTask Pro](https://github.com/nethahussain/wikitask-pro), created by [Netha Hussain](https://github.com/nethahussain). The original prototype ran entirely in the browser, with no backend or dependencies (preserved in [`legacy/`](legacy/README.md)).
+Compass began as [WikiTask Pro](https://github.com/nethahussain/wikitask-pro), a browser-only prototype created by [Netha Hussain](https://github.com/nethahussain) (preserved in [`legacy/`](legacy/README.md)).
 
+At the Wikimedia Technical Workshop 2026 at C-SiS CUSAT, the technical team of the Wikimedians of Kerala User Group took it up as a workshop project and built it into what Compass is now: a backend that works on any language Wikipedia and reads Wikipedia's own topic and country labels, tasks ranked by signals that each card explains, and the features listed below.
 
-The technical team of the Wikimedians of Kerala User Group then built that idea into what Compass is now: a backend that works on any language Wikipedia and reads Wikipedia's own topic and country labels, tasks ranked by signals that each card explains, and the features listed below.
-
-- [Netha Hussain](https://github.com/nethahussain)
-- [Akash A](https://github.com/akashanil-dev)
-- [Albin Jojo](https://github.com/albinjojo)
-- [Edson Edwin Ninan](https://github.com/Edson-Edwin)
-- [Mathews](https://github.com/MatthewsM2)
+- [Netha Hussain](https://github.com/nethahussain): original idea and the WikiTask Pro prototype
+- [Akash A](https://github.com/akashanil-dev): maintainer; built the scoring engine, most features (Discover, Revisit, Trends, stats, feedback, live alerts, event worklists), the v2 backend and tests, and the production setup
+- [Albin Jojo](https://github.com/albinjojo): profile endpoint, the MediaWiki API client, and the first Vue 3 frontend
+- [Edson Edwin Ninan](https://github.com/Edson-Edwin): Article Guide performance: paginated references, caching, and asynchronous requests
+- [Mathews](https://github.com/MatthewsM2): global edit count in the editor profile
 
 See the [GitHub contributors page](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/graphs/contributors) for contribution activity.
 
