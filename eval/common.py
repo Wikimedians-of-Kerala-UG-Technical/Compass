@@ -6,7 +6,7 @@ import requests
 
 USER_AGENT = os.environ.get(
     'COMPASS_EVAL_UA',
-    'CompassEval/1.0 (https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass; evaluation harness)',
+    'CompassEval/1.0 (https://gitlab.wikimedia.org/toolforge-repos/compass; evaluation harness)',
 )
 BACKEND = os.environ.get('COMPASS_BACKEND', 'http://127.0.0.1:5000')
 

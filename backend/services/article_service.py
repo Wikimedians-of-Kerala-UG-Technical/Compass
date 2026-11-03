@@ -7,7 +7,6 @@ links and bare URLs, and compare the article with its Wikidata item (image, birt
 and with the same article in other languages (missing sections, via Content Translation).
 """
 import json
-import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -205,12 +204,6 @@ def _missing_sections(dbname, title, sitelinks):
 
 
 def analyze_article(title, dbname='enwiki'):
-    if os.environ.get('STRESS_TEST') == '1':
-        # Canned response for locustfile.py, so load tests never hit Wikimedia.
-        time.sleep(0.1)
-        return {'title': title, 'wiki': dbname, 'sections': [], 'suggestions': [], 'missingSections': [],
-                'inlineTags': [], 'citedUrls': [], 'topics': [], 'totalRefs': 0, 'currentSize': 0,
-                'hasInfobox': False, 'hasImages': False, 'wikidata': None, 'quality': None}
     key = (dbname, title)
     cached = _cache.get(key)
     if cached:

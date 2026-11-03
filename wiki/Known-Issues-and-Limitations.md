@@ -32,7 +32,6 @@ What's approximate or missing in Compass. Read this before trusting an output or
 | `doc_James`, `Doc James` cached as different users | MediaWiki-style username normalisation |
 | Cache stored with `pickle` | Tagged JSON (no code runs when a cache file is read) |
 | Unbounded per-key cache locks; O(n) eviction | Locks freed after use; insertion-order eviction |
-| No tests or CI | pytest (offline), vitest, ruff, GitHub Actions, nightly API probe |
 | Development server only | gunicorn config, Dockerfile, Procfile, `/api/health`, static serving with deep links |
 | No rate limit on Compass's own API | `COMPASS_RATE_LIMIT`, default 120/min per client |
 | CORS defaulted to `*` | Dev servers only, unless configured |

@@ -7,6 +7,17 @@
 
 ---
 
+## Development has moved to GitLab
+
+Compass is now maintained on [Wikimedia GitLab](https://gitlab.wikimedia.org/toolforge-repos/compass). This GitHub repository is no longer used for active development.
+
+Use GitLab for the [latest source code](https://gitlab.wikimedia.org/toolforge-repos/compass), [issues](https://gitlab.wikimedia.org/toolforge-repos/compass/-/issues), and [merge requests](https://gitlab.wikimedia.org/toolforge-repos/compass/-/merge_requests).
+
+```bash
+git clone https://gitlab.wikimedia.org/toolforge-repos/compass.git
+cd compass
+```
+
 ## What is Compass?
 
 Wikipedia has millions of articles that need work, but no good way to match editors with tasks suited to them. Existing tools hand everyone the same generic maintenance lists.
@@ -29,7 +40,7 @@ At the Wikimedia Technical Workshop 2026 at C-SiS CUSAT, the technical team of t
 - [Edson Edwin Ninan](https://github.com/Edson-Edwin): Article Guide performance: paginated references, caching, and asynchronous requests
 - [Mathews](https://github.com/MatthewsM2): global edit count in the editor profile
 
-See the [GitHub contributors page](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/graphs/contributors) for contribution activity.
+See the [GitLab commit history](https://gitlab.wikimedia.org/toolforge-repos/compass/-/commits/main) for contribution activity.
 
 ---
 
@@ -56,7 +67,7 @@ Newcomers (under 200 edits) get Wikipedia's guided link and image tasks. Monolin
 ```
 frontend/   Vue 3 + Vite + Pinia + vue-router + vue-i18n + Wikimedia Codex (light and dark)
 backend/    Flask API: one Wikimedia client (services/wiki.py), per-feature services, TTL caches (memory + SQLite),
-            a small SQLite store for task feedback; tests in backend/tests
+            a small SQLite store for task feedback
 eval/       Reproducible evaluation harness (see eval/README.md and EVALUATION.md)
 legacy/     The original single-file prototype (inactive)
 ```
@@ -85,6 +96,8 @@ Data sources: MediaWiki Action and REST APIs on any wiki, Wikidata and its Query
 
 ## Running it locally
 
+For current setup instructions, see [Getting Started on GitLab](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Getting-Started.md). The instructions below describe this GitHub snapshot.
+
 **Backend** (Flask, serves on `:5000`; see [Getting Started](wiki/Getting-Started.md) for env vars):
 
 ```bash
@@ -101,11 +114,10 @@ npm install
 npm run dev
 ```
 
-**Tests and lint** (also run by CI on every pull request):
+**Lint:**
 
 ```bash
-pytest && ruff check .
-cd frontend && npm test
+ruff check .
 ```
 
 **Production:** `docker build -t compass . && docker run -p 8000:8000 -v compass-data:/data compass` serves the API and the app together. See [Getting Started](wiki/Getting-Started.md#production) for gunicorn and proxy settings.
@@ -114,15 +126,15 @@ cd frontend && npm test
 
 ## Documentation
 
-Full developer documentation is available in our [GitHub Wiki](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki).
+Full developer documentation is available in our [documentation on GitLab](https://gitlab.wikimedia.org/toolforge-repos/compass/-/tree/main/wiki).
 
-- [Home](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Home) — start here
-- [Architecture](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Architecture) — how the pieces fit together
-- [External APIs](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/External-APIs) — every API we call, and the exact parameters
-- [API Reference](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/API-Reference) — request/response shapes for every endpoint
-- [Known Issues and Limitations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Known-Issues-and-Limitations) — what's approximate or fragile
+- [Home](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Home.md) — start here
+- [Architecture](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Architecture.md) — how the pieces fit together
+- [External APIs](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/External-APIs.md) — every API we call, and the exact parameters
+- [API Reference](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/API-Reference.md) — request/response shapes for every endpoint
+- [Known Issues and Limitations](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Known-Issues-and-Limitations.md) — what's approximate or fragile
 
-Each feature has its own page: [Editor Profile](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Editor-Profile), [Task Recommendations](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Task-Recommendations), [Geographic Focus](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Geographic-Focus), [Revisit](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Revisit), [Discover](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Discover), [Commons & Wikidata](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Contribute), [Article Guide](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Article-Guide), [Trends](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Trends), [Stats & feedback](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Stats-and-Feedback), [Live alerts](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Live-Alerts), [Events](https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass/wiki/Feature-Events).
+Each feature has its own page: [Editor Profile](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Editor-Profile.md), [Task Recommendations](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Task-Recommendations.md), [Geographic Focus](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Geographic-Focus.md), [Revisit](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Revisit.md), [Discover](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Discover.md), [Commons & Wikidata](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Contribute.md), [Article Guide](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Article-Guide.md), [Trends](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Trends.md), [Stats & feedback](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Stats-and-Feedback.md), [Live alerts](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Live-Alerts.md), [Events](https://gitlab.wikimedia.org/toolforge-repos/compass/-/blob/main/wiki/Feature-Events.md).
 
 ---
 

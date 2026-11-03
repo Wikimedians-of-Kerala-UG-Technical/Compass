@@ -7,8 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@wikimedia/codex": "^2.6.0",
@@ -21,8 +20,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
-    "happy-dom": "^21.0.1",
-    "vite": "^8.1.1",
-    "vitest": "^5.0.4"
+    "vite": "^8.1.1"
   }
 }

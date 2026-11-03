@@ -14,7 +14,7 @@ No accounts or API keys are needed.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt      # backend deps + pytest + ruff
+pip install -r requirements-dev.txt      # backend deps + ruff
 cd backend
 python app.py
 ```
@@ -46,15 +46,11 @@ npm run dev
 
 Open **http://localhost:5173** and enter any username, e.g. `Ranjithsiji` (Malayalam), `Hog Farm` (English), or `Ravidreams` (Tamil). Every screen has a URL (`/u/Ranjithsiji/tasks?wiki=mlwiki`), so you can refresh or share a link. To point the frontend at another backend, set `VITE_API_BASE`; an empty value means the same origin.
 
-## Tests and lint
+## Lint
 
 ```bash
-pytest                       # backend, offline: network calls fail the test
 ruff check .
-cd frontend && npm test      # store, router sync and i18n key coverage
 ```
-
-CI (`.github/workflows/ci.yml`) runs all three plus `npm run build` on every PR. `probe-apis.yml` runs `eval/probe_apis.py` nightly, so an upstream API change shows up as a failed run.
 
 ## What to expect
 
@@ -85,15 +81,6 @@ python eval/probe_apis.py                                     # every external A
 - **HTTP 429 from Compass:** you hit `COMPASS_RATE_LIMIT`. Raise it, or set `0` for local testing.
 - **A 500 with an error id:** the full traceback is in the server log under that id.
 - **Slow first load for a very active editor:** expected. The profile is cached afterwards.
-
-## Load testing
-
-`locustfile.py` drives the Guide endpoint with random titles. Start the backend with `STRESS_TEST=1` so the Guide returns canned data instead of calling Wikimedia:
-
-```bash
-STRESS_TEST=1 COMPASS_RATE_LIMIT=0 python backend/app.py
-locust -f locustfile.py --host http://127.0.0.1:5000
-```
 
 ## Production
 

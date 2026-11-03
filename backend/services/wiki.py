@@ -15,7 +15,7 @@ import requests
 
 USER_AGENT = os.environ.get(
     'COMPASS_USER_AGENT',
-    'Compass/2.0 (https://github.com/Wikimedians-of-Kerala-UG-Technical/Compass) python-requests',
+    'Compass/2.0 (https://gitlab.wikimedia.org/toolforge-repos/compass) python-requests',
 )
 TIMEOUT = 30
 
